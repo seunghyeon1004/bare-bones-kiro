@@ -8,10 +8,13 @@
     "test:props": "vitest --run test/props",
     "build": "tsx skeleton/build/build.ts",
     "bones": "tsx skeleton/cli/bones.ts",
-    "mcp": "tsx skeleton/mcp/server.ts"
+    "mcp": "tsx skeleton/mcp/server.ts",
+    "test:e2e": "npm run build && playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@modelcontextprotocol/sdk": "1.32.2",
+    "@playwright/test": "1.65.0",
     "@types/node": "22.20.5",
     "esbuild": "0.28.2",
     "fast-check": "4.10.2",

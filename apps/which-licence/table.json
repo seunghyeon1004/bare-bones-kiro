@@ -1,0 +1,220 @@
+{
+  "id": "which-licence",
+  "title": "Which licence?",
+  "conditions": [
+    {
+      "id": "copyleft",
+      "question": "If someone shares a changed or combined version, how much of it must be shared under your licence?",
+      "help": "Copyleft means the source must be shared under the same terms.",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "hint": "Changes and larger works may use other terms and need not include source."
+        },
+        {
+          "id": "file",
+          "label": "Only the changed files",
+          "hint": "Source of the licensed files and changes to them stays open (weak copyleft)."
+        },
+        {
+          "id": "library",
+          "label": "Only the library",
+          "hint": "Source of the library and changes to it stays open; a program that uses it through its interfaces may use other terms."
+        },
+        {
+          "id": "whole",
+          "label": "The whole program",
+          "hint": "Larger works that use your code must be shared under the same licence (strong copyleft)."
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "question": "Should running a modified version as a network service count as distributing it?",
+      "help": "Among these seven licences, only AGPL-3.0 requires the source of a modified version that is used to provide a network service.",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Users of the service can get the source of the modified version."
+        }
+      ]
+    },
+    {
+      "id": "patent",
+      "question": "Do you want contributors to give an express patent grant?",
+      "help": "Apache-2.0, MPL-2.0, LGPL-3.0, GPL-3.0 and AGPL-3.0 list patent-use. MIT and the Unlicense do not.",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Contributors grant patent rights."
+        }
+      ]
+    },
+    {
+      "id": "credit",
+      "question": "Must copies keep your copyright notice?",
+      "help": "Every licence here except the Unlicense lists include-copyright.",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Copies keep the copyright and licence notice."
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "mit",
+      "label": "MIT License (MIT)",
+      "detail": "A short and simple permissive license with conditions only requiring preservation of copyright and license notices. Licensed works, modifications, and larger works may be distributed under different terms and without source code."
+    },
+    {
+      "id": "apache-2-0",
+      "label": "Apache License 2.0 (Apache-2.0)",
+      "detail": "A permissive license whose main conditions require preservation of copyright and license notices. Contributors provide an express grant of patent rights. Licensed works, modifications, and larger works may be distributed under different terms and without source code."
+    },
+    {
+      "id": "unlicense",
+      "label": "The Unlicense (Unlicense)",
+      "detail": "A license with no conditions whatsoever which dedicates works to the public domain. Unlicensed works, modifications, and larger works may be distributed under different terms and without source code."
+    },
+    {
+      "id": "mpl-2-0",
+      "label": "Mozilla Public License 2.0 (MPL-2.0)",
+      "detail": "Permissions of this weak copyleft license are conditioned on making available source code of licensed files and modifications of those files under the same license (or in certain cases, one of the GNU licenses). Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. However, a larger work using the licensed work may be distributed under different terms and without source code for files added in the larger work."
+    },
+    {
+      "id": "lgpl-3-0",
+      "label": "GNU Lesser General Public License v3.0 (LGPL-3.0)",
+      "detail": "Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or the GNU GPLv3. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms and without source code for the larger work."
+    },
+    {
+      "id": "gpl-3-0",
+      "label": "GNU General Public License v3.0 (GPL-3.0)",
+      "detail": "Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights."
+    },
+    {
+      "id": "agpl-3-0",
+      "label": "GNU Affero General Public License v3.0 (AGPL-3.0)",
+      "detail": "Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available."
+    }
+  ],
+  "rules": [
+    {
+      "id": "permissive-patent",
+      "when": {
+        "copyleft": "none",
+        "patent": "yes"
+      },
+      "then": "apache-2-0",
+      "note": "Apache-2.0 is the only licence of the seven without copyleft that lists patent-use, the express patent grant. It also lists include-copyright, so copies must keep notices. If you wanted a patent grant and no notice requirement, none of the seven fits both, and Apache-2.0 is the nearest.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "apache-2.0.yml: patent-use; include-copyright"
+      }
+    },
+    {
+      "id": "permissive-notice",
+      "when": {
+        "copyleft": "none",
+        "patent": "no",
+        "credit": "yes"
+      },
+      "then": "mit",
+      "note": "MIT lists include-copyright as its only condition, so copies keep your notice. It does not list patent-use.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "mit.yml: include-copyright; no patent-use"
+      }
+    },
+    {
+      "id": "permissive-nothing",
+      "when": {
+        "copyleft": "none",
+        "patent": "no",
+        "credit": "no"
+      },
+      "then": "unlicense",
+      "note": "The Unlicense has no conditions, so copies need not keep any notice. It does not list patent-use.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "unlicense.yml: no conditions; no patent-use"
+      }
+    },
+    {
+      "id": "copyleft-file",
+      "when": {
+        "copyleft": "file"
+      },
+      "then": "mpl-2-0",
+      "note": "MPL-2.0 keeps the licensed files and changes to them under the same licence; a larger work may use other terms for the files it adds. It lists include-copyright and patent-use, as do the other copyleft licences here, so your answers on notices and patents do not change this. Only agpl-3.0.yml lists network-use-disclose, and it covers the whole program, so none of the seven combines file-level copyleft with network use.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "mpl-2.0.yml: same-license--file; patent-use"
+      }
+    },
+    {
+      "id": "copyleft-library",
+      "when": {
+        "copyleft": "library"
+      },
+      "then": "lgpl-3-0",
+      "note": "LGPL-3.0 keeps the library and changes to it under the same licence or GPL-3.0; a larger work that uses it through its interfaces may use other terms. It lists include-copyright and patent-use, as do the other copyleft licences here. Only agpl-3.0.yml lists network-use-disclose, so none of the seven combines library-level copyleft with network use.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "lgpl-3.0.yml: same-license--library; patent-use"
+      }
+    },
+    {
+      "id": "copyleft-whole",
+      "when": {
+        "copyleft": "whole",
+        "network": "no"
+      },
+      "then": "gpl-3-0",
+      "note": "GPL-3.0 keeps larger works that use the licensed work under the same licence. It does not list network-use-disclose. It lists include-copyright and patent-use.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "gpl-3.0.yml: same-license; no network-use-disclose"
+      }
+    },
+    {
+      "id": "copyleft-network",
+      "when": {
+        "copyleft": "whole",
+        "network": "yes"
+      },
+      "then": "agpl-3-0",
+      "note": "AGPL-3.0 adds network-use-disclose: when a modified version is used to provide a service over a network, its complete source must be made available. Its other conditions are the same as GPL-3.0's.",
+      "source": {
+        "ref": "choosealicense",
+        "at": "agpl-3.0.yml: network-use-disclose; same-license"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "choosealicense",
+      "title": "choosealicense.com licence data (github/choosealicense.com, gh-pages commit 687dabb)",
+      "url": "https://github.com/github/choosealicense.com/tree/687dabb300c3d58891285d9567cc6f73a495470c/_licenses",
+      "published": "unknown",
+      "read": "2026-11-12"
+    }
+  ]
+}

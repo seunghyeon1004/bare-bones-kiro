@@ -1,0 +1,28 @@
+:root {
+  --bg: #f6f1e4;
+  --surface: #fffdf7;
+  --text: #1b1b1b;
+  --muted: #4f4a3f;
+  --accent: #1c3d6e;
+  --accent-text: #ffffff;
+  --border: #6e675a;
+  --focus: #9a3412;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-size: 1rem;
+  --radius: 0;
+  --space: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181b;
+    --surface: #202226;
+    --text: #ebe6d9;
+    --muted: #b9b3a5;
+    --accent: #8fb4ea;
+    --accent-text: #101820;
+    --border: #8a8f99;
+    --focus: #f0b36a;
+  }
+}

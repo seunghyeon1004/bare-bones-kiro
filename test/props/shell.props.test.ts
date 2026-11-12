@@ -38,15 +38,16 @@ describe('shell properties', () => {
     };
     const blockPattern = /<script type="application\/json" id="data-([a-z]+)">([^]*?)<\/script>/g;
     const bootPattern = /<div id="boot" class="page">[^]*?<\/div>/;
+    const titlePattern = /<title>([^]*?)<\/title>/g;
     const strip = (html: string): string =>
-      html.replace(blockPattern, '<script data>').replace(bootPattern, '<boot>');
-    const baseline = strip(renderPage(template, { table: null, copy: null }, bootApp(emptyCopy)));
+      html.replace(blockPattern, '<script data>').replace(bootPattern, '<boot>').replace(titlePattern, '<title></title>');
+    const baseline = strip(renderPage(template, { table: null, copy: null }, bootApp(emptyCopy), ''));
     const unescape = (s: string): string =>
       s.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&amp;', '&');
 
     fc.assert(
       fc.property(arbHostileTable, arbHostileCopy, (table, copy) => {
-        const html = renderPage(template, { table, copy }, bootApp(copy));
+        const html = renderPage(template, { table, copy }, bootApp(copy), copy.title);
 
         // (a) three script elements: two data blocks and the app script
         expect(html.split('<script').length - 1).toBe(3);
@@ -74,6 +75,13 @@ describe('shell properties', () => {
           copy.intro,
           copy.labels.noscript,
         ]);
+
+        // (f) the <title> holds copy.title, escaped
+        const titles = [...html.matchAll(titlePattern)];
+        expect(titles).toHaveLength(1);
+        const titleText = titles[0]?.[1] ?? '';
+        expect(titleText).not.toMatch(/[<>]/);
+        expect(unescape(titleText)).toBe(copy.title);
       }),
       runs,
     );

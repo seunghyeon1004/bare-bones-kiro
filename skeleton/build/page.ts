@@ -47,13 +47,16 @@ export function bootLanding(landing: Landing, apps: readonly AppSummary[]): stri
   );
 }
 
-/** Puts `boot` and one JSON data block per entry of `blocks` into the template. */
-export function renderPage(template: string, blocks: Record<string, unknown>, boot: string): string {
+/** Puts `boot`, one JSON data block per entry of `blocks` and the HTML-escaped `title` into the template. */
+export function renderPage(template: string, blocks: Record<string, unknown>, boot: string, title: string): string {
   const data = Object.entries(blocks)
     .map(([key, value]) => {
       if (!KEY_PATTERN.test(key)) throw new Error(`bad data block key: ${key}`);
       return `<script type="application/json" id="data-${key}">${escapeJson(value)}</script>`;
     })
     .join('\n');
-  return template.replace('<!--bones:boot-->', () => boot).replace('<!--bones:data-->', () => data);
+  return template
+    .replace('<title></title>', () => `<title>${escapeHtml(title)}</title>`)
+    .replace('<!--bones:boot-->', () => boot)
+    .replace('<!--bones:data-->', () => data);
 }

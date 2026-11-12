@@ -1,0 +1,34 @@
+{
+  "title": "Which licence?",
+  "tagline": "Which of seven common open-source licences fits your project, from choosealicense.com data.",
+  "intro": "Answer a few questions about how others may reuse your code. Each result is tied to facts in the choosealicense.com data for MIT, Apache-2.0, Unlicense, MPL-2.0, LGPL-3.0, GPL-3.0 and AGPL-3.0. This is not legal advice.",
+  "answerStyle": "list",
+  "labels": {
+    "startOver": "Start over",
+    "change": "Change",
+    "why": "Why this result",
+    "rule": "Rule",
+    "whatMattered": "What decided it",
+    "source": "Source",
+    "published": "Published",
+    "readOn": "Read on",
+    "notAsked": "Not asked, because the answer could not change the result",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "showTable": "Show the whole table",
+    "hideTable": "Hide the table",
+    "any": "any",
+    "outcome": "Licence",
+    "yourAnswers": "Your answers",
+    "questionOf": "Question {n} of at most {max}",
+    "badLink": "{count} answer(s) in this link were not recognised and were ignored.",
+    "noscript": "This page needs JavaScript. It makes no network requests and stores nothing."
+  },
+  "resultLead": "Closest fit:",
+  "footer": [
+    { "text": "Licence data from choosealicense.com, CC BY 3.0", "href": "https://choosealicense.com/" },
+    { "text": "Data source: github.com/github/choosealicense.com", "href": "https://github.com/github/choosealicense.com" },
+    { "text": "CC BY 3.0 licence text", "href": "https://creativecommons.org/licenses/by/3.0/" },
+    { "text": "Not legal advice. Read the full licence text before you use a licence." }
+  ]
+}

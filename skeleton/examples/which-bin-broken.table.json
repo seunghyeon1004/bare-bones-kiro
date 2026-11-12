@@ -1,0 +1,588 @@
+{
+  "id": "which-bin-broken",
+  "title": "Which bin? (broken on purpose: rule paper-cup-soiled removed, rule receipt-as-paper added)",
+  "conditions": [
+    {
+      "id": "kind",
+      "question": "What is the item?",
+      "values": [
+        {
+          "id": "paper-box",
+          "label": "Paper or cardboard box",
+          "hint": "Cardboard and pizza boxes. A delivery box lined with foil or plastic has its own choice."
+        },
+        {
+          "id": "insulated-box",
+          "label": "Insulated delivery box",
+          "hint": "A box lined with foil or plastic that will not come off"
+        },
+        {
+          "id": "paper-books",
+          "label": "Newspaper, books or flyers",
+          "hint": "Plastic-coated flyers go in the general waste bag."
+        },
+        {
+          "id": "paper-cup",
+          "label": "Paper cup"
+        },
+        {
+          "id": "carton",
+          "label": "Drink carton",
+          "hint": "Milk or juice cartons"
+        },
+        {
+          "id": "receipt",
+          "label": "Receipt"
+        },
+        {
+          "id": "glass",
+          "label": "Glass",
+          "hint": "Bottles, jars, drinking glasses, window glass"
+        },
+        {
+          "id": "can",
+          "label": "Can",
+          "hint": "Drink and food cans"
+        },
+        {
+          "id": "foil",
+          "label": "Aluminium foil"
+        },
+        {
+          "id": "plastic-bottle",
+          "label": "Plastic bottle"
+        },
+        {
+          "id": "plastic-container",
+          "label": "Other plastic container or tray"
+        },
+        {
+          "id": "plastic-film",
+          "label": "Plastic film or bag"
+        },
+        {
+          "id": "styrofoam",
+          "label": "Styrofoam"
+        },
+        {
+          "id": "battery",
+          "label": "Battery"
+        },
+        {
+          "id": "lamp",
+          "label": "Fluorescent lamp"
+        }
+      ]
+    },
+    {
+      "id": "soiled",
+      "question": "Is there food or grease on it that rinsing will not remove?",
+      "help": "Rinse it first if you can. Answer Yes only if it is still dirty after rinsing.",
+      "values": [
+        {
+          "id": "no",
+          "label": "No",
+          "hint": "Clean, or it rinses clean."
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Still dirty after rinsing."
+        }
+      ]
+    },
+    {
+      "id": "broken",
+      "question": "Is it broken?",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes"
+        }
+      ]
+    },
+    {
+      "id": "glass-type",
+      "question": "What kind of glass is it?",
+      "values": [
+        {
+          "id": "ordinary",
+          "label": "Bottle, jar or ordinary drinking glass"
+        },
+        {
+          "id": "special",
+          "label": "Heat-resistant, crystal, ceramic or window glass",
+          "hint": "Includes coated or coloured glass products, lighting glass and pottery (사기·도자기)."
+        }
+      ]
+    },
+    {
+      "id": "coated",
+      "question": "Is the paper cup coated on both sides?",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Both the inside and the outside have a coating."
+        }
+      ]
+    },
+    {
+      "id": "clear-drink",
+      "question": "Is it a colourless, see-through water or drink bottle?",
+      "values": [
+        {
+          "id": "no",
+          "label": "No",
+          "hint": "Coloured, or not a drink bottle."
+        },
+        {
+          "id": "yes",
+          "label": "Yes",
+          "hint": "Colourless and see-through."
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "paper",
+      "label": "Paper",
+      "detail": "Put it out with paper recycling."
+    },
+    {
+      "id": "cartons",
+      "label": "Drink cartons",
+      "detail": "Put it in the carton-only collection bin."
+    },
+    {
+      "id": "glass-bottles",
+      "label": "Glass bottles",
+      "detail": "Put it out with glass bottles."
+    },
+    {
+      "id": "cans",
+      "label": "Cans",
+      "detail": "Put it out with metal cans."
+    },
+    {
+      "id": "clear-pet",
+      "label": "Clear PET bottles",
+      "detail": "Put it out as a clear PET bottle, separate from other plastics."
+    },
+    {
+      "id": "plastics",
+      "label": "Plastics",
+      "detail": "Put it out with plastic containers."
+    },
+    {
+      "id": "plastic-film",
+      "label": "Plastic film",
+      "detail": "Put it out with plastic film and bags, inside a clear or semi-clear bag."
+    },
+    {
+      "id": "styrofoam",
+      "label": "Styrofoam",
+      "detail": "Put it out with styrofoam."
+    },
+    {
+      "id": "battery-box",
+      "label": "Battery collection box",
+      "detail": "Put it in a battery collection box at a collection point."
+    },
+    {
+      "id": "lamp-box",
+      "label": "Fluorescent lamp collection box",
+      "detail": "Put it in your district's fluorescent lamp collection container."
+    },
+    {
+      "id": "general-waste",
+      "label": "General waste bag (종량제봉투)",
+      "detail": "Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the official pay-as-you-throw bag: you pay for the bag, and the price depends on its size."
+    },
+    {
+      "id": "special-sack",
+      "label": "Special sack for non-combustibles (특수규격마대)",
+      "detail": "Put it in a special sack for non-combustible waste, called a 특수규격마대 (teuksu-gyugyeok madae). You buy the sack. Large items can also go out as bulky waste (대형폐기물)."
+    },
+    {
+      "id": "ask-district",
+      "label": "Ask your district office",
+      "detail": "The guides this app uses do not cover this case. Ask your district office (구청) before you put it out."
+    }
+  ],
+  "rules": [
+    {
+      "id": "paper-box-clean",
+      "when": {
+        "kind": "paper-box",
+        "soiled": "no"
+      },
+      "then": "paper",
+      "note": "Take off any plastic coating, tape, staples and foil, then fold the box.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 가"
+      }
+    },
+    {
+      "id": "paper-box-soiled",
+      "when": {
+        "kind": "paper-box",
+        "soiled": "yes"
+      },
+      "then": "general-waste",
+      "note": "The Ministry's guide lists a pizza box as paper, but inner paper soiled with grease goes in the general waste bag.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 dictionary p.33, 피자박스"
+      }
+    },
+    {
+      "id": "insulated-box",
+      "when": {
+        "kind": "insulated-box"
+      },
+      "then": "general-waste",
+      "note": "A box with a foil or plastic lining that cannot be separated from the paper cannot be recycled as paper.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 1"
+      }
+    },
+    {
+      "id": "paper-books-clean",
+      "when": {
+        "kind": "paper-books",
+        "soiled": "no"
+      },
+      "then": "paper",
+      "note": "Keep it dry, flatten it, stack it and tie it into a bundle. Remove plastic covers and spiral bindings first.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 나 (신문지, 책자)"
+      }
+    },
+    {
+      "id": "paper-books-soiled",
+      "when": {
+        "kind": "paper-books",
+        "soiled": "yes"
+      },
+      "then": "general-waste",
+      "note": "Paper with food or dirt on it goes in the general waste bag. (Ministry FAQ, paper with dirt.)",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.21 (핸드타월)"
+      }
+    },
+    {
+      "id": "paper-cup-coated",
+      "when": {
+        "kind": "paper-cup",
+        "coated": "yes"
+      },
+      "then": "general-waste",
+      "note": "A paper cup coated on both sides cannot be recycled as paper.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 2"
+      }
+    },
+    {
+      "id": "paper-cup-clean",
+      "when": {
+        "kind": "paper-cup",
+        "coated": "no",
+        "soiled": "no"
+      },
+      "then": "paper",
+      "note": "Empty it, rinse it with water and press it flat. Put cups in a bag or tie them together.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 나 (종이컵)"
+      }
+    },
+    {
+      "id": "carton-clean",
+      "when": {
+        "kind": "carton",
+        "soiled": "no"
+      },
+      "then": "cartons",
+      "note": "Empty it, rinse it and let it dry. Use the carton-only bin. If there is none, tie the cartons together and put them out beside the paper.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 나 (종이팩)"
+      }
+    },
+    {
+      "id": "carton-soiled",
+      "when": {
+        "kind": "carton",
+        "soiled": "yes"
+      },
+      "then": "general-waste",
+      "note": "A carton with a lot of residue on it goes in the general waste bag. (Ministry FAQ, cartons.)",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.22 (종이팩)"
+      }
+    },
+    {
+      "id": "receipt",
+      "when": {
+        "kind": "receipt"
+      },
+      "then": "general-waste",
+      "note": "Thermal paper receipts cannot be recycled as paper.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 2"
+      }
+    },
+    {
+      "id": "glass-clean",
+      "when": {
+        "kind": "glass",
+        "glass-type": "ordinary",
+        "broken": "no"
+      },
+      "then": "glass-bottles",
+      "note": "Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with glass anyway (moe-2018 FAQ p.23 (유리병 이물질)). Deposit bottles (soju, beer) can go back to a shop. Ordinary drinking glasses and beer mugs go with glass bottles too (moe-2018 FAQ p.22 (유리잔)).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 다"
+      }
+    },
+    {
+      "id": "glass-broken",
+      "when": {
+        "kind": "glass",
+        "glass-type": "ordinary",
+        "broken": "yes"
+      },
+      "then": "general-waste",
+      "note": "Wrap the pieces in newspaper first. A small amount goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대) (seoul-2025 A1 3).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 다 (비해당)"
+      }
+    },
+    {
+      "id": "glass-special",
+      "when": {
+        "kind": "glass",
+        "glass-type": "special"
+      },
+      "then": "special-sack",
+      "note": "Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 3"
+      }
+    },
+    {
+      "id": "can",
+      "when": {
+        "kind": "can"
+      },
+      "then": "cans",
+      "note": "Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with cans anyway (moe-2018 FAQ p.23 (캔 이물질)). Remove plastic lids and anything else that is not metal.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 라"
+      }
+    },
+    {
+      "id": "foil",
+      "when": {
+        "kind": "foil"
+      },
+      "then": "general-waste",
+      "note": "Aluminium foil goes in the general waste bag.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 4"
+      }
+    },
+    {
+      "id": "pet-clear",
+      "when": {
+        "kind": "plastic-bottle",
+        "clear-drink": "yes"
+      },
+      "then": "clear-pet",
+      "note": "Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics. If it is still dirty, wash it as clean as you can and put it out as PET anyway (moe-2018 FAQ p.23 (페트병 이물질)).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 마"
+      }
+    },
+    {
+      "id": "plastic-bottle",
+      "when": {
+        "kind": "plastic-bottle",
+        "clear-drink": "no"
+      },
+      "then": "plastics",
+      "note": "Empty it and rinse it. Remove the label and any parts made of another material. If it is still dirty, wash it as clean as you can (moe-2018 FAQ p.23 (페트병 이물질)).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 바"
+      }
+    },
+    {
+      "id": "plastic-container-clean",
+      "when": {
+        "kind": "plastic-container",
+        "soiled": "no"
+      },
+      "then": "plastics",
+      "note": "Empty it and rinse it. Remove the label and any parts made of another material.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 바"
+      }
+    },
+    {
+      "id": "plastic-container-soiled",
+      "when": {
+        "kind": "plastic-container",
+        "soiled": "yes"
+      },
+      "then": "ask-district",
+      "note": "Neither guide says what to do with a plastic container that still has food or grease on it after rinsing.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "docs/sources/README.md, note below the quote table"
+      }
+    },
+    {
+      "id": "film-clean",
+      "when": {
+        "kind": "plastic-film",
+        "soiled": "no"
+      },
+      "then": "plastic-film",
+      "note": "Empty it, rinse it, and put it out inside a clear or semi-clear bag.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 사"
+      }
+    },
+    {
+      "id": "film-soiled",
+      "when": {
+        "kind": "plastic-film",
+        "soiled": "yes"
+      },
+      "then": "general-waste",
+      "note": "Film or wrap that cannot be cleaned, such as snack and noodle wrappers, goes in the general waste bag.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.25 (비닐류)"
+      }
+    },
+    {
+      "id": "styrofoam-clean",
+      "when": {
+        "kind": "styrofoam",
+        "soiled": "no"
+      },
+      "then": "styrofoam",
+      "note": "Empty it, rinse it and remove labels.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 아, A1 7"
+      }
+    },
+    {
+      "id": "styrofoam-soiled",
+      "when": {
+        "kind": "styrofoam",
+        "soiled": "yes"
+      },
+      "then": "general-waste",
+      "note": "Styrofoam with food on it, or with dirt that is hard to remove, goes in the general waste bag.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 아, A1 7"
+      }
+    },
+    {
+      "id": "battery",
+      "when": {
+        "kind": "battery"
+      },
+      "then": "battery-box",
+      "note": "Take the battery out of the device. Put it in a battery collection box at a collection point.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 차"
+      }
+    },
+    {
+      "id": "lamp-whole",
+      "when": {
+        "kind": "lamp",
+        "broken": "no"
+      },
+      "then": "lamp-box",
+      "note": "Put it in your district's fluorescent lamp collection container.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 카, A1 9"
+      }
+    },
+    {
+      "id": "lamp-broken",
+      "when": {
+        "kind": "lamp",
+        "broken": "yes"
+      },
+      "then": "general-waste",
+      "note": "A small amount of a broken lamp goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 카, A1 9"
+      }
+    },
+    {
+      "id": "receipt-as-paper",
+      "when": {
+        "kind": "receipt"
+      },
+      "then": "paper",
+      "note": "WRONG ON PURPOSE: contradicts rule receipt (general waste). Added for the demo.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 2"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "seoul-2025",
+      "title": "Seoul Metropolitan Government, 헷갈리는 분리배출 기준, 서울시가 알려드립니다! (Seoul's standard discharge rules)",
+      "url": "https://news.seoul.go.kr/env/archives/564022",
+      "published": "2025-08-06",
+      "read": "2026-11-12"
+    },
+    {
+      "id": "moe-2018",
+      "title": "Ministry of Environment, 재활용품 분리배출 가이드라인 (Guidelines for separating recyclables)",
+      "url": "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf",
+      "published": "2018-08-30",
+      "read": "2026-11-12"
+    }
+  ]
+}

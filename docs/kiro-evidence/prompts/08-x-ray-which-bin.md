@@ -1,0 +1,1 @@
+Audit apps/which-bin/table.json against docs/sources/README.md, as your instructions say. Every rule, one verdict each. Also look at apps/which-bin/copy.json for claims the sources do not support. Change nothing.

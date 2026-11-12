@@ -8,9 +8,9 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 ## Terms
 
-- **README Ref**: the text of the first cell of a row in the quote table of `docs/sources/README.md` (for example `seoul-2025 A2 가`). Two pairs of rows share a Ref (`moe-2018 FAQ p.21` and `moe-2018 FAQ p.22`).
+- **README Ref**: the text of the first cell of a row in the quote table of `docs/sources/README.md` (for example `seoul-2025 A2 가`). Every Ref is unique (owner answer 2).
 - **Silent rule**: a which-bin rule that sends a case to `ask-district` because the README says the sources are silent on it. Its `source.at` is the README note.
-- **Unlisted rule**: a which-bin rule that sends a case to `ask-district` because no README row covers it and the README note does not mention it. Its `source.at` starts with `none:`. These need the owner's agreement (design, open question 1).
+- **Unlisted rule**: a rule that sends a case to `ask-district` with no README row or note behind it. There are none (owner answer 1).
 - **Yml fact**: a token in a licence rule's `source.at` after `<file>.yml: `. It is `<key>` (the key is listed under `permissions` or `conditions` in that file), `no <key>` (it is listed under neither), or `no conditions` (`conditions: []`).
 - **Golden item**: a row of answers with an expected outcome, rule and source, evaluated through the engine in `test/apps.test.ts`.
 - **Walk**: answering the question `decide` asks, from one complete combination, until `decide` returns decided (as in engine Property 8).
@@ -39,7 +39,7 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 2.2 THE SYSTEM SHALL define exactly these 13 outcomes: `paper`, `cartons`, `glass-bottles`, `cans`, `clear-pet`, `plastics`, `plastic-film`, `styrofoam`, `battery-box`, `lamp-box`, `general-waste`, `special-sack`, `ask-district`.
 
-2.3 WHEN the engine validates and checks `apps/which-bin/table.json` THE SYSTEM SHALL report no problem, 6 conditions, 448 combinations, 30 rules, 0 gaps, 0 conflicts and no warning (every outcome is produced by a rule).
+2.3 WHEN the engine validates and checks `apps/which-bin/table.json` THE SYSTEM SHALL report no problem, 6 conditions, 480 combinations, 27 rules, 0 gaps, 0 conflicts and no warning (every outcome is produced by a rule).
 
 2.4 WHERE a condition does not change the outcome for a kind THE SYSTEM SHALL leave it out of that kind's rules ("any"), so that the walk lengths in design.md (golden items) hold.
 
@@ -53,17 +53,17 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 3.1 WHEN a which-bin rule does not send to `ask-district` THE SYSTEM SHALL set `source.ref` to a source id and `source.at` to exactly one README Ref that begins with that source id.
 
-3.2 THE SYSTEM SHALL use every README Ref as the `source.at` of at least one rule except `seoul-2025 A1 1`; that row is not turned into a rule because no condition can express it (design, open question 3).
+3.2 THE SYSTEM SHALL use every README Ref either as the `source.at` of at least one rule or verbatim in the `note` of a rule (owner answer 1: the Refs `moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs are cited in notes).
 
 3.3 THE SYSTEM SHALL give every rule a `note`, with the instruction of its row (rinse, peel the label, wrap broken glass in newspaper, and so on) as listed in design.md.
 
-3.4 WHEN a which-bin rule is a silent rule THE SYSTEM SHALL set its `source.at` to `docs/sources/README.md, note below the quote table`, and exactly two rules (`plastic-bottle-soiled`, `plastic-container-soiled`) SHALL be silent rules.
+3.4 WHEN a which-bin rule is a silent rule THE SYSTEM SHALL set its `source.at` to `docs/sources/README.md, note below the quote table`, and exactly one rule (`plastic-container-soiled`) SHALL be a silent rule.
 
-3.5 WHEN a which-bin rule is an unlisted rule THE SYSTEM SHALL set its `source.at` to `none: no quoted row (open question 1)` and its `note` to say that the guides do not cover the case, and exactly three rules (`glass-soiled`, `can-soiled`, `pet-clear-soiled`) SHALL be unlisted rules.
+3.5 THE SYSTEM SHALL contain no unlisted rule: no `source.at` starts with `none:`.
 
-3.6 THE SYSTEM SHALL send to `ask-district` exactly the five rules named in 3.4 and 3.5, and SHALL write no rule for any case outside a quoted row except those five.
+3.6 THE SYSTEM SHALL send to `ask-district` exactly the rule named in 3.4, and SHALL write no rule for any case outside a quoted row except that one.
 
-3.7 IF a README row depends on a fact the six conditions do not ask (the amount of broken glass or lamp, a foil or plastic lining on a box, a coating on a flyer, grease on only the inner paper of a pizza box) THEN THE SYSTEM SHALL NOT add a rule or a condition for it, and SHALL carry the fact in the `note` of the nearest rule or in the `hint` of the `kind` value, as listed in design.md.
+3.7 IF a README row depends on a fact the six conditions do not ask (the amount of broken glass or lamp, a coating on a flyer, grease on only the inner paper of a pizza box) THEN THE SYSTEM SHALL NOT add a rule or a condition for it, and SHALL carry the fact in the `note` of the nearest rule or in the `hint` of the `kind` value, as listed in design.md.
 
 ## Requirement 4: which-bin, copy
 
@@ -117,15 +117,15 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 7.5 THE SYSTEM SHALL include `"Apple SD Gothic Neo"` and `"Malgun Gothic"` in the which-bin font stacks, so that the Korean terms in the text have a system font.
 
-7.6 WHERE the build's theme contract includes `--font-size` THE SYSTEM SHALL define it in both light rules (which-bin `1.25rem`, which-licence `1rem`); IF it does not THEN the task report SHALL say that "large type" for which-bin is not delivered (design, open question 6).
+7.6 THE SYSTEM SHALL define `--font-size` in both light rules (which-bin `1.25rem`, which-licence `1rem`); the build's theme contract includes it (owner answer 5).
 
 ## Requirement 8: broken demo table
 
 **User story:** As a demonstrator, I want one real table with a hole and a contradiction to show the checker.
 
-8.1 THE SYSTEM SHALL provide `skeleton/examples/which-bin-broken.table.json`, equal to `apps/which-bin/table.json` with the rule `glass-soiled` removed and the rule `receipt-as-paper` (`kind=receipt` → `paper`) added, `id` `which-bin-broken`, and a `title` that names the removed rule and the added rule.
+8.1 THE SYSTEM SHALL provide `skeleton/examples/which-bin-broken.table.json`, equal to `apps/which-bin/table.json` with the rule `paper-cup-soiled` removed and the rule `receipt-as-paper` (`kind=receipt` → `paper`) added, `id` `which-bin-broken`, and a `title` that names the removed rule and the added rule.
 
-8.2 WHEN the engine validates and checks the demo table THE SYSTEM SHALL report no structural problem, 4 gaps (all with `kind=glass`, `soiled=yes`, `broken=no`, `glass-type=ordinary`), exactly one conflict (`receipt` against `receipt-as-paper`, outcomes `general-waste` and `paper`) and no warning.
+8.2 WHEN the engine validates and checks the demo table THE SYSTEM SHALL report no structural problem, 8 gaps (all with `kind=paper-cup`, `coated=no`, `soiled=yes`), exactly one conflict (`receipt` against `receipt-as-paper`, outcomes `general-waste` and `paper`) and no warning.
 
 8.3 WHEN `npm run bones -- check skeleton/examples/which-bin-broken.table.json` runs THE SYSTEM SHALL exit with code 1.
 
@@ -182,3 +182,16 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 11.5 THE SYSTEM SHALL set top-level `permissions` to `contents: read` only, and give `pages: write` and `id-token: write` to the deploy job only; the deploy job SHALL `need` the build job and use the environment `github-pages`.
 
 11.6 THE SYSTEM SHALL set Node 22 and `cache: npm` in `setup-node`.
+
+## Owner answers
+
+Given after the spec session. They override anything above they contradict; the numbers in the body above (combinations, rules, gaps) were adjusted to match.
+
+1. U1 to U3 are covered. Three rows were added to `docs/sources/README.md` from the Ministry FAQ (PDF page 23): a dirty glass bottle, a dirty can and a dirty plastic bottle are washed as clean as possible and put out with glass, cans and PET. So `soiled` does not matter for unbroken ordinary glass, cans and plastic bottles (clear or not). The `*-soiled` rules for them are dropped, the clean rules are widened to any `soiled`, and the notes say "wash it as clean as you can" and cite the new Refs. Only `plastic-container` with `soiled=yes` stays on `ask-district` (README note). No unlisted rule remains.
+2. README Refs are unique: `moe-2018 FAQ p.21 (핸드타월)`, `moe-2018 FAQ p.21 (종이컵)`, `moe-2018 FAQ p.22 (종이팩)`, `moe-2018 FAQ p.22 (유리잔)`, `moe-2018 FAQ p.25 (비닐류)`, `moe-2018 dictionary p.33, 피자박스`, and the new `seoul-2025 A2 다 (비해당)` (wrap broken glass in newspaper). The rules use these exact Refs; the test that checks every `at` against the README stays.
+3. New `kind` `insulated-box` (a delivery box lined with foil or plastic that will not come off): general waste, `seoul-2025 A1 1`.
+4. `coated` stays for paper cups only. The amount cases (broken glass, broken lamp) and the pizza-box split stay in notes.
+5. `--font-size` is in the shell's theme contract (headings use `--font-heading`): used, which-bin with larger type.
+6. The condition order is kept. Open question 9 (copyleft scope wins) is accepted. The demo table may carry two defects, its title says which. Serving `dist/` under `/bare-bones-kiro/` in e2e is accepted. The owner commits the lock file and enables Pages.
+
+Consequences recorded by this session: the demo table removes `paper-cup-soiled` instead of `glass-soiled` (which no longer exists); removing `glass-clean` would also leave the outcome `glass-bottles` unused and add a warning. `moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs are cited in notes, not used as `source.at`; broken glass cites `seoul-2025 A2 다 (비해당)`.

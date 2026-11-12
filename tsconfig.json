@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["skeleton", "test", "e2e", "vitest.config.ts"]
+  "include": ["skeleton", "test", "e2e", "vitest.config.ts", "playwright.config.ts"]
 }

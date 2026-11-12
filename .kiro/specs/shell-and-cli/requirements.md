@@ -263,3 +263,4 @@ Given after the spec session; they override anything above that they contradict,
 6. Confirmed: invalid JSON exits 1; the table view scrolls in its own region; tiles show hints.
 7. The theme contract gains `--font-size` (13 properties; the dark block stays at 8 colours). The owner's `--heading-font` is taken to be the existing `--font-heading` (the `apps` spec uses that name); no second heading property is added. Heading weight is set by `shell.css`, not by the theme, so the stack is weight-free.
 8. `@types/node` stays pinned at 22.20.5.
+9. Amendment (apps session): the static `<title>` was empty until the script ran. The build writes the page's title into `<title>`, HTML-escaped: `copy.title` for an app page, `landing.title` for the landing page. `renderPage` takes the title as a fourth argument; Property 12 gains clause (f): the `<title>` text, with the five entities decoded, equals `copy.title`, and the rest of the page still does not depend on the input.

@@ -160,12 +160,12 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
     writeFileSync(target, content);
   };
 
-  put('index.html', renderPage(template, { landing, apps: summaries }, bootLanding(landing, summaries)));
+  put('index.html', renderPage(template, { landing, apps: summaries }, bootLanding(landing, summaries), landing.title));
   put('app.js', landingJs);
   put('shell.css', shellCss);
   put('theme.css', neutralTheme);
   for (const app of apps) {
-    put(`${app.name}/index.html`, renderPage(template, { table: app.table, copy: app.copy }, bootApp(app.copy)));
+    put(`${app.name}/index.html`, renderPage(template, { table: app.table, copy: app.copy }, bootApp(app.copy), app.copy.title));
     put(`${app.name}/app.js`, shellJs);
     put(`${app.name}/shell.css`, shellCss);
     put(`${app.name}/theme.css`, app.themeCss);

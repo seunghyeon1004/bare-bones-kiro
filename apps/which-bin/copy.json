@@ -1,0 +1,41 @@
+{
+  "title": "Which bin?",
+  "tagline": "Where does it go? Sorting household rubbish and recycling in South Korea, in plain English.",
+  "intro": "Pick what the item is and answer a few quick questions. The answer follows the separate-discharge rules for South Korea, as published by Seoul in 2025. Rules vary by district, so your own district office has the last word.",
+  "answerStyle": "tiles",
+  "labels": {
+    "startOver": "Start again",
+    "change": "Change",
+    "why": "Why this answer",
+    "rule": "Rule",
+    "whatMattered": "What mattered",
+    "source": "Source",
+    "published": "Published",
+    "readOn": "Read on",
+    "notAsked": "Questions we skipped, because they could not change the answer",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "showTable": "Show every rule",
+    "hideTable": "Hide the rules",
+    "any": "any",
+    "outcome": "Where it goes",
+    "yourAnswers": "Your answers",
+    "questionOf": "Question {n} of up to {max}",
+    "badLink": "{count} answer(s) in this link were not recognised and were ignored.",
+    "noscript": "This page needs JavaScript to ask its questions. It does not send anything anywhere."
+  },
+  "resultLead": "Where it goes:",
+  "footer": [
+    {
+      "text": "Source: Seoul Metropolitan Government, Seoul's standard discharge rules (page updated 2025-08-06)",
+      "href": "https://news.seoul.go.kr/env/archives/564022"
+    },
+    {
+      "text": "Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30)",
+      "href": "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf"
+    },
+    {
+      "text": "These are the rules for South Korea as published by Seoul. They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service."
+    }
+  ]
+}

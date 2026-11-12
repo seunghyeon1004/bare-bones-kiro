@@ -1,0 +1,28 @@
+:root {
+  --bg: #fff4e0;
+  --surface: #fffbf2;
+  --text: #2b1a0e;
+  --muted: #6b4a2f;
+  --accent: #a63d00;
+  --accent-text: #ffffff;
+  --border: #8a5a2b;
+  --focus: #0b57d0;
+  --font-body: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-heading: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-size: 1.25rem;
+  --radius: 1.25rem;
+  --space: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #2a1a10;
+    --surface: #3a2616;
+    --text: #fdeedb;
+    --muted: #e0c3a2;
+    --accent: #ffb36b;
+    --accent-text: #2a1204;
+    --border: #b58a5f;
+    --focus: #8ab4f8;
+  }
+}
