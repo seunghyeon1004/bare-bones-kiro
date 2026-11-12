@@ -35,11 +35,11 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 **User story:** As a reader living in Korea, I want the app to ask as few questions as the sources allow.
 
-2.1 THE SYSTEM SHALL define the conditions of `apps/which-bin/table.json` in this order: `kind`, `soiled`, `broken`, `glass-type`, `coated`, `clear-drink`, with the values, questions and hints listed in design.md.
+2.1 THE SYSTEM SHALL define the conditions of `apps/which-bin/table.json` in this order: `kind`, `soiled`, `broken`, `amount`, `glass-type`, `coated`, `clear-drink`, with the values, questions and hints listed in design.md.
 
 2.2 THE SYSTEM SHALL define exactly these 13 outcomes: `paper`, `cartons`, `glass-bottles`, `cans`, `clear-pet`, `plastics`, `plastic-film`, `styrofoam`, `battery-box`, `lamp-box`, `general-waste`, `special-sack`, `ask-district`.
 
-2.3 WHEN the engine validates and checks `apps/which-bin/table.json` THE SYSTEM SHALL report no problem, 6 conditions, 480 combinations, 27 rules, 0 gaps, 0 conflicts and no warning (every outcome is produced by a rule).
+2.3 WHEN the engine validates and checks `apps/which-bin/table.json` THE SYSTEM SHALL report no problem, 7 conditions, 960 combinations, 33 rules, 0 gaps, 0 conflicts and no warning (every outcome is produced by a rule).
 
 2.4 WHERE a condition does not change the outcome for a kind THE SYSTEM SHALL leave it out of that kind's rules ("any"), so that the walk lengths in design.md (golden items) hold.
 
@@ -53,17 +53,17 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 3.1 WHEN a which-bin rule does not send to `ask-district` THE SYSTEM SHALL set `source.ref` to a source id and `source.at` to exactly one README Ref that begins with that source id.
 
-3.2 THE SYSTEM SHALL use every README Ref either as the `source.at` of at least one rule or verbatim in the `note` of a rule (owner answer 1: the Refs `moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs are cited in notes).
+3.2 THE SYSTEM SHALL use every README Ref either as the `source.at` of at least one rule or verbatim in a value `hint`, and SHALL NOT name in a rule's `note` a source other than the rule's own (owner answer 1: the Refs `moe-2018 FAQ p.22 (유리잔)` is quoted in a value hint; the three `moe-2018 FAQ p.23` Refs are the `source.at` of the dirty rules).
 
 3.3 THE SYSTEM SHALL give every rule a `note`, with the instruction of its row (rinse, peel the label, wrap broken glass in newspaper, and so on) as listed in design.md.
 
-3.4 WHEN a which-bin rule is a silent rule THE SYSTEM SHALL set its `source.at` to `docs/sources/README.md, note below the quote table`, and exactly one rule (`plastic-container-soiled`) SHALL be a silent rule.
+3.4 WHEN a which-bin rule is a silent rule THE SYSTEM SHALL set its `source.at` to the README Ref `sources-silent`, and exactly one rule (`plastic-container-soiled`) SHALL be a silent rule.
 
 3.5 THE SYSTEM SHALL contain no unlisted rule: no `source.at` starts with `none:`.
 
 3.6 THE SYSTEM SHALL send to `ask-district` exactly the rule named in 3.4, and SHALL write no rule for any case outside a quoted row except that one.
 
-3.7 IF a README row depends on a fact the six conditions do not ask (the amount of broken glass or lamp, a coating on a flyer, grease on only the inner paper of a pizza box) THEN THE SYSTEM SHALL NOT add a rule or a condition for it, and SHALL carry the fact in the `note` of the nearest rule or in the `hint` of the `kind` value, as listed in design.md.
+3.7 IF a README row depends on a fact the six conditions do not ask (a coating on a flyer, grease on only the inner paper of a pizza box) THEN THE SYSTEM SHALL NOT add a rule or a condition for it, and SHALL carry the fact in the `note` of the nearest rule or in the `hint` of the `kind` value, as listed in design.md.
 
 ## Requirement 4: which-bin, copy
 
@@ -71,9 +71,9 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 4.1 WHEN `apps/which-bin/copy.json` is validated by the build THE SYSTEM SHALL pass, with `answerStyle` `tiles` and all 19 labels.
 
-4.2 THE SYSTEM SHALL make `intro` contain the phrases `South Korea, as published by Seoul in 2025` and `vary by district`.
+4.2 THE SYSTEM SHALL make `tagline`, `intro` and the last `footer` line contain the phrase `Seoul's rules (2025) and the Ministry of Environment's guide (2018)`, and `intro` contain `vary by district`.
 
-4.3 THE SYSTEM SHALL list in `footer` both sources with their dates, each as a link whose `href` equals that source's `url` in `table.json`, and a line that says the rules vary by district.
+4.3 THE SYSTEM SHALL list in `footer` both sources with their dates, each as a link (the Ministry label says it is a copy hosted by Korea University) whose `href` equals that source's `url` in `table.json`, and a line that says the rules vary by district.
 
 ## Requirement 5: which-licence, table
 
@@ -125,7 +125,7 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 8.1 THE SYSTEM SHALL provide `skeleton/examples/which-bin-broken.table.json`, equal to `apps/which-bin/table.json` with the rule `paper-cup-soiled` removed and the rule `receipt-as-paper` (`kind=receipt` → `paper`) added, `id` `which-bin-broken`, and a `title` that names the removed rule and the added rule.
 
-8.2 WHEN the engine validates and checks the demo table THE SYSTEM SHALL report no structural problem, 8 gaps (all with `kind=paper-cup`, `coated=no`, `soiled=yes`), exactly one conflict (`receipt` against `receipt-as-paper`, outcomes `general-waste` and `paper`) and no warning.
+8.2 WHEN the engine validates and checks the demo table THE SYSTEM SHALL report no structural problem, 16 gaps (all with `kind=paper-cup`, `coated=no`, `soiled=yes`), exactly one conflict (`receipt` against `receipt-as-paper`, outcomes `general-waste` and `paper`) and no warning.
 
 8.3 WHEN `npm run bones -- check skeleton/examples/which-bin-broken.table.json` runs THE SYSTEM SHALL exit with code 1.
 
@@ -133,7 +133,7 @@ This spec assumes the owner's answers to the shell-and-cli session are recorded 
 
 **User story:** As the owner, I want a short list of real items with the answer I expect and the row it comes from.
 
-9.1 THE SYSTEM SHALL hold in `test/apps.test.ts` 8 golden items for which-bin and 8 for which-licence, as listed in design.md, each evaluated with `decide` on the validated table.
+9.1 THE SYSTEM SHALL hold in `test/apps.test.ts` 9 golden items for which-bin and 8 for which-licence, as listed in design.md, each evaluated with `decide` on the validated table.
 
 9.2 WHEN a golden item runs THE SYSTEM SHALL return `status: 'decided'`, the listed outcome id, exactly the listed firing rule, and that rule's `source.at` equal to the listed README Ref (which-bin) or yml facts (which-licence).
 
@@ -195,3 +195,15 @@ Given after the spec session. They override anything above they contradict; the 
 6. The condition order is kept. Open question 9 (copyleft scope wins) is accepted. The demo table may carry two defects, its title says which. Serving `dist/` under `/bare-bones-kiro/` in e2e is accepted. The owner commits the lock file and enables Pages.
 
 Consequences recorded by this session: the demo table removes `paper-cup-soiled` instead of `glass-soiled` (which no longer exists); removing `glass-clean` would also leave the outcome `glass-bottles` unused and add a warning. `moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs are cited in notes, not used as `source.at`; broken glass cites `seoul-2025 A2 다 (비해당)`.
+
+### Owner answers: amendment after the x-ray audit of which-bin (docs/kiro-evidence/08-x-ray-which-bin.txt)
+
+Given after `apps/which-bin/table.json` was audited against `docs/sources/README.md`. They override anything above and in the first "Owner answers" that they contradict (notably answer 4 on amounts and answer 1 on notes that cite Refs).
+
+1. Amounts. New condition `amount` ("How much is there?": `small` = a few pieces that fit wrapped in a bag, `large` = more than that), after `broken`. Broken ordinary glass: small to general waste (`seoul-2025 A2 다 (비해당)`), large to the special sack (`seoul-2025 A1 3`). Broken lamp: small to general waste, large to the special sack (`seoul-2025 A2 카, A1 9`). Special glass stays in the special sack whether broken or not; its note says the source lists these kinds without a broken/whole split. Rules `glass-broken` and `lamp-broken` become `-small` and `-large`. Now 7 conditions, 960 combinations, 33 rules.
+2. One source per rule. `glass-clean`, `can`, `pet-clear`, `plastic-bottle` take `soiled=no` and cite the Seoul row; new rules `glass-dirty`, `can-dirty`, `pet-clear-dirty`, `plastic-bottle-dirty` take `soiled=yes`, give the same outcome, cite the matching `moe-2018 FAQ p.23 (...)` row, and say "wash it as clean as you can". The engine still does not ask `soiled` for them; the "why" lists both rules. The drinking-glass sentence leaves the note: it is a hint on the `glass-type` value `ordinary`, quoting `moe-2018 FAQ p.22 (유리잔)`, the only README Ref used neither as an `at` nor in a note.
+3. `plastic-container-soiled` has `source.at` `sources-silent` (the README Ref of the silence note).
+4. Hints and details: `paper-books` hint says to take plastic-coated paper out first because it goes in the general waste bag; `glass` hint drops window glass; `cartons` detail adds the fallback (no carton bin: tie and put beside the paper); `general-waste` detail keeps only the pay-as-you-throw bag (종량제봉투), no "official", no price claim; `clear-drink` question says PET.
+5. `copy.json`: tagline, intro and last footer line say "Seoul's rules (2025) and the Ministry of Environment's guide (2018)"; the intro says rules vary by district; the Ministry footer label says it is a copy hosted by Korea University.
+6. The STRETCHED verdicts on `paper-box-clean`, `paper-box-soiled`, `paper-books-soiled`, `paper-cup-soiled` and `carton-soiled` stay; each note says which source line it extends and how.
+7. Consequences: the broken demo table has 16 gaps (the removed rule's hole is now free in `amount` too), still one hole and one conflict; golden items grow to 9 (small and large broken glass; `pet-clear-dirty` replaces `pet-clear` in the dirty-bottle item); the e2e walks changed: pizza box skips 5 questions, the shared link carries `amount=small` and shows 4 steps, the whole table has 33 rows.

@@ -13,7 +13,7 @@ test('which-bin: keyboard walk, greasy pizza box', async ({ page }) => {
   const heading = page.getByRole('heading', { name: resultHeading(copy, table, 'general-waste') });
   await expect(heading).toBeFocused();
   await expect(steps(page, copy)).toHaveCount(2);
-  await expect(skipped(page, copy)).toHaveCount(4);
+  await expect(skipped(page, copy)).toHaveCount(5);
 });
 
 test('which-licence: keyboard walk, MIT', async ({ page }) => {

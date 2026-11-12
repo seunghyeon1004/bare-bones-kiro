@@ -44,19 +44,19 @@ function readmeRefs(): string[] {
     .map((line) => line.slice(2, line.indexOf(' | ', 2)));
 }
 
-const SILENT = 'docs/sources/README.md, note below the quote table';
+const SILENT = 'sources-silent';
 
 describe('which-bin table', () => {
   const table = loadTable('apps/which-bin/table.json');
 
   it('has the pinned counts, the two sources and no warning', () => {
     const report = check(table);
-    expect(report.counts).toEqual({ conditions: 6, combinations: 480, rules: 27 });
+    expect(report.counts).toEqual({ conditions: 7, combinations: 960, rules: 33 });
     expect(report.gaps.count).toBe(0);
     expect(report.conflicts).toEqual([]);
     expect(report.warnings).toEqual([]);
     expect(report.passed).toBe(true);
-    expect(table.conditions.map((c) => c.id)).toEqual(['kind', 'soiled', 'broken', 'glass-type', 'coated', 'clear-drink']);
+    expect(table.conditions.map((c) => c.id)).toEqual(['kind', 'soiled', 'broken', 'amount', 'glass-type', 'coated', 'clear-drink']);
     expect(table.outcomes).toHaveLength(13);
     expect(table.sources.map((s) => s.id)).toEqual(['seoul-2025', 'moe-2018']);
     const general = table.outcomes.find((o) => o.id === 'general-waste');
@@ -69,9 +69,10 @@ describe('which-bin table', () => {
     { item: 'greasy pizza box', answers: { kind: 'paper-box', soiled: 'yes' }, outcome: 'general-waste', rule: 'paper-box-soiled', at: 'moe-2018 dictionary p.33, 피자박스', questions: 2 },
     { item: 'clean paper cup', answers: { kind: 'paper-cup', soiled: 'no', coated: 'no' }, outcome: 'paper', rule: 'paper-cup-clean', at: 'seoul-2025 A2 나 (종이컵)', questions: 3 },
     { item: 'paper cup coated on both sides', answers: { kind: 'paper-cup', coated: 'yes' }, outcome: 'general-waste', rule: 'paper-cup-coated', at: 'seoul-2025 A1 2', questions: 3 },
-    { item: 'broken drinking glass', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes' }, outcome: 'general-waste', rule: 'glass-broken', at: 'seoul-2025 A2 다 (비해당)', questions: 3 },
+    { item: 'broken drinking glass, a few pieces', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes', amount: 'small' }, outcome: 'general-waste', rule: 'glass-broken-small', at: 'seoul-2025 A2 다 (비해당)', questions: 4 },
+    { item: 'broken drinking glass, a large amount', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes', amount: 'large' }, outcome: 'special-sack', rule: 'glass-broken-large', at: 'seoul-2025 A1 3', questions: 3 },
     { item: 'insulated delivery box', answers: { kind: 'insulated-box' }, outcome: 'general-waste', rule: 'insulated-box', at: 'seoul-2025 A1 1', questions: 1 },
-    { item: 'dirty clear water bottle', answers: { kind: 'plastic-bottle', 'clear-drink': 'yes', soiled: 'yes' }, outcome: 'clear-pet', rule: 'pet-clear', at: 'seoul-2025 A2 마', questions: 2 },
+    { item: 'dirty clear water bottle (soiled does not matter)', answers: { kind: 'plastic-bottle', 'clear-drink': 'yes', soiled: 'yes' }, outcome: 'clear-pet', rule: 'pet-clear-dirty', at: 'moe-2018 FAQ p.23 (페트병 이물질)', questions: 2 },
     { item: 'plastic tub with food that will not rinse off', answers: { kind: 'plastic-container', soiled: 'yes' }, outcome: 'ask-district', rule: 'plastic-container-soiled', at: SILENT, questions: 2 },
     { item: 'battery', answers: { kind: 'battery' }, outcome: 'battery-box', rule: 'battery', at: 'seoul-2025 A2 차', questions: 1 },
   ];
@@ -86,12 +87,37 @@ describe('which-bin table', () => {
     expect(walk(table, answers)).toEqual({ questions, outcome });
   });
 
-  it('does not ask whether a bottle, glass or can is dirty (owner answer 1)', () => {
-    for (const answers of [{ kind: 'can' } as Answers, { kind: 'glass', 'glass-type': 'ordinary', broken: 'no' }, { kind: 'plastic-bottle', 'clear-drink': 'no' }]) {
+  it('does not ask whether a bottle, glass or can is dirty, and the why shows the clean and the dirty rule', () => {
+    const cases: [Answers, string[]][] = [
+      [{ kind: 'can' }, ['can', 'can-dirty']],
+      [{ kind: 'glass', 'glass-type': 'ordinary', broken: 'no' }, ['glass-clean', 'glass-dirty']],
+      [{ kind: 'plastic-bottle', 'clear-drink': 'yes' }, ['pet-clear', 'pet-clear-dirty']],
+      [{ kind: 'plastic-bottle', 'clear-drink': 'no' }, ['plastic-bottle', 'plastic-bottle-dirty']],
+    ];
+    for (const [answers, rules] of cases) {
       const result = decide(table, answers);
       expect(result.status).toBe('decided');
-      if (result.status === 'decided') expect(result.skipped.map((s) => s.condition)).toContain('soiled');
+      if (result.status !== 'decided') continue;
+      expect(result.skipped.map((s) => s.condition)).toContain('soiled');
+      expect(result.rules.map((r) => r.id)).toEqual(rules);
     }
+  });
+
+  it('asks the amount only for broken ordinary glass and broken lamps', () => {
+    const special = decide(table, { kind: 'glass', 'glass-type': 'special' });
+    expect(special.status).toBe('decided');
+    if (special.status === 'decided') {
+      expect(special.outcome.id).toBe('special-sack');
+      expect(special.skipped.map((s) => s.condition)).toContain('amount');
+    }
+    const lamp = decide(table, { kind: 'lamp', broken: 'yes' });
+    expect(lamp.status).toBe('open');
+    if (lamp.status === 'open') expect(lamp.next.condition).toBe('amount');
+    const small = decide(table, { kind: 'lamp', broken: 'yes', amount: 'small' });
+    const large = decide(table, { kind: 'lamp', broken: 'yes', amount: 'large' });
+    expect(small.status === 'decided' && small.outcome.id).toBe('general-waste');
+    expect(large.status === 'decided' && large.outcome.id).toBe('special-sack');
+    expect(table.conditions.find((c) => c.id === 'clear-drink')?.question).toContain('PET');
   });
 
   it('ties every rule to a README row, and every README row to a rule', () => {
@@ -105,18 +131,25 @@ describe('which-bin table', () => {
       expect(refs, `${rule.id}: at "${rule.source.at}" is a README Ref`).toContain(rule.source.at);
       expect(rule.source.at.startsWith(rule.source.ref), `${rule.id}: at begins with ref`).toBe(true);
     }
-    const notes = table.rules.map((r) => r.note ?? '').join('\n');
+    const hints = table.conditions.flatMap((c) => c.values.map((v) => v.hint ?? '')).join('\n');
     const used = new Set(table.rules.map((r) => r.source.at));
     const unused = refs.filter((ref) => !used.has(ref));
-    expect(unused.sort()).toEqual([
-      'moe-2018 FAQ p.22 (유리잔)',
-      'moe-2018 FAQ p.23 (유리병 이물질)',
-      'moe-2018 FAQ p.23 (캔 이물질)',
-      'moe-2018 FAQ p.23 (페트병 이물질)',
-    ]);
-    for (const ref of unused) expect(notes, `${ref} is quoted in a note`).toContain(ref);
-    for (const id of ['glass-clean', 'can', 'pet-clear']) {
-      expect(table.rules.find((r) => r.id === id)?.note).toContain('wash it as clean as you can');
+    expect(unused).toEqual(['moe-2018 FAQ p.22 (유리잔)']);
+    expect(hints, 'moe-2018 FAQ p.22 (유리잔) is quoted in a value hint').toContain('moe-2018 FAQ p.22 (유리잔)');
+
+    // One source per rule: a note never names the other source.
+    for (const rule of table.rules) {
+      for (const other of table.sources.filter((s) => s.id !== rule.source.ref)) {
+        expect(rule.note ?? '', `${rule.id}: note does not cite ${other.id}`).not.toContain(other.id);
+      }
+    }
+    // Dirty rules cite the matching Ministry FAQ p.23 row.
+    for (const id of ['glass-dirty', 'can-dirty', 'pet-clear-dirty', 'plastic-bottle-dirty']) {
+      const rule = table.rules.find((r) => r.id === id);
+      expect(rule?.source.ref, id).toBe('moe-2018');
+      expect(rule?.source.at.startsWith('moe-2018 FAQ p.23 ('), id).toBe(true);
+      expect(rule?.when.soiled, id).toBe('yes');
+      expect(rule?.note, id).toContain('wash it as clean as you can');
     }
 
     const asks = table.rules.filter((r) => r.then === 'ask-district');
@@ -146,7 +179,7 @@ describe('which-bin broken example', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const report = check(result.table);
-    expect(report.gaps.count).toBe(8);
+    expect(report.gaps.count).toBe(16);
     for (const example of report.gaps.examples) {
       expect(example).toMatchObject({ kind: 'paper-cup', coated: 'no', soiled: 'yes' });
     }
@@ -272,6 +305,7 @@ describe('which-licence table', () => {
 
 interface AppCopy {
   title: string;
+  tagline: string;
   intro: string;
   answerStyle: string;
   labels: Record<string, string>;
@@ -292,8 +326,12 @@ describe('copy', () => {
   });
 
   it('which-bin names Seoul and the districts, and links both sources as in the table', () => {
-    expect(bin.intro).toContain('South Korea, as published by Seoul in 2025');
+    const sources = "Seoul's rules (2025) and the Ministry of Environment's guide (2018)";
+    expect(bin.tagline).toContain(sources);
+    expect(bin.intro).toContain(sources);
+    expect(bin.footer.at(-1)?.text).toContain(sources);
     expect(bin.intro).toContain('vary by district');
+    expect(bin.footer.find((f) => f.href?.includes('sustainability.korea.ac.kr'))?.text).toContain('copy hosted by Korea University');
     const table = loadTable('apps/which-bin/table.json');
     const hrefs = bin.footer.map((f) => f.href).filter((h): h is string => h !== undefined);
     expect(hrefs.sort()).toEqual(table.sources.map((s) => s.url).sort());

@@ -10,7 +10,7 @@ Two data folders, one demo table, one test file, a Playwright setup and one work
 2. **`source.at` forms.** which-bin: exactly one README Ref (`steering/table-format.md` rule 3). The five `ask-district` rules need other forms (below). which-licence: `<file>.yml: <fact>; <fact>`, as the owner asked, so a test can check each fact against the yml file.
 3. **Unique Refs.** Since the owner's answers every README Ref is unique; a rule's `at` is exactly one of them.
 4. **The demo table has two defects.** `table-format.md` rule 7 says one defect per example, named in the file name. The owner asked for a gap and a conflict in one file called `which-bin-broken`. The `title` and the added rule's `note` say which rule was removed and which added.
-5. **The demo shows `gaps: 8`, not 1.** A rule covers a block of combinations. The removed rule `paper-cup-soiled` names `kind`, `coated` and `soiled`; the 8 combinations it covered differ only in `broken`, `glass-type` and `clear-drink`, so it is one hole with eight example combinations.
+5. **The demo shows `gaps: 16`, not 1.** A rule covers a block of combinations. The removed rule `paper-cup-soiled` names `kind`, `coated` and `soiled`; the 16 combinations it covered differ only in `broken`, `amount`, `glass-type` and `clear-drink`, so it is one hole with sixteen example combinations (8 before the `amount` condition).
 6. **e2e is served under `/bare-bones-kiro/`.** The brief says the site lives at `https://seunghyeon1004.github.io/bare-bones-kiro/`. Serving `dist/` under that prefix tests the relative links the way Pages serves them.
 7. **Korean text.** 종량제봉투, 특수규격마대, 대형폐기물 and 지자체별 차이 appear as written, each with an English explanation. The pages stay `lang="en"` (translations are a non-goal). Fonts: see themes.
 8. **`published` for `seoul-2025`** is `2025-08-06`, which `docs/sources/README.md` records as the date the page was updated.
@@ -35,6 +35,10 @@ tsconfig.json   + "playwright.config.ts" in include
 
 The owner's answers are at the end of `requirements.md`. They changed this design as follows: `soiled` no longer matters for glass, cans and plastic bottles (rules `glass-soiled`, `can-soiled`, `pet-clear-soiled`, `plastic-bottle-soiled` are gone; `glass-clean`, `can`, `pet-clear`, `plastic-bottle` take any `soiled`); `kind` gains `insulated-box` (15 values) and the rule `insulated-box`; the README Refs are the unique ones; `--font-size` is used. Counts: 15 kinds x 32 = 480 combinations, 27 rules. Open questions 1, 3, 6, 8 and 9 are answered; 2, 4 and 5 are answered as "keep the note"; 7 is "keep the order". The counts and walk lengths below are asserted by `test/apps.test.ts` against the real engine.
 
+## Amendment after the x-ray audit
+
+The owner's amendment is the last item of `requirements.md` ("Owner answers: amendment after the x-ray audit"). It supersedes the which-bin tables below where they differ: seven conditions (`amount` after `broken`), 960 combinations, 33 rules, one source per rule, `sources-silent`, the reworded hints, details and copy. The sections "which-bin: conditions", "outcomes", "rules", "combinations the sources do not cover", "Copy", "Broken demo table" and "Golden items" are updated to match. Counts in "Owner answers applied" (480, 27) are the pre-amendment ones.
+
 ## which-bin: conditions
 
 Value order inside a yes/no condition is `no`, then `yes` (as in the template). Ids are lower-case kebab-case.
@@ -44,9 +48,10 @@ Value order inside a yes/no condition is `no`, then `yes` (as in the template). 
 | `kind` | What is the item? | | see next table |
 | `soiled` | Is there food or grease on it that rinsing will not remove? | Rinse it first if you can. Answer Yes only if it is still dirty after rinsing. | `no`: No, Clean, or it rinses clean. `yes`: Yes, Still dirty after rinsing. |
 | `broken` | Is it broken? | | `no`: No. `yes`: Yes. |
-| `glass-type` | What kind of glass is it? | | `ordinary`: Bottle, jar or ordinary drinking glass. `special`: Heat-resistant, crystal, ceramic or window glass, Includes coated or coloured glass products, lighting glass and pottery (사기·도자기). |
+| `amount` | How much is there? | | `small`: Small, A few pieces that fit wrapped in a bag. `large`: Large, More than that. |
+| `glass-type` | What kind of glass is it? | | `ordinary`: Bottle, jar or ordinary drinking glass, Ordinary drinking glasses and beer mugs count as ordinary glass (moe-2018 FAQ p.22 (유리잔)). `special`: Heat-resistant, crystal, ceramic or window glass, Includes coated or coloured glass products, lighting glass and pottery (사기·도자기). |
 | `coated` | Is the paper cup coated on both sides? | | `no`: No. `yes`: Yes, Both the inside and the outside have a coating. |
-| `clear-drink` | Is it a colourless, see-through water or drink bottle? | | `no`: No, Coloured, or not a drink bottle. `yes`: Yes, Colourless and see-through. |
+| `clear-drink` | Is it a colourless, see-through PET water or drink bottle? | | `no`: No, Coloured, or not a PET drink bottle. `yes`: Yes, Colourless and see-through. |
 
 `kind` values, in the owner's order:
 
@@ -54,11 +59,11 @@ Value order inside a yes/no condition is `no`, then `yes` (as in the template). 
 | --- | --- | --- |
 | `paper-box` | Paper or cardboard box | Cardboard and pizza boxes. A delivery box lined with foil or plastic has its own choice. |
 | `insulated-box` | Insulated delivery box | A box lined with foil or plastic that will not come off |
-| `paper-books` | Newspaper, books or flyers | Plastic-coated flyers go in the general waste bag. |
+| `paper-books` | Newspaper, books or flyers | Take plastic-coated paper (a coated flyer, for example) out first: it goes in the general waste bag. The rest goes out as paper. |
 | `paper-cup` | Paper cup | |
 | `carton` | Drink carton | Milk or juice cartons |
 | `receipt` | Receipt | |
-| `glass` | Glass | Bottles, jars, drinking glasses, window glass |
+| `glass` | Glass | Bottles, jars, drinking glasses |
 | `can` | Can | Drink and food cans |
 | `foil` | Aluminium foil | |
 | `plastic-bottle` | Plastic bottle | |
@@ -68,14 +73,14 @@ Value order inside a yes/no condition is `no`, then `yes` (as in the template). 
 | `battery` | Battery | |
 | `lamp` | Fluorescent lamp | |
 
-The hint on `paper-books` carries the plastic-coated-flyer half of `seoul-2025 A1 2` without a rule (requirement 3.7).
+The hint on `paper-books` carries the plastic-coated-flyer half of `seoul-2025 A1 2` without a rule (requirement 3.7); `A2 나` says to remove the coating and `A1 2` says where it goes, so the two lines agree.
 
 ## which-bin: outcomes
 
 | id | label | detail |
 | --- | --- | --- |
 | `paper` | Paper | Put it out with paper recycling. |
-| `cartons` | Drink cartons | Put it in the carton-only collection bin. |
+| `cartons` | Drink cartons | Put it in the carton-only collection bin. If there is no carton bin, tie the cartons together and put them out beside the paper. |
 | `glass-bottles` | Glass bottles | Put it out with glass bottles. |
 | `cans` | Cans | Put it out with metal cans. |
 | `clear-pet` | Clear PET bottles | Put it out as a clear PET bottle, separate from other plastics. |
@@ -84,45 +89,51 @@ The hint on `paper-books` carries the plastic-coated-flyer half of `seoul-2025 A
 | `styrofoam` | Styrofoam | Put it out with styrofoam. |
 | `battery-box` | Battery collection box | Put it in a battery collection box at a collection point. |
 | `lamp-box` | Fluorescent lamp collection box | Put it in your district's fluorescent lamp collection container. |
-| `general-waste` | General waste bag (종량제봉투) | Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the official pay-as-you-throw bag: you pay for the bag, and the price depends on its size. |
+| `general-waste` | General waste bag (종량제봉투) | Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the pay-as-you-throw bag. |
 | `special-sack` | Special sack for non-combustibles (특수규격마대) | Put it in a special sack for non-combustible waste, called a 특수규격마대 (teuksu-gyugyeok madae). You buy the sack. Large items can also go out as bulky waste (대형폐기물). |
 | `ask-district` | Ask your district office | The guides this app uses do not cover this case. Ask your district office (구청) before you put it out. |
 
 ## which-bin: rules
 
-27 rules, each `{ id, when, then, note, source: { ref, at } }`. A condition missing from `when` is "any". `at` is the README Ref in the column; `SILENT` = `docs/sources/README.md, note below the quote table` (`ref` `seoul-2025`).
+33 rules, each `{ id, when, then, note, source: { ref, at } }`. A condition missing from `when` is "any". `at` is the README Ref in the column; the silent rule's `at` is the Ref `sources-silent` (`ref` `seoul-2025`). One source per rule: a note never names the other source. `*-dirty` rules (`soiled=yes`) give the same outcome as their clean rule, so `decide` does not ask `soiled` for glass, cans and bottles, and the "why" lists both rules. Notes on rules that extend a line (`paper-box-*`, `paper-books-soiled`, `paper-cup-soiled`, `carton-soiled`, `plastic-bottle-dirty`) say which line they extend and how.
 
 | Rule id | when | then | at | note |
 | --- | --- | --- | --- | --- |
-| `paper-box-clean` | kind=paper-box, soiled=no | paper | seoul-2025 A2 가 | Take off any plastic coating, tape, staples and foil, then fold the box. |
-| `paper-box-soiled` | kind=paper-box, soiled=yes | general-waste | moe-2018 dictionary p.33, 피자박스 | The Ministry's guide lists a pizza box as paper, but inner paper soiled with grease goes in the general waste bag. |
+| `paper-box-clean` | kind=paper-box, soiled=no | paper | seoul-2025 A2 가 | Take off any plastic coating, tape, staples and foil, then fold the box. The source line is about cardboard boxes (골판지상자); this app applies it to every paper box, pizza boxes included. |
+| `paper-box-soiled` | kind=paper-box, soiled=yes | general-waste | moe-2018 dictionary p.33, 피자박스 | The Ministry's guide lists a pizza box as paper, and only the inner paper soiled with grease goes in the general waste bag. This app extends that line to any paper box with food or grease that rinsing will not remove, and sends the whole box to the general waste bag. |
 | `insulated-box` | kind=insulated-box | general-waste | seoul-2025 A1 1 | A box with a foil or plastic lining that cannot be separated from the paper cannot be recycled as paper. |
 | `paper-books-clean` | kind=paper-books, soiled=no | paper | seoul-2025 A2 나 (신문지, 책자) | Keep it dry, flatten it, stack it and tie it into a bundle. Remove plastic covers and spiral bindings first. |
-| `paper-books-soiled` | kind=paper-books, soiled=yes | general-waste | moe-2018 FAQ p.21 (핸드타월) | Paper with food or dirt on it goes in the general waste bag. (Ministry FAQ, paper with dirt.) |
+| `paper-books-soiled` | kind=paper-books, soiled=yes | general-waste | moe-2018 FAQ p.21 (핸드타월) | The FAQ line is about a hand towel with dirt on it, which goes in the general waste bag. This app applies it to newspaper, books and flyers with food or dirt on them. |
 | `paper-cup-coated` | kind=paper-cup, coated=yes | general-waste | seoul-2025 A1 2 | A paper cup coated on both sides cannot be recycled as paper. |
 | `paper-cup-clean` | kind=paper-cup, coated=no, soiled=no | paper | seoul-2025 A2 나 (종이컵) | Empty it, rinse it with water and press it flat. Put cups in a bag or tie them together. |
-| `paper-cup-soiled` | kind=paper-cup, coated=no, soiled=yes | general-waste | moe-2018 FAQ p.21 (종이컵) | A cup with a lot of food or other residue on it goes in the general waste bag. (Ministry FAQ, paper cups.) |
+| `paper-cup-soiled` | kind=paper-cup, coated=no, soiled=yes | general-waste | moe-2018 FAQ p.21 (종이컵) | The FAQ says a cup with a lot of residue (다량) goes in the general waste bag; this app applies it to any residue that rinsing will not remove. |
 | `carton-clean` | kind=carton, soiled=no | cartons | seoul-2025 A2 나 (종이팩) | Empty it, rinse it and let it dry. Use the carton-only bin. If there is none, tie the cartons together and put them out beside the paper. |
-| `carton-soiled` | kind=carton, soiled=yes | general-waste | moe-2018 FAQ p.22 (종이팩) | A carton with a lot of residue on it goes in the general waste bag. (Ministry FAQ, cartons.) |
+| `carton-soiled` | kind=carton, soiled=yes | general-waste | moe-2018 FAQ p.22 (종이팩) | The FAQ says a carton with a lot of residue (다량) goes in the general waste bag; this app applies it to any residue that rinsing will not remove. |
 | `receipt` | kind=receipt | general-waste | seoul-2025 A1 2 | Thermal paper receipts cannot be recycled as paper. |
-| `glass-clean` | kind=glass, glass-type=ordinary, broken=no | glass-bottles | seoul-2025 A2 다 | Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with glass anyway (moe-2018 FAQ p.23 (유리병 이물질)). Deposit bottles (soju, beer) can go back to a shop. Ordinary drinking glasses and beer mugs go with glass bottles too (moe-2018 FAQ p.22 (유리잔)). |
-| `glass-broken` | kind=glass, glass-type=ordinary, broken=yes | general-waste | seoul-2025 A2 다 (비해당) | Wrap the pieces in newspaper first. A small amount goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대) (seoul-2025 A1 3). |
-| `glass-special` | kind=glass, glass-type=special | special-sack | seoul-2025 A1 3 | Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물). |
-| `can` | kind=can | cans | seoul-2025 A2 라 | Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with cans anyway (moe-2018 FAQ p.23 (캔 이물질)). Remove plastic lids and anything else that is not metal. |
+| `glass-clean` | kind=glass, glass-type=ordinary, broken=no, soiled=no | glass-bottles | seoul-2025 A2 다 | Empty it and rinse it. Deposit bottles (soju, beer) can go back to a shop. |
+| `glass-dirty` | kind=glass, glass-type=ordinary, broken=no, soiled=yes | glass-bottles | moe-2018 FAQ p.23 (유리병 이물질) | If it still has dirt on it, wash it as clean as you can and put it out with glass bottles anyway. |
+| `glass-broken-small` | kind=glass, glass-type=ordinary, broken=yes, amount=small | general-waste | seoul-2025 A2 다 (비해당) | Wrap the pieces in newspaper first, then put them in the general waste bag. |
+| `glass-broken-large` | kind=glass, glass-type=ordinary, broken=yes, amount=large | special-sack | seoul-2025 A1 3 | A large amount of broken glass goes in a special sack for non-combustibles (특수규격마대). |
+| `glass-special` | kind=glass, glass-type=special | special-sack | seoul-2025 A1 3 | Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물). The source lists these kinds for the special sack without a broken/whole split, so the answer is the same whether or not the glass is broken. |
+| `can` | kind=can, soiled=no | cans | seoul-2025 A2 라 | Empty it and rinse it. Remove plastic lids and anything else that is not metal. |
+| `can-dirty` | kind=can, soiled=yes | cans | moe-2018 FAQ p.23 (캔 이물질) | If it still has dirt on it, wash it as clean as you can and put it out with cans anyway. |
 | `foil` | kind=foil | general-waste | seoul-2025 A1 4 | Aluminium foil goes in the general waste bag. |
-| `pet-clear` | kind=plastic-bottle, clear-drink=yes | clear-pet | seoul-2025 A2 마 | Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics. If it is still dirty, wash it as clean as you can and put it out as PET anyway (moe-2018 FAQ p.23 (페트병 이물질)). |
-| `plastic-bottle` | kind=plastic-bottle, clear-drink=no | plastics | seoul-2025 A2 바 | Empty it and rinse it. Remove the label and any parts made of another material. If it is still dirty, wash it as clean as you can (moe-2018 FAQ p.23 (페트병 이물질)). |
+| `pet-clear` | kind=plastic-bottle, clear-drink=yes, soiled=no | clear-pet | seoul-2025 A2 마 | Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics. |
+| `pet-clear-dirty` | kind=plastic-bottle, clear-drink=yes, soiled=yes | clear-pet | moe-2018 FAQ p.23 (페트병 이물질) | If it still has dirt on it, wash it as clean as you can and put it out as PET anyway. |
+| `plastic-bottle` | kind=plastic-bottle, clear-drink=no, soiled=no | plastics | seoul-2025 A2 바 | Empty it and rinse it. Remove the label and any parts made of another material. |
+| `plastic-bottle-dirty` | kind=plastic-bottle, clear-drink=no, soiled=yes | plastics | moe-2018 FAQ p.23 (페트병 이물질) | If it still has dirt on it, wash it as clean as you can. The FAQ line is about a dirty plastic bottle and says to put it out as PET; this app applies the wash-first advice to bottles that are not colourless drink bottles and keeps them with plastics. |
 | `plastic-container-clean` | kind=plastic-container, soiled=no | plastics | seoul-2025 A2 바 | Empty it and rinse it. Remove the label and any parts made of another material. |
-| `plastic-container-soiled` | kind=plastic-container, soiled=yes | ask-district | SILENT | Neither guide says what to do with a plastic container that still has food or grease on it after rinsing. |
+| `plastic-container-soiled` | kind=plastic-container, soiled=yes | ask-district | sources-silent | Neither guide says what to do with a plastic container that still has food or grease on it after rinsing. |
 | `film-clean` | kind=plastic-film, soiled=no | plastic-film | seoul-2025 A2 사 | Empty it, rinse it, and put it out inside a clear or semi-clear bag. |
 | `film-soiled` | kind=plastic-film, soiled=yes | general-waste | moe-2018 FAQ p.25 (비닐류) | Film or wrap that cannot be cleaned, such as snack and noodle wrappers, goes in the general waste bag. |
 | `styrofoam-clean` | kind=styrofoam, soiled=no | styrofoam | seoul-2025 A2 아, A1 7 | Empty it, rinse it and remove labels. |
 | `styrofoam-soiled` | kind=styrofoam, soiled=yes | general-waste | seoul-2025 A2 아, A1 7 | Styrofoam with food on it, or with dirt that is hard to remove, goes in the general waste bag. |
 | `battery` | kind=battery | battery-box | seoul-2025 A2 차 | Take the battery out of the device. Put it in a battery collection box at a collection point. |
 | `lamp-whole` | kind=lamp, broken=no | lamp-box | seoul-2025 A2 카, A1 9 | Put it in your district's fluorescent lamp collection container. |
-| `lamp-broken` | kind=lamp, broken=yes | general-waste | seoul-2025 A2 카, A1 9 | A small amount of a broken lamp goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대). |
+| `lamp-broken-small` | kind=lamp, broken=yes, amount=small | general-waste | seoul-2025 A2 카, A1 9 | A small amount of a broken lamp goes in the general waste bag. |
+| `lamp-broken-large` | kind=lamp, broken=yes, amount=large | special-sack | seoul-2025 A2 카, A1 9 | A large amount of a broken lamp goes in a special sack for non-combustibles (특수규격마대). |
 
-The README quote table has 26 rows and 26 distinct Refs. The rules use 22 as `at`; the other four (`moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs) are quoted verbatim in the `note` of the rule they widen. The test checks both: every `at` is a README Ref, and every README Ref is an `at` or appears in a note.
+The README quote table has 26 rows and 26 distinct Refs. The rules use 25 as `at` (the three `moe-2018 FAQ p.23` Refs are now the `at` of the dirty rules); the last, `moe-2018 FAQ p.22 (유리잔)`, is quoted in the `glass-type` value hint. The test checks: every `at` (except `sources-silent`) is a README Ref, every README Ref is an `at` or appears in a hint, and no note names the other source.
 
 `sources`:
 
@@ -142,19 +153,19 @@ The README quote table has 26 rows and 26 distinct Refs. The rules use 22 as `at
 
 ### Result of the check
 
-`6 conditions, 480 combinations, 27 rules`, 0 gaps, 0 conflicts, all 13 outcomes used. 16 combinations end in `ask-district` (`plastic-container-soiled`: the other four conditions free). Walk lengths: see "Golden items".
+`7 conditions, 960 combinations, 33 rules`, 0 gaps, 0 conflicts, all 13 outcomes used. 32 combinations end in `ask-district` (`plastic-container-soiled`: the other five conditions free). Walk lengths: see "Golden items".
 
 ## which-bin: combinations the sources do not cover
 
-**A. Silent (routed to `ask-district`).** `kind=plastic-container`, `soiled=yes` (16 combinations). The rule cites the README note. This is the only `ask-district` rule. (U1 to U3, dirty glass, cans and plastic bottles, are now covered by the Ministry FAQ p.23 rows and need no special rule.)
+**A. Silent (routed to `ask-district`).** `kind=plastic-container`, `soiled=yes` (32 combinations). The rule cites the README Ref `sources-silent`. This is the only `ask-district` rule. (U1 to U3, dirty glass, cans and plastic bottles, are now covered by the Ministry FAQ p.23 rows and need no special rule.)
 
 **B. A README row exists but depends on a fact no condition asks.** No rule or condition is added; the owner confirmed keeping the notes.
 
 | # | Row | What the conditions cannot say | What the table does |
 | --- | --- | --- | --- |
-| P1 | `seoul-2025 A1 3`, broken glass | small amount: general bag; large amount: special sack | `glass-broken` goes to general waste; the note gives the large-amount case |
-| P2 | `seoul-2025 A2 카, A1 9`, broken lamp | same | `lamp-broken` goes to general waste; the note gives the large-amount case |
-| P4 | `seoul-2025 A1 2` against `A2 나`, plastic-coated flyers | `coated` is defined for paper cups only | `paper-books` rules ignore coating; a sentence in the `paper-books` hint |
+| P1 | `seoul-2025 A1 3`, broken glass | (resolved: condition `amount`) | `glass-broken-small` to general waste, `glass-broken-large` to the special sack |
+| P2 | `seoul-2025 A2 카, A1 9`, broken lamp | (resolved: condition `amount`) | `lamp-broken-small`, `lamp-broken-large` |
+| P4 | `seoul-2025 A1 2` and `A2 나`, plastic-coated flyers | `coated` is defined for paper cups only | `paper-books` rules ignore coating; the `paper-books` hint says to take the coated paper out first |
 | P5 | `moe-2018 dictionary p.33, 피자박스`, the box is paper, only the greasy inner paper is general waste | one bin per item | `soiled=yes` goes to general waste; the note quotes the split |
 
 (P3, the foil-lined insulated box, is now the `insulated-box` kind.)
@@ -211,8 +222,8 @@ Both files have the 19 labels. `{n}`, `{max}` and `{count}` are placeholders.
 ```json
 {
   "title": "Which bin?",
-  "tagline": "Where does it go? Sorting household rubbish and recycling in South Korea, in plain English.",
-  "intro": "Pick what the item is and answer a few quick questions. The answer follows the separate-discharge rules for South Korea, as published by Seoul in 2025. Rules vary by district, so your own district office has the last word.",
+  "tagline": "Where does it go? Household rubbish and recycling in plain English, following Seoul's rules (2025) and the Ministry of Environment's guide (2018).",
+  "intro": "Pick what the item is and answer a few quick questions. The answer follows Seoul's rules (2025) and the Ministry of Environment's guide (2018). Rules vary by district, so your own district office has the last word.",
   "answerStyle": "tiles",
   "labels": {
     "startOver": "Start again", "change": "Change", "why": "Why this answer", "rule": "Rule",
@@ -228,8 +239,8 @@ Both files have the 19 labels. `{n}`, `{max}` and `{count}` are placeholders.
   "resultLead": "Where it goes:",
   "footer": [
     { "text": "Source: Seoul Metropolitan Government, Seoul's standard discharge rules (page updated 2025-08-06)", "href": "https://news.seoul.go.kr/env/archives/564022" },
-    { "text": "Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30)", "href": "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf" },
-    { "text": "These are the rules for South Korea as published by Seoul. They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service." }
+    { "text": "Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30; a copy hosted by Korea University)", "href": "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf" },
+    { "text": "These answers follow Seoul's rules (2025) and the Ministry of Environment's guide (2018). They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service." }
   ]
 }
 ```
@@ -300,7 +311,7 @@ The look: which-bin is warm cream and burnt orange, round tiles, rounded typefac
 
 `skeleton/examples/which-bin-broken.table.json` is `apps/which-bin/table.json` with:
 
-- the rule `paper-cup-soiled` removed: 8 gaps, `kind=paper-cup, coated=no, soiled=yes`, with `broken`, `glass-type` and `clear-drink` free;
+- the rule `paper-cup-soiled` removed: 16 gaps, `kind=paper-cup, coated=no, soiled=yes`, with `broken`, `amount`, `glass-type` and `clear-drink` free;
 - a rule added at the end: `{ "id": "receipt-as-paper", "when": { "kind": "receipt" }, "then": "paper", "note": "WRONG ON PURPOSE: contradicts rule receipt (general waste). Added for the demo.", "source": { "ref": "seoul-2025", "at": "seoul-2025 A1 2" } }`;
 - `id` `which-bin-broken`, `title` `Which bin? (broken on purpose: rule paper-cup-soiled removed, rule receipt-as-paper added)`.
 
@@ -317,13 +328,14 @@ which-bin:
 | 1 | Greasy pizza box | kind=paper-box, soiled=yes | general-waste | `paper-box-soiled` | moe-2018 dictionary p.33, 피자박스 | 2 |
 | 2 | Clean paper cup | kind=paper-cup, soiled=no, coated=no | paper | `paper-cup-clean` | seoul-2025 A2 나 (종이컵) | 3 |
 | 3 | Paper cup coated on both sides | kind=paper-cup, coated=yes | general-waste | `paper-cup-coated` | seoul-2025 A1 2 | 3 |
-| 4 | Broken drinking glass | kind=glass, glass-type=ordinary, broken=yes | general-waste | `glass-broken` | seoul-2025 A2 다 (비해당) | 3 |
+| 4 | Broken drinking glass, a few pieces | kind=glass, glass-type=ordinary, broken=yes, amount=small | general-waste | `glass-broken-small` | seoul-2025 A2 다 (비해당) | 4 |
 | 5 | Insulated delivery box | kind=insulated-box | general-waste | `insulated-box` | seoul-2025 A1 1 | 1 |
-| 6 | Dirty clear water bottle (soiled does not matter) | kind=plastic-bottle, clear-drink=yes, soiled=yes | clear-pet | `pet-clear` | seoul-2025 A2 마 | 2 |
-| 7 | Plastic tub with food that will not rinse off | kind=plastic-container, soiled=yes | ask-district | `plastic-container-soiled` | docs/sources/README.md, note below the quote table | 2 |
+| 6 | Dirty clear water bottle (soiled does not matter) | kind=plastic-bottle, clear-drink=yes, soiled=yes | clear-pet | `pet-clear-dirty` | moe-2018 FAQ p.23 (페트병 이물질) | 2 |
+| 7 | Plastic tub with food that will not rinse off | kind=plastic-container, soiled=yes | ask-district | `plastic-container-soiled` | sources-silent | 2 |
 | 8 | Battery | kind=battery | battery-box | `battery` | seoul-2025 A2 차 | 1 |
+| 9 | Broken drinking glass, a large amount | kind=glass, glass-type=ordinary, broken=yes, amount=large | special-sack | `glass-broken-large` | seoul-2025 A1 3 | 3 |
 
-(Item 5 replaces the heat-resistant glass dish of the first design, which is covered by the rule table; item 4 now cites the new `다 (비해당)` row. The walk for item 3 is 3, not 2: `decide` asks `soiled` before `coated` because it breaks ties by condition order.)
+(Item 9 is the large-amount case: `glass-type` is never asked, because large broken glass of either type goes in the special sack, so the walk is 3. Without `soiled`, the "why" for a can, glass or bottle lists the clean and the dirty rule. Item 5 replaces the heat-resistant glass dish of the first design, which is covered by the rule table; item 4 now cites the new `다 (비해당)` row. The walk for item 3 is 3, not 2: `decide` asks `soiled` before `coated` because it breaks ties by condition order.)
 
 which-licence:
 
@@ -346,9 +358,9 @@ Imports `validate`, `check`, `decide` from `skeleton/engine/index.ts`; reads fil
 
 - `which-bin table`
   - validates and checks with the pinned counts and no warning (2.3, 2.5, 2.6).
-  - golden items, `it.each` over the 8 rows: decided, outcome, firing rules equal `[rule]`, `source.at`; walk length (9.1 to 9.3).
-  - traceability: parse the README quote table (rows whose first cell starts with `seoul-2025` or `moe-2018`); every rule except `plastic-container-soiled` has an `at` that is a README Ref beginning with its `ref`; every README Ref is some rule's `at` or appears verbatim in some rule's `note`; every rule has a non-empty `note`; the only `ask-district` rule is `plastic-container-soiled`, with the silent `at` (3.1 to 3.6).
-- `which-bin broken example`: equals the which-bin table minus `paper-cup-soiled` plus `receipt-as-paper` (compared as objects); `check` gives 8 gaps, all with `kind=paper-cup`, one conflict pair `receipt`/`receipt-as-paper`, no warning (8.1, 8.2).
+  - golden items, `it.each` over the 9 rows: decided, outcome, firing rules equal `[rule]`, `source.at`; walk length (9.1 to 9.3).
+  - traceability: parse the README quote table (rows whose first cell starts with `seoul-2025` or `moe-2018`); every rule except `plastic-container-soiled` has an `at` that is a README Ref beginning with its `ref`; every README Ref is some rule's `at` or appears verbatim in a value `hint`; no note names the other source; the four dirty rules cite `moe-2018 FAQ p.23`; every rule has a non-empty `note`; the only `ask-district` rule is `plastic-container-soiled`, with the silent `at` (3.1 to 3.6).
+- `which-bin broken example`: equals the which-bin table minus `paper-cup-soiled` plus `receipt-as-paper` (compared as objects); `check` gives 16 gaps, all with `kind=paper-cup`, one conflict pair `receipt`/`receipt-as-paper`, no warning (8.1, 8.2).
 - `which-licence table`
   - validates and checks with the pinned counts and no warning.
   - golden items, `it.each` over 8 rows, as above, with the two note assertions.
@@ -396,10 +408,10 @@ export default defineConfig({
 | File | Test | What it asserts |
 | --- | --- | --- |
 | `landing.spec.ts` | landing page lists both apps | `h1` equals `landing.json` title; one link per app named by the app's title, followed by its tagline; Tab to the first link and `Enter` opens `which-bin/` with its `h1`; axe on the landing page has no violation |
-| `walk.spec.ts` | which-bin: keyboard walk, greasy pizza box | goes to `which-bin/`; `labels.questionOf` shows question 1; `pressChoice` paper box, then Yes; result heading (`copy.resultLead`, a space, the `general-waste` label from `table.json`) is the focused element; `stepCount` is 2; the skipped list has 4 entries |
+| `walk.spec.ts` | which-bin: keyboard walk, greasy pizza box | goes to `which-bin/`; `labels.questionOf` shows question 1; `pressChoice` paper box, then Yes; result heading (`copy.resultLead`, a space, the `general-waste` label from `table.json`) is the focused element; `stepCount` is 2; the skipped list has 5 entries |
 | `walk.spec.ts` | which-licence: keyboard walk, MIT | `pressChoice` None, No, Yes; result heading is focused and names MIT; `stepCount` is 3; skipped list has 1 entry (`network`) |
-| `link.spec.ts` | shared link and bad link | `which-bin/#kind=glass&glass-type=ordinary&broken=yes`: result `General waste bag` shown with no interaction, focus on its heading, 3 steps. Then `which-bin/#kind=glass&broken=maybe&nope=1&kind=can`: the bad-link notice with count 3, the `kind=glass` step kept, a question shown (no result), address hash rewritten to `#kind=glass` |
-| `table.spec.ts` | which-bin: whole table | toggle has `aria-expanded=false`, after activation `true`; the table named by `table.title` has 27 body rows and `conditions.length + 3` header cells; the `receipt` row has `labels.any` in 5 cells; its source cell contains the rule's `at` |
+| `link.spec.ts` | shared link and bad link | `which-bin/#kind=glass&glass-type=ordinary&broken=yes&amount=small`: result `General waste bag` shown with no interaction, focus on its heading, 4 steps. Then `which-bin/#kind=glass&broken=maybe&nope=1&kind=can`: the bad-link notice with count 3, the `kind=glass` step kept, a question shown (no result), address hash rewritten to `#kind=glass` |
+| `table.spec.ts` | which-bin: whole table | toggle has `aria-expanded=false`, after activation `true`; the table named by `table.title` has 33 body rows and `conditions.length + 3` header cells; the `receipt` row has `labels.any` in 5 cells; its source cell contains the rule's `at` |
 | `table.spec.ts` | which-licence: whole table | same with 7 rows, 7 header cells; the `copyleft-file` row has `labels.any` in 3 cells |
 | `nojs.spec.ts` | pages are not blank without JavaScript | a context with `javaScriptEnabled: false`; for each app: the `h1` shows `copy.title`, `copy.intro` and `copy.labels.noscript` are visible |
 | `a11y.spec.ts` | axe, which-bin, light | `emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })`; scans the question screen, the result screen (`#kind=battery`), and the result screen with the whole table open; each has no violation |
@@ -411,7 +423,7 @@ export default defineConfig({
 Notes:
 - Reduced motion is set in the axe tests so that the colour transitions of `shell.css` cannot make axe read a colour mid-transition. The shell removes transitions under `prefers-reduced-motion` (shell-and-cli 9.4).
 - Scanning the result screen with the whole table open goes one step beyond "question and result screens" in the owner's list. The table sits in a scrollable region, which is where axe finds `scrollable-region-focusable` and header problems. Cost: no extra test.
-- The tests read headings, labels and counts from the JSON files, so a copy edit does not break them. The counts that must stay literal (2 and 3 questions, 27 and 7 rows) come from this design and from the table; a table change that alters them should fail.
+- The tests read headings, labels and counts from the JSON files, so a copy edit does not break them. The counts that must stay literal (2 and 3 questions, 33 and 7 rows) come from this design and from the table; a table change that alters them should fail.
 - Known risk: the live region (`role="status"`) sits outside the landmarks. axe's `region` rule normally exempts live regions. If it does not, that is a shell defect: requirement 1.5 and 10.11 apply, and the owner decides.
 
 ## Workflow: `.github/workflows/pages.yml`

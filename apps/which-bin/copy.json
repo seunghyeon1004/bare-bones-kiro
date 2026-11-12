@@ -1,7 +1,7 @@
 {
   "title": "Which bin?",
-  "tagline": "Where does it go? Sorting household rubbish and recycling in South Korea, in plain English.",
-  "intro": "Pick what the item is and answer a few quick questions. The answer follows the separate-discharge rules for South Korea, as published by Seoul in 2025. Rules vary by district, so your own district office has the last word.",
+  "tagline": "Where does it go? Household rubbish and recycling in plain English, following Seoul's rules (2025) and the Ministry of Environment's guide (2018).",
+  "intro": "Pick what the item is and answer a few quick questions. The answer follows Seoul's rules (2025) and the Ministry of Environment's guide (2018). Rules vary by district, so your own district office has the last word.",
   "answerStyle": "tiles",
   "labels": {
     "startOver": "Start again",
@@ -32,11 +32,11 @@
       "href": "https://news.seoul.go.kr/env/archives/564022"
     },
     {
-      "text": "Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30)",
+      "text": "Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30; a copy hosted by Korea University)",
       "href": "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf"
     },
     {
-      "text": "These are the rules for South Korea as published by Seoul. They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service."
+      "text": "These answers follow Seoul's rules (2025) and the Ministry of Environment's guide (2018). They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service."
     }
   ]
 }

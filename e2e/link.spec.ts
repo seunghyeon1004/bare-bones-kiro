@@ -5,9 +5,9 @@ test('shared link and bad link', async ({ page }) => {
   const { table, copy } = loadApp('which-bin');
 
   // A complete link shows the result with no interaction.
-  await page.goto('which-bin/#kind=glass&glass-type=ordinary&broken=yes');
+  await page.goto('which-bin/#kind=glass&glass-type=ordinary&broken=yes&amount=small');
   await expect(page.getByRole('heading', { name: resultHeading(copy, table, 'general-waste') })).toBeFocused();
-  await expect(steps(page, copy)).toHaveCount(3);
+  await expect(steps(page, copy)).toHaveCount(4);
 
   // A link with unknown, repeated and bad entries keeps the valid ones and says so.
   await page.goto('about:blank');

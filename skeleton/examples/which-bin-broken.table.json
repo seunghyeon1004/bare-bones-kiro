@@ -19,7 +19,7 @@
         {
           "id": "paper-books",
           "label": "Newspaper, books or flyers",
-          "hint": "Plastic-coated flyers go in the general waste bag."
+          "hint": "Take plastic-coated paper (a coated flyer, for example) out first: it goes in the general waste bag. The rest goes out as paper."
         },
         {
           "id": "paper-cup",
@@ -37,7 +37,7 @@
         {
           "id": "glass",
           "label": "Glass",
-          "hint": "Bottles, jars, drinking glasses, window glass"
+          "hint": "Bottles, jars, drinking glasses"
         },
         {
           "id": "can",
@@ -106,12 +106,29 @@
       ]
     },
     {
+      "id": "amount",
+      "question": "How much is there?",
+      "values": [
+        {
+          "id": "small",
+          "label": "Small",
+          "hint": "A few pieces that fit wrapped in a bag."
+        },
+        {
+          "id": "large",
+          "label": "Large",
+          "hint": "More than that."
+        }
+      ]
+    },
+    {
       "id": "glass-type",
       "question": "What kind of glass is it?",
       "values": [
         {
           "id": "ordinary",
-          "label": "Bottle, jar or ordinary drinking glass"
+          "label": "Bottle, jar or ordinary drinking glass",
+          "hint": "Ordinary drinking glasses and beer mugs count as ordinary glass (moe-2018 FAQ p.22 (유리잔))."
         },
         {
           "id": "special",
@@ -137,12 +154,12 @@
     },
     {
       "id": "clear-drink",
-      "question": "Is it a colourless, see-through water or drink bottle?",
+      "question": "Is it a colourless, see-through PET water or drink bottle?",
       "values": [
         {
           "id": "no",
           "label": "No",
-          "hint": "Coloured, or not a drink bottle."
+          "hint": "Coloured, or not a PET drink bottle."
         },
         {
           "id": "yes",
@@ -161,7 +178,7 @@
     {
       "id": "cartons",
       "label": "Drink cartons",
-      "detail": "Put it in the carton-only collection bin."
+      "detail": "Put it in the carton-only collection bin. If there is no carton bin, tie the cartons together and put them out beside the paper."
     },
     {
       "id": "glass-bottles",
@@ -206,7 +223,7 @@
     {
       "id": "general-waste",
       "label": "General waste bag (종량제봉투)",
-      "detail": "Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the official pay-as-you-throw bag: you pay for the bag, and the price depends on its size."
+      "detail": "Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the pay-as-you-throw bag."
     },
     {
       "id": "special-sack",
@@ -227,7 +244,7 @@
         "soiled": "no"
       },
       "then": "paper",
-      "note": "Take off any plastic coating, tape, staples and foil, then fold the box.",
+      "note": "Take off any plastic coating, tape, staples and foil, then fold the box. The source line is about cardboard boxes (골판지상자); this app applies it to every paper box, pizza boxes included.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 가"
@@ -240,7 +257,7 @@
         "soiled": "yes"
       },
       "then": "general-waste",
-      "note": "The Ministry's guide lists a pizza box as paper, but inner paper soiled with grease goes in the general waste bag.",
+      "note": "The Ministry's guide lists a pizza box as paper, and only the inner paper soiled with grease goes in the general waste bag. This app extends that line to any paper box with food or grease that rinsing will not remove, and sends the whole box to the general waste bag.",
       "source": {
         "ref": "moe-2018",
         "at": "moe-2018 dictionary p.33, 피자박스"
@@ -278,7 +295,7 @@
         "soiled": "yes"
       },
       "then": "general-waste",
-      "note": "Paper with food or dirt on it goes in the general waste bag. (Ministry FAQ, paper with dirt.)",
+      "note": "The FAQ line is about a hand towel with dirt on it, which goes in the general waste bag. This app applies it to newspaper, books and flyers with food or dirt on them.",
       "source": {
         "ref": "moe-2018",
         "at": "moe-2018 FAQ p.21 (핸드타월)"
@@ -331,7 +348,7 @@
         "soiled": "yes"
       },
       "then": "general-waste",
-      "note": "A carton with a lot of residue on it goes in the general waste bag. (Ministry FAQ, cartons.)",
+      "note": "The FAQ says a carton with a lot of residue (다량) goes in the general waste bag; this app applies it to any residue that rinsing will not remove.",
       "source": {
         "ref": "moe-2018",
         "at": "moe-2018 FAQ p.22 (종이팩)"
@@ -354,27 +371,59 @@
       "when": {
         "kind": "glass",
         "glass-type": "ordinary",
-        "broken": "no"
+        "broken": "no",
+        "soiled": "no"
       },
       "then": "glass-bottles",
-      "note": "Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with glass anyway (moe-2018 FAQ p.23 (유리병 이물질)). Deposit bottles (soju, beer) can go back to a shop. Ordinary drinking glasses and beer mugs go with glass bottles too (moe-2018 FAQ p.22 (유리잔)).",
+      "note": "Empty it and rinse it. Deposit bottles (soju, beer) can go back to a shop.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 다"
       }
     },
     {
-      "id": "glass-broken",
+      "id": "glass-dirty",
       "when": {
         "kind": "glass",
         "glass-type": "ordinary",
-        "broken": "yes"
+        "broken": "no",
+        "soiled": "yes"
+      },
+      "then": "glass-bottles",
+      "note": "If it still has dirt on it, wash it as clean as you can and put it out with glass bottles anyway.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.23 (유리병 이물질)"
+      }
+    },
+    {
+      "id": "glass-broken-small",
+      "when": {
+        "kind": "glass",
+        "glass-type": "ordinary",
+        "broken": "yes",
+        "amount": "small"
       },
       "then": "general-waste",
-      "note": "Wrap the pieces in newspaper first. A small amount goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대) (seoul-2025 A1 3).",
+      "note": "Wrap the pieces in newspaper first, then put them in the general waste bag.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 다 (비해당)"
+      }
+    },
+    {
+      "id": "glass-broken-large",
+      "when": {
+        "kind": "glass",
+        "glass-type": "ordinary",
+        "broken": "yes",
+        "amount": "large"
+      },
+      "then": "special-sack",
+      "note": "A large amount of broken glass goes in a special sack for non-combustibles (특수규격마대).",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A1 3"
       }
     },
     {
@@ -384,7 +433,7 @@
         "glass-type": "special"
       },
       "then": "special-sack",
-      "note": "Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물).",
+      "note": "Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물). The source lists these kinds for the special sack without a broken/whole split, so the answer is the same whether or not the glass is broken.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A1 3"
@@ -393,13 +442,27 @@
     {
       "id": "can",
       "when": {
-        "kind": "can"
+        "kind": "can",
+        "soiled": "no"
       },
       "then": "cans",
-      "note": "Empty it and rinse it. If it is still dirty, wash it as clean as you can and put it out with cans anyway (moe-2018 FAQ p.23 (캔 이물질)). Remove plastic lids and anything else that is not metal.",
+      "note": "Empty it and rinse it. Remove plastic lids and anything else that is not metal.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 라"
+      }
+    },
+    {
+      "id": "can-dirty",
+      "when": {
+        "kind": "can",
+        "soiled": "yes"
+      },
+      "then": "cans",
+      "note": "If it still has dirt on it, wash it as clean as you can and put it out with cans anyway.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.23 (캔 이물질)"
       }
     },
     {
@@ -418,26 +481,56 @@
       "id": "pet-clear",
       "when": {
         "kind": "plastic-bottle",
-        "clear-drink": "yes"
+        "clear-drink": "yes",
+        "soiled": "no"
       },
       "then": "clear-pet",
-      "note": "Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics. If it is still dirty, wash it as clean as you can and put it out as PET anyway (moe-2018 FAQ p.23 (페트병 이물질)).",
+      "note": "Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 마"
       }
     },
     {
+      "id": "pet-clear-dirty",
+      "when": {
+        "kind": "plastic-bottle",
+        "clear-drink": "yes",
+        "soiled": "yes"
+      },
+      "then": "clear-pet",
+      "note": "If it still has dirt on it, wash it as clean as you can and put it out as PET anyway.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.23 (페트병 이물질)"
+      }
+    },
+    {
       "id": "plastic-bottle",
       "when": {
         "kind": "plastic-bottle",
-        "clear-drink": "no"
+        "clear-drink": "no",
+        "soiled": "no"
       },
       "then": "plastics",
-      "note": "Empty it and rinse it. Remove the label and any parts made of another material. If it is still dirty, wash it as clean as you can (moe-2018 FAQ p.23 (페트병 이물질)).",
+      "note": "Empty it and rinse it. Remove the label and any parts made of another material.",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 바"
+      }
+    },
+    {
+      "id": "plastic-bottle-dirty",
+      "when": {
+        "kind": "plastic-bottle",
+        "clear-drink": "no",
+        "soiled": "yes"
+      },
+      "then": "plastics",
+      "note": "If it still has dirt on it, wash it as clean as you can. The FAQ line is about a dirty plastic bottle and says to put it out as PET; this app applies the wash-first advice to bottles that are not colourless drink bottles and keeps them with plastics.",
+      "source": {
+        "ref": "moe-2018",
+        "at": "moe-2018 FAQ p.23 (페트병 이물질)"
       }
     },
     {
@@ -463,7 +556,7 @@
       "note": "Neither guide says what to do with a plastic container that still has food or grease on it after rinsing.",
       "source": {
         "ref": "seoul-2025",
-        "at": "docs/sources/README.md, note below the quote table"
+        "at": "sources-silent"
       }
     },
     {
@@ -544,13 +637,28 @@
       }
     },
     {
-      "id": "lamp-broken",
+      "id": "lamp-broken-small",
       "when": {
         "kind": "lamp",
-        "broken": "yes"
+        "broken": "yes",
+        "amount": "small"
       },
       "then": "general-waste",
-      "note": "A small amount of a broken lamp goes in the general waste bag. A large amount goes in a special sack for non-combustibles (특수규격마대).",
+      "note": "A small amount of a broken lamp goes in the general waste bag.",
+      "source": {
+        "ref": "seoul-2025",
+        "at": "seoul-2025 A2 카, A1 9"
+      }
+    },
+    {
+      "id": "lamp-broken-large",
+      "when": {
+        "kind": "lamp",
+        "broken": "yes",
+        "amount": "large"
+      },
+      "then": "special-sack",
+      "note": "A large amount of a broken lamp goes in a special sack for non-combustibles (특수규격마대).",
       "source": {
         "ref": "seoul-2025",
         "at": "seoul-2025 A2 카, A1 9"

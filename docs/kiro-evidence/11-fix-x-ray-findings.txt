@@ -1,0 +1,559 @@
+# Kiro CLI 3.2.1, 2026-11-12T05:39:51Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --agent bonesetter --trust-all-tools --trust-workspace --model auto "$(cat docs/kiro-evidence/prompts/11-fix-x-ray-findings.md)"
+
+--- prompt ---
+The read-only x-ray agent audited apps/which-bin/table.json against docs/sources/README.md. Its full report is docs/kiro-evidence/08-x-ray-which-bin.txt: read it first, and the README (the owner added a paragraph on how bins are named and a Ref `sources-silent`). Fix the findings as the owner decided below. Record the change as an amendment ("Owner answers", next item) in .kiro/specs/apps/requirements.md and update design.md's rules table and the golden items. Change only apps/which-bin/, skeleton/examples/which-bin-broken.table.json (keep exactly its two defects), test/apps.test.ts, e2e tests whose walks change, and the apps spec files.
+
+1. Amounts. Add a condition `amount` ("How much is there?": `small` = a few pieces that fit wrapped in a bag, `large` = more than that), placed after `broken`. Broken ordinary glass: small -> general waste (cite `seoul-2025 A2 다 (비해당)`), large -> special sack (cite `seoul-2025 A1 3`). Broken lamp: small -> general waste, large -> special sack (cite `seoul-2025 A2 카, A1 9`). Special glass (heat-resistant, crystal, ceramic, window) stays special sack whether broken or not; say in its note that the source lists these kinds for the special sack without a broken/whole split.
+2. One source per rule, so a note never cites a second source. Split each of `glass-clean`, `can`, `pet-clear`, `plastic-bottle` into a clean rule (`soiled=no`, citing the Seoul row) and a dirty rule (`soiled=yes`, same outcome, citing the matching `moe-2018 FAQ p.23 (...)` row, note "wash it as clean as you can"). The engine will still not ask `soiled` for these items, because both rules give the same outcome; the "why" shows both rules. Ordinary drinking glasses: the `glass-clean` note may mention them only if it cites `moe-2018 FAQ p.22 (유리잔)`; since a rule has one source, add a value hint on `glass-type` instead and keep the note to bottles.
+3. `plastic-container-soiled`: `source.at` becomes `sources-silent`.
+4. Hints and details: the `paper-books` hint says to take plastic-coated paper out first, because it goes in the general waste bag (A2 나 says remove it; A1 2 says where it goes), no contradiction; the `glass` value hint drops "window glass"; the `cartons` detail adds the fallback (no carton bin: tie them and put them beside the paper); the `general-waste` detail keeps only what the sources say (the pay-as-you-throw bag, 종량제봉투), no "official" and no price claim; the `clear-drink` question says "PET" (colourless, see-through PET water or drink bottle).
+5. copy.json: tagline, intro and footer say "Seoul's rules (2025) and the Ministry of Environment's guide (2018)", that rules vary by district, and the Ministry footer link label says it is a copy hosted by Korea University.
+
+Leave the STRETCHED verdicts on `paper-box-*`, `paper-books-soiled`, `paper-cup-soiled` and `carton-soiled` as they are, but make each note say plainly which source line it extends and how (for example "The FAQ says a cup with a lot of residue; this app applies it to any residue rinsing will not remove").
+
+Verify: `npm run bones -- check apps/which-bin/table.json && npm run typecheck && npm test && npm run test:e2e`. Do not stage, commit or push. End with the check output, the real result lines and the files changed.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the x-ray report, the sources README, and the current spec and app files.
+
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/kiro-evidence/08-x-ray-which-bin.txt
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/sources/README.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/apps/which-bin/table.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/apps/which-bin/copy.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/examples/which-bin-broken.table.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md"],"kind":"steering_inclusion"}
+
+Next I'll read the rest of the design file, the test file and the e2e specs.
+
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/apps.test.ts
+[tool:search] Grep Search
+[tool:search] Grep Search
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/walk.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/table.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/link.spec.ts
+[tool:search] Grep Search
+[tool:search] Grep Search
+
+I've read everything I need. The plan is to update the test first and watch it fail, then change the table, the demo, the copy, the e2e walks and the spec files.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+import re
+p='test/apps.test.ts'
+s=open(p,encoding='utf8').read()
+def rep(a,b):
+    global s
+    assert a in s, a[:60]
+    s=s.replace(a,b,1)
+
+rep("const SILENT = 'docs/sources/README.md, note below the quote table';","const SILENT = 'sources-silent';")
+rep("{ conditions: 6, combinations: 480, rules: 27 }","{ conditions: 7, combinations: 960, rules: 33 }")
+rep("['kind', 'soiled', 'broken', 'glass-type', 'coated', 'clear-drink']","['kind', 'soiled', 'broken', 'amount', 'glass-type', 'coated', 'clear-drink']")
+rep("""    { item: 'broken drinking glass', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes' }, outcome: 'general-waste', rule: 'glass-broken', at: 'seoul-2025 A2 다 (비해당)', questions: 3 },""",
+"""    { item: 'broken drinking glass, a few pieces', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes', amount: 'small' }, outcome: 'general-waste', rule: 'glass-broken-small', at: 'seoul-2025 A2 다 (비해당)', questions: 4 },
+    { item: 'broken drinking glass, a large amount', answers: { kind: 'glass', 'glass-type': 'ordinary', broken: 'yes', amount: 'large' }, outcome: 'special-sack', rule: 'glass-broken-large', at: 'seoul-2025 A1 3', questions: 4 },""")
+rep("""    { item: 'dirty clear water bottle', answers: { kind: 'plastic-bottle', 'clear-drink': 'yes', soiled: 'yes' }, outcome: 'clear-pet', rule: 'pet-clear', at: 'seoul-2025 A2 마', questions: 2 },""",
+"""    { item: 'dirty clear water bottle (soiled does not matter)', answers: { kind: 'plastic-bottle', 'clear-drink': 'yes', soiled: 'yes' }, outcome: 'clear-pet', rule: 'pet-clear-dirty', at: 'moe-2018 FAQ p.23 (페트병 이물질)', questions: 2 },""")
+rep("""  it('does not ask whether a bottle, glass or can is dirty (owner answer 1)', () => {
+    for (const answers of [{ kind: 'can' } as Answers, { kind: 'glass', 'glass-type': 'ordinary', broken: 'no' }, { kind: 'plastic-bottle', 'clear-drink': 'no' }]) {
+      const result = decide(table, answers);
+      expect(result.status).toBe('decided');
+      if (result.status === 'decided') expect(result.skipped.map((s) => s.condition)).toContain('soiled');
+    }
+  });
+""","""  it('does not ask whether a bottle, glass or can is dirty, and the why shows the clean and the dirty rule', () => {
+    const cases: [Answers, string[]][] = [
+      [{ kind: 'can' }, ['can', 'can-dirty']],
+      [{ kind: 'glass', 'glass-type': 'ordinary', broken: 'no' }, ['glass-clean', 'glass-dirty']],
+      [{ kind: 'plastic-bottle', 'clear-drink': 'yes' }, ['pet-clear', 'pet-clear-dirty']],
+      [{ kind: 'plastic-bottle', 'clear-drink': 'no' }, ['plastic-bottle', 'plastic-bottle-dirty']],
+    ];
+    for (const [answers, rules] of cases) {
+      const result = decide(table, answers);
+      expect(result.status).toBe('decided');
+      if (result.status !== 'decided') continue;
+      expect(result.skipped.map((s) => s.condition)).toContain('soiled');
+      expect(result.rules.map((r) => r.id)).toEqual(rules);
+    }
+  });
+
+  it('asks the amount only for broken ordinary glass and broken lamps', () => {
+    const special = decide(table, { kind: 'glass', 'glass-type': 'special' });
+    expect(special.status).toBe('decided');
+    if (special.status === 'decided') {
+      expect(special.outcome.id).toBe('special-sack');
+      expect(special.skipped.map((s) => s.condition)).toContain('amount');
+    }
+    const lamp = decide(table, { kind: 'lamp', broken: 'yes' });
+    expect(lamp.status).toBe('open');
+    if (lamp.status === 'open') expect(lamp.next.condition).toBe('amount');
+    const small = decide(table, { kind: 'lamp', broken: 'yes', amount: 'small' });
+    const large = decide(table, { kind: 'lamp', broken: 'yes', amount: 'large' });
+    expect(small.status === 'decided' && small.outcome.id).toBe('general-waste');
+    expect(large.status === 'decided' && large.outcome.id).toBe('special-sack');
+    expect(table.conditions.find((c) => c.id === 'clear-drink')?.question).toContain('PET');
+  });
+""")
+rep("""    const notes = table.rules.map((r) => r.note ?? '').join('\\n');
+    const used = new Set(table.rules.map((r) => r.source.at));
+    const unused = refs.filter((ref) => !used.has(ref));
+    expect(unused.sort()).toEqual([
+      'moe-2018 FAQ p.22 (유리잔)',
+      'moe-2018 FAQ p.23 (유리병 이물질)',
+      'moe-2018 FAQ p.23 (캔 이물질)',
+      'moe-2018 FAQ p.23 (페트병 이물질)',
+    ]);
+    for (const ref of unused) expect(notes, `${ref} is quoted in a note`).toContain(ref);
+    for (const id of ['glass-clean', 'can', 'pet-clear']) {
+      expect(table.rules.find((r) => r.id === id)?.note).toContain('wash it as clean as you can');
+    }
+""","""    const hints = table.conditions.flatMap((c) => c.values.map((v) => v.hint ?? '')).join('\\n');
+    const used = new Set(table.rules.map((r) => r.source.at));
+    const unused = refs.filter((ref) => !used.has(ref));
+    expect(unused).toEqual(['moe-2018 FAQ p.22 (유리잔)']);
+    expect(hints, 'moe-2018 FAQ p.22 (유리잔) is quoted in a value hint').toContain('moe-2018 FAQ p.22 (유리잔)');
+
+    // One source per rule: a note never names the other source.
+    for (const rule of table.rules) {
+      for (const other of table.sources.filter((s) => s.id !== rule.source.ref)) {
+        expect(rule.note ?? '', `${rule.id}: note does not cite ${other.id}`).not.toContain(other.id);
+      }
+    }
+    // Dirty rules cite the matching Ministry FAQ p.23 row.
+    for (const id of ['glass-dirty', 'can-dirty', 'pet-clear-dirty', 'plastic-bottle-dirty']) {
+      const rule = table.rules.find((r) => r.id === id);
+      expect(rule?.source.ref, id).toBe('moe-2018');
+      expect(rule?.source.at.startsWith('moe-2018 FAQ p.23 ('), id).toBe(true);
+      expect(rule?.when.soiled, id).toBe('yes');
+      expect(rule?.note, id).toContain('wash it as clean as you can');
+    }
+""")
+rep("expect(report.gaps.count).toBe(8);\n    for (const example","expect(report.gaps.count).toBe(16);\n    for (const example")
+rep("""    expect(bin.intro).toContain('South Korea, as published by Seoul in 2025');
+    expect(bin.intro).toContain('vary by district');""","""    const sources = "Seoul's rules (2025) and the Ministry of Environment's guide (2018)";
+    expect(bin.tagline).toContain(sources);
+    expect(bin.intro).toContain(sources);
+    expect(bin.footer.at(-1)?.text).toContain(sources);
+    expect(bin.intro).toContain('vary by district');
+    expect(bin.footer.find((f) => f.href?.includes('sustainability.korea.ac.kr'))?.text).toContain('copy hosted by Korea University');""")
+rep("""interface AppCopy {
+  title: string;""","""interface AppCopy {
+  title: string;
+  tagline: string;""")
+open(p,'w',encoding='utf8').write(s)
+EOF
+npx vitest --run test/apps.test.ts -t "which-bin" 2>&1 | tail -15
+        328|   it('which-bin names Seoul and the districts, and links both sources …
+        329|     const sources = "Seoul's rules (2025) and the Ministry of Environm…
+        330|     expect(bin.tagline).toContain(sources);
+           |                         ^
+        331|     expect(bin.intro).toContain(sources);
+        332|     expect(bin.footer.at(-1)?.text).toContain(sources);
+    
+    ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+    
+    
+     Test Files  1 failed (1)
+          Tests  10 failed | 6 passed | 17 skipped (33)
+       Start at  14:41:32
+       Duration  125ms (transform 43%, tests 32%, import 21%, worker 4%)
+    exit 0
+
+The tests fail as expected. Now I'll rewrite `table.json` and regenerate the broken demo from it.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+import json
+p='apps/which-bin/table.json'
+t=json.load(open(p,encoding='utf8'))
+conds={c['id']:c for c in t['conditions']}
+vals=lambda c:{v['id']:v for v in conds[c]['values']}
+vals('kind')['paper-books']['hint']="Take plastic-coated paper (a coated flyer, for example) out first: it goes in the general waste bag. The rest goes out as paper."
+vals('kind')['glass']['hint']="Bottles, jars, drinking glasses"
+conds['clear-drink']['question']="Is it a colourless, see-through PET water or drink bottle?"
+vals('clear-drink')['no']['hint']="Coloured, or not a PET drink bottle."
+vals('glass-type')['ordinary']['hint']="Ordinary drinking glasses and beer mugs count as ordinary glass (moe-2018 FAQ p.22 (유리잔))."
+amount={"id":"amount","question":"How much is there?","values":[
+ {"id":"small","label":"Small","hint":"A few pieces that fit wrapped in a bag."},
+ {"id":"large","label":"Large","hint":"More than that."}]}
+i=[c['id'] for c in t['conditions']].index('broken')
+t['conditions'].insert(i+1,amount)
+out={o['id']:o for o in t['outcomes']}
+out['cartons']['detail']="Put it in the carton-only collection bin. If there is no carton bin, tie the cartons together and put them out beside the paper."
+out['general-waste']['detail']="Put it in the general waste bag, called a 종량제봉투 (jongnyangje-bongtu). It is the pay-as-you-throw bag."
+R={r['id']:r for r in t['rules']}
+def rule(id,when,then,note,ref,at):
+    return {"id":id,"when":when,"then":then,"note":note,"source":{"ref":ref,"at":at}}
+R['paper-box-clean']['note']="Take off any plastic coating, tape, staples and foil, then fold the box. The source line is about cardboard boxes (골판지상자); this app applies it to every paper box, pizza boxes included."
+R['paper-box-soiled']['note']="The Ministry's guide lists a pizza box as paper, and only the inner paper soiled with grease goes in the general waste bag. This app extends that line to any paper box with food or grease that rinsing will not remove, and sends the whole box to the general waste bag."
+R['paper-books-soiled']['note']="The FAQ line is about a hand towel with dirt on it, which goes in the general waste bag. This app applies it to newspaper, books and flyers with food or dirt on them."
+R['paper-cup-soiled']['note']="The FAQ says a cup with a lot of residue (다량) goes in the general waste bag; this app applies it to any residue that rinsing will not remove."
+R['carton-soiled']['note']="The FAQ says a carton with a lot of residue (다량) goes in the general waste bag; this app applies it to any residue that rinsing will not remove."
+R['plastic-container-soiled']['source']['at']="sources-silent"
+R['glass-clean']['when']['soiled']='no'
+R['glass-clean']['note']="Empty it and rinse it. Deposit bottles (soju, beer) can go back to a shop."
+R['can']['when']['soiled']='no'
+R['can']['note']="Empty it and rinse it. Remove plastic lids and anything else that is not metal."
+R['pet-clear']['when']['soiled']='no'
+R['pet-clear']['note']="Empty it, peel off the label, press it flat and close the cap. Put it out separately from other plastics."
+R['plastic-bottle']['when']['soiled']='no'
+R['plastic-bottle']['note']="Empty it and rinse it. Remove the label and any parts made of another material."
+R['glass-special']['note']="Heat-resistant, crystal, coated or coloured glass, window glass, lighting glass and ceramics go in a special sack (특수규격마대) or can be put out as bulky waste (대형폐기물). The source lists these kinds for the special sack without a broken/whole split, so the answer is the same whether or not the glass is broken."
+new={
+ 'glass-clean':[rule('glass-dirty',{"kind":"glass","glass-type":"ordinary","broken":"no","soiled":"yes"},"glass-bottles","If it still has dirt on it, wash it as clean as you can and put it out with glass bottles anyway.","moe-2018","moe-2018 FAQ p.23 (유리병 이물질)")],
+ 'can':[rule('can-dirty',{"kind":"can","soiled":"yes"},"cans","If it still has dirt on it, wash it as clean as you can and put it out with cans anyway.","moe-2018","moe-2018 FAQ p.23 (캔 이물질)")],
+ 'pet-clear':[rule('pet-clear-dirty',{"kind":"plastic-bottle","clear-drink":"yes","soiled":"yes"},"clear-pet","If it still has dirt on it, wash it as clean as you can and put it out as PET anyway.","moe-2018","moe-2018 FAQ p.23 (페트병 이물질)")],
+ 'plastic-bottle':[rule('plastic-bottle-dirty',{"kind":"plastic-bottle","clear-drink":"no","soiled":"yes"},"plastics","If it still has dirt on it, wash it as clean as you can. The FAQ line is about a dirty plastic bottle and says to put it out as PET; this app applies the wash-first advice to bottles that are not colourless drink bottles and keeps them with plastics.","moe-2018","moe-2018 FAQ p.23 (페트병 이물질)")],
+}
+rules=[]
+for r in t['rules']:
+    if r['id']=='glass-broken':
+        rules.append(rule('glass-broken-small',{"kind":"glass","glass-type":"ordinary","broken":"yes","amount":"small"},"general-waste","Wrap the pieces in newspaper first, then put them in the general waste bag.","seoul-2025","seoul-2025 A2 다 (비해당)"))
+        rules.append(rule('glass-broken-large',{"kind":"glass","glass-type":"ordinary","broken":"yes","amount":"large"},"special-sack","A large amount of broken glass goes in a special sack for non-combustibles (특수규격마대).","seoul-2025","seoul-2025 A1 3"))
+    elif r['id']=='lamp-broken':
+        rules.append(rule('lamp-broken-small',{"kind":"lamp","broken":"yes","amount":"small"},"general-waste","A small amount of a broken lamp goes in the general waste bag.","seoul-2025","seoul-2025 A2 카, A1 9"))
+        rules.append(rule('lamp-broken-large',{"kind":"lamp","broken":"yes","amount":"large"},"special-sack","A large amount of a broken lamp goes in a special sack for non-combustibles (특수규격마대).","seoul-2025","seoul-2025 A2 카, A1 9"))
+    else:
+        rules.append(r)
+        rules.extend(new.get(r['id'],[]))
+t['rules']=rules
+dump=lambda x:json.dumps(x,ensure_ascii=False,indent=2)+"\n"
+open(p,'w',encoding='utf8').write(dump(t))
+# broken demo
+d=json.loads(json.dumps(t))
+d['id']='which-bin-broken'
+d['title']="Which bin? (broken on purpose: rule paper-cup-soiled removed, rule receipt-as-paper added)"
+d['rules']=[r for r in d['rules'] if r['id']!='paper-cup-soiled']
+d['rules'].append({"id":"receipt-as-paper","when":{"kind":"receipt"},"then":"paper","note":"WRONG ON PURPOSE: contradicts rule receipt (general waste). Added for the demo.","source":{"ref":"seoul-2025","at":"seoul-2025 A1 2"}})
+open('skeleton/examples/which-bin-broken.table.json','w',encoding='utf8').write(dump(d))
+# copy
+cp='apps/which-bin/copy.json'
+c=json.load(open(cp,encoding='utf8'))
+S="Seoul's rules (2025) and the Ministry of Environment's guide (2018)"
+c['tagline']=f"Where does it go? Household rubbish and recycling in plain English, following {S}."
+c['intro']=f"Pick what the item is and answer a few quick questions. The answer follows {S}. Rules vary by district, so your own district office has the last word."
+c['footer'][1]['text']="Source: Ministry of Environment, Guidelines for separating recyclables (PDF, 2018-08-30; a copy hosted by Korea University)"
+c['footer'][2]['text']=f"These answers follow {S}. They vary by district (지자체별 차이), so check with your district office if you are unsure. This is not an official service."
+open(cp,'w',encoding='utf8').write(dump(c))
+EOF
+git diff --stat -- apps skeleton | cat; npm run bones -- check apps/which-bin/table.json; echo exit $?; npm run bones -- check skeleton/examples/which-bin-broken.table.json | tail -8; echo exit $?
+     apps/which-bin/copy.json                      |   8 +-
+     apps/which-bin/table.json                     | 164 +++++++++++++++++++++-----
+     skeleton/examples/which-bin-broken.table.json | 162 ++++++++++++++++++++-----
+     3 files changed, 275 insertions(+), 59 deletions(-)
+    
+    > bones
+    > tsx skeleton/cli/bones.ts check apps/which-bin/table.json
+    
+    gaps: 0
+    ok: 7 conditions, 960 combinations, 33 rules
+    exit 0
+      kind=paper-cup, soiled=yes, broken=yes, amount=small, glass-type=special, coated=no, clear-drink=no
+      kind=paper-cup, soiled=yes, broken=yes, amount=small, glass-type=special, coated=no, clear-drink=yes
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=ordinary, coated=no, clear-drink=no
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=ordinary, coated=no, clear-drink=yes
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=special, coated=no, clear-drink=no
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=special, coated=no, clear-drink=yes
+    conflict: receipt -> general-waste vs receipt-as-paper -> paper, e.g. kind=receipt, soiled=no, broken=no, amount=small, glass-type=ordinary, coated=no, clear-drink=no
+    failed
+    exit 0
+    exit 0
+
+The table passes the check with 7 conditions, 960 combinations and 33 rules. The demo still shows its two defects. Next are the e2e walks that change.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='e2e/walk.spec.ts'
+s=open(p,encoding='utf8').read()
+s=s.replace("skipped(page, copy)).toHaveCount(4)","skipped(page, copy)).toHaveCount(5)")
+open(p,'w',encoding='utf8').write(s)
+p='e2e/table.spec.ts'
+s=open(p,encoding='utf8').read()
+s=s.replace("'which-bin', 27,","'which-bin', 33,")
+open(p,'w',encoding='utf8').write(s)
+p='e2e/link.spec.ts'
+s=open(p,encoding='utf8').read()
+s=s.replace("#kind=glass&glass-type=ordinary&broken=yes');","#kind=glass&glass-type=ordinary&broken=yes&amount=small');").replace("toHaveCount(3);\n\n  // A link with","toHaveCount(4);\n\n  // A link with")
+open(p,'w',encoding='utf8').write(s)
+EOF
+npm run bones -- check apps/which-bin/table.json && npm run typecheck 2>&1 | tail -3 && npm test 2>&1 | tail -8
+    
+    > bones
+    > tsx skeleton/cli/bones.ts check apps/which-bin/table.json
+    
+    gaps: 0
+    ok: 7 conditions, 960 combinations, 33 rules
+    > typecheck
+    > tsc --noEmit
+    
+    ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    
+    
+     Test Files  1 failed | 10 passed (11)
+          Tests  1 failed | 92 passed (93)
+       Start at  14:41:56
+       Duration  527ms (tests 53%, import 33%, transform 13%, worker 1%)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run typecheck 2>&1 | tail -12; npm test 2>&1 | grep -B3 -A25 "FAIL" | head -50
+    … (3 earlier lines not shown)
+    
+    
+    ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+    
+     FAIL  test/apps.test.ts > which-bin table > golden item: broken drinking glass, a large amount
+    AssertionError: expected { questions: 3, …(1) } to deeply equal { questions: 4, …(1) }
+    
+    - Expected
+    + Received
+    
+      {
+        "outcome": "special-sack",
+    -   "questions": 4,
+    +   "questions": 3,
+      }
+    
+     ❯ test/apps.test.ts:87:34
+         85|     expect(result.rules.map((r) => r.id)).toEqual([rule]);
+         86|     expect(result.rules[0]?.source.at).toBe(at);
+         87|     expect(walk(table, answers)).toEqual({ questions, outcome });
+           |                                  ^
+         88|   });
+         89|
+    
+    ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    
+    
+     Test Files  1 failed | 10 passed (11)
+          Tests  1 failed | 92 passed (93)
+       Start at  14:41:59
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/apps.test.ts'
+s=open(p,encoding='utf8').read()
+a="rule: 'glass-broken-large', at: 'seoul-2025 A1 3', questions: 4 }"
+assert a in s
+s=s.replace(a,"rule: 'glass-broken-large', at: 'seoul-2025 A1 3', questions: 3 }")
+open(p,'w',encoding='utf8').write(s)
+EOF
+npm test 2>&1 | tail -6
+    
+     Test Files  11 passed (11)
+          Tests  93 passed (93)
+       Start at  14:42:06
+       Duration  499ms (tests 50%, import 30%, transform 18%, worker 2%)
+    exit 0
+
+The unit suite passes. Next come the spec files: the requirements amendment and the design updates.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='.kiro/specs/apps/requirements.md'
+s=open(p,encoding='utf8').read()
+def rep(a,b):
+    global s
+    assert a in s, a[:50]
+    s=s.replace(a,b,1)
+rep("`kind`, `soiled`, `broken`, `glass-type`, `coated`, `clear-drink`, with","`kind`, `soiled`, `broken`, `amount`, `glass-type`, `coated`, `clear-drink`, with")
+rep("report no problem, 6 conditions, 480 combinations, 27 rules, 0 gaps","report no problem, 7 conditions, 960 combinations, 33 rules, 0 gaps")
+rep("and the three `moe-2018 FAQ p.23` Refs are cited in notes)","is quoted in a value hint; the three `moe-2018 FAQ p.23` Refs are the `source.at` of the dirty rules)")
+rep("THE SYSTEM SHALL use every README Ref either as the `source.at` of at least one rule or verbatim in the `note` of a rule","THE SYSTEM SHALL use every README Ref either as the `source.at` of at least one rule or verbatim in a value `hint`, and SHALL NOT name in a rule's `note` a source other than the rule's own")
+rep("set its `source.at` to `docs/sources/README.md, note below the quote table`","set its `source.at` to the README Ref `sources-silent`")
+rep("(the amount of broken glass or lamp, a coating on a flyer, grease on only the inner paper of a pizza box)","(a coating on a flyer, grease on only the inner paper of a pizza box)")
+rep("`intro` contain the phrases `South Korea, as published by Seoul in 2025` and `vary by district`.","`tagline`, `intro` and the last `footer` line contain the phrase `Seoul's rules (2025) and the Ministry of Environment's guide (2018)`, and `intro` contain `vary by district`.")
+rep("both sources with their dates, each as a link","both sources with their dates, each as a link (the Ministry label says it is a copy hosted by Korea University)")
+rep("report no structural problem, 8 gaps (all with `kind=paper-cup`, `coated=no`, `soiled=yes`)","report no structural problem, 16 gaps (all with `kind=paper-cup`, `coated=no`, `soiled=yes`)")
+rep("8 golden items for which-bin and 8 for which-licence","9 golden items for which-bin and 8 for which-licence")
+rep("27 and 7 rows","33 and 7 rows") if "27 and 7 rows" in s else None
+s=s.rstrip('\n')+"""
+
+### Owner answers: amendment after the x-ray audit of which-bin (docs/kiro-evidence/08-x-ray-which-bin.txt)
+
+Given after `apps/which-bin/table.json` was audited against `docs/sources/README.md`. They override anything above and in the first "Owner answers" that they contradict (notably answer 4 on amounts and answer 1 on notes that cite Refs).
+
+1. Amounts. New condition `amount` ("How much is there?": `small` = a few pieces that fit wrapped in a bag, `large` = more than that), after `broken`. Broken ordinary glass: small to general waste (`seoul-2025 A2 다 (비해당)`), large to the special sack (`seoul-2025 A1 3`). Broken lamp: small to general waste, large to the special sack (`seoul-2025 A2 카, A1 9`). Special glass stays in the special sack whether broken or not; its note says the source lists these kinds without a broken/whole split. Rules `glass-broken` and `lamp-broken` become `-small` and `-large`. Now 7 conditions, 960 combinations, 33 rules.
+2. One source per rule. `glass-clean`, `can`, `pet-clear`, `plastic-bottle` take `soiled=no` and cite the Seoul row; new rules `glass-dirty`, `can-dirty`, `pet-clear-dirty`, `plastic-bottle-dirty` take `soiled=yes`, give the same outcome, cite the matching `moe-2018 FAQ p.23 (...)` row, and say "wash it as clean as you can". The engine still does not ask `soiled` for them; the "why" lists both rules. The drinking-glass sentence leaves the note: it is a hint on the `glass-type` value `ordinary`, quoting `moe-2018 FAQ p.22 (유리잔)`, the only README Ref used neither as an `at` nor in a note.
+3. `plastic-container-soiled` has `source.at` `sources-silent` (the README Ref of the silence note).
+4. Hints and details: `paper-books` hint says to take plastic-coated paper out first because it goes in the general waste bag; `glass` hint drops window glass; `cartons` detail adds the fallback (no carton bin: tie and put beside the paper); `general-waste` detail keeps only the pay-as-you-throw bag (종량제봉투), no "official", no price claim; `clear-drink` question says PET.
+5. `copy.json`: tagline, intro and last footer line say "Seoul's rules (2025) and the Ministry of Environment's guide (2018)"; the intro says rules vary by district; the Ministry footer label says it is a copy hosted by Korea University.
+6. The STRETCHED verdicts on `paper-box-clean`, `paper-box-soiled`, `paper-books-soiled`, `paper-cup-soiled` and `carton-soiled` stay; each note says which source line it extends and how.
+7. Consequences: the broken demo table has 16 gaps (the removed rule's hole is now free in `amount` too), still one hole and one conflict; golden items grow to 9 (small and large broken glass; `pet-clear-dirty` replaces `pet-clear` in the dirty-bottle item); the e2e walks changed: pizza box skips 5 questions, the shared link carries `amount=small` and shows 4 steps, the whole table has 33 rows.
+"""
+open(p,'w',encoding='utf8').write(s)
+EOF
+grep -n "27 and 7\|33 and 7" .kiro/specs/apps/requirements.md | head
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+import json,re
+p='.kiro/specs/apps/design.md'
+s=open(p,encoding='utf8').read()
+def rep(a,b,cnt=1):
+    global s
+    assert a in s, a[:60]
+    s=s.replace(a,b,cnt)
+
+rep("""## which-bin: conditions
+""","""## Amendment after the x-ray audit
+
+The owner's amendment is the last item of `requirements.md` ("Owner answers: amendment after the x-ray audit"). It supersedes the which-bin tables below where they differ: seven conditions (`amount` after `broken`), 960 combinations, 33 rules, one source per rule, `sources-silent`, the reworded hints, details and copy. The sections "which-bin: conditions", "outcomes", "rules", "combinations the sources do not cover", "Copy", "Broken demo table" and "Golden items" are updated to match. Counts in "Owner answers applied" (480, 27) are the pre-amendment ones.
+
+## which-bin: conditions
+""")
+rep("| `broken` | Is it broken? | | `no`: No. `yes`: Yes. |\n","| `broken` | Is it broken? | | `no`: No. `yes`: Yes. |\n| `amount` | How much is there? | | `small`: Small, A few pieces that fit wrapped in a bag. `large`: Large, More than that. |\n")
+rep("`ordinary`: Bottle, jar or ordinary drinking glass. `special`","`ordinary`: Bottle, jar or ordinary drinking glass, Ordinary drinking glasses and beer mugs count as ordinary glass (moe-2018 FAQ p.22 (유리잔)). `special`")
+rep("| Is the paper cup coated on both sides? | | `no`","| Is the paper cup coated on both sides? | | `no`") 
+rep("| `clear-drink` | Is it a colourless, see-through water or drink bottle? | | `no`: No, Coloured, or not a drink bottle.","| `clear-drink` | Is it a colourless, see-through PET water or drink bottle? | | `no`: No, Coloured, or not a PET drink bottle.")
+rep("| `paper-books` | Newspaper, books or flyers | Plastic-coated flyers go in the general waste bag. |","| `paper-books` | Newspaper, books or flyers | Take plastic-coated paper (a coated flyer, for example) out first: it goes in the general waste bag. The rest goes out as paper. |")
+rep("| Bottles, jars, drinking glasses, window glass |","| Bottles, jars, drinking glasses |")
+rep("The hint on `paper-books` carries the plastic-coated-flyer half of `seoul-2025 A1 2` without a rule (requirement 3.7).","The hint on `paper-books` carries the plastic-coated-flyer half of `seoul-2025 A1 2` without a rule (requirement 3.7); `A2 나` says to remove the coating and `A1 2` says where it goes, so the two lines agree.")
+rep("| `cartons` | Drink cartons | Put it in the carton-only collection bin. |","| `cartons` | Drink cartons | Put it in the carton-only collection bin. If there is no carton bin, tie the cartons together and put them out beside the paper. |")
+rep("It is the official pay-as-you-throw bag: you pay for the bag, and the price depends on its size. |","It is the pay-as-you-throw bag. |")
+
+# rules table
+start=s.index("27 rules, each `{ id, when, then, note, source: { ref, at } }`.")
+end=s.index("The README quote table has 26 rows")
+t=json.load(open('apps/which-bin/table.json',encoding='utf8'))
+rows=[]
+for r in t['rules']:
+    when=", ".join(f"{k}={v}" for k,v in r['when'].items())
+    rows.append(f"| `{r['id']}` | {when} | {r['then']} | {r['source']['at']} | {r['note']} |")
+new=("33 rules, each `{ id, when, then, note, source: { ref, at } }`. A condition missing from `when` is \"any\". `at` is the README Ref in the column; the silent rule's `at` is the Ref `sources-silent` (`ref` `seoul-2025`). One source per rule: a note never names the other source. `*-dirty` rules (`soiled=yes`) give the same outcome as their clean rule, so `decide` does not ask `soiled` for glass, cans and bottles, and the \"why\" lists both rules. Notes on rules that extend a line (`paper-box-*`, `paper-books-soiled`, `paper-cup-soiled`, `carton-soiled`, `plastic-bottle-dirty`) say which line they extend and how.\n\n| Rule id | when | then | at | note |\n| --- | --- | --- | --- | --- |\n"+"\n".join(rows)+"\n\n")
+s=s[:start]+new+s[end:]
+rep("The README quote table has 26 rows and 26 distinct Refs. The rules use 22 as `at`; the other four (`moe-2018 FAQ p.22 (유리잔)` and the three `moe-2018 FAQ p.23` Refs) are quoted verbatim in the `note` of the rule they widen. The test checks both: every `at` is a README Ref, and every README Ref is an `at` or appears in a note.","The README quote table has 26 rows and 26 distinct Refs. The rules use 25 as `at` (the three `moe-2018 FAQ p.23` Refs are now the `at` of the dirty rules); the last, `moe-2018 FAQ p.22 (유리잔)`, is quoted in the `glass-type` value hint. The test checks: every `at` (except `sources-silent`) is a README Ref, every README Ref is an `at` or appears in a hint, and no note names the other source.")
+rep("`6 conditions, 480 combinations, 27 rules`, 0 gaps, 0 conflicts, all 13 outcomes used. 16 combinations end in `ask-district` (`plastic-container-soiled`: the other four conditions free).","`7 conditions, 960 combinations, 33 rules`, 0 gaps, 0 conflicts, all 13 outcomes used. 32 combinations end in `ask-district` (`plastic-container-soiled`: the other five conditions free).")
+rep("`kind=plastic-container`, `soiled=yes` (16 combinations). The rule cites the README note.","`kind=plastic-container`, `soiled=yes` (32 combinations). The rule cites the README Ref `sources-silent`.")
+rep("| P1 | `seoul-2025 A1 3`, broken glass | small amount: general bag; large amount: special sack | `glass-broken` goes to general waste; the note gives the large-amount case |\n| P2 | `seoul-2025 A2 카, A1 9`, broken lamp | same | `lamp-broken` goes to general waste; the note gives the large-amount case |\n","| P1 | `seoul-2025 A1 3`, broken glass | (resolved: condition `amount`) | `glass-broken-small` to general waste, `glass-broken-large` to the special sack |\n| P2 | `seoul-2025 A2 카, A1 9`, broken lamp | (resolved: condition `amount`) | `lamp-broken-small`, `lamp-broken-large` |\n")
+rep("| P4 | `seoul-2025 A1 2` against `A2 나`, plastic-coated flyers | `coated` is defined for paper cups only | `paper-books` rules ignore coating; a sentence in the `paper-books` hint |","| P4 | `seoul-2025 A1 2` and `A2 나`, plastic-coated flyers | `coated` is defined for paper cups only | `paper-books` rules ignore coating; the `paper-books` hint says to take the coated paper out first |")
+# copy
+rep("""  "tagline": "Where does it go? Sorting household rubbish and recycling in South Korea, in plain English.",
+  "intro": "Pick what the item is and answer a few quick questions. The answer follows the separate-discharge rules for South Korea, as published by Seoul in 2025. Rules vary by district, so your own district office has the last word.",
+  "answerStyle": "tiles",""","""  "tagline": "Where does it go? Household rubbish and recycling in plain English, following Seoul's rules (2025) and the Ministry of Environment's guide (2018).",
+  "intro": "Pick what the item is and answer a few quick questions. The answer follows Seoul's rules (2025) and the Ministry of Environment's guide (2018). Rules vary by district, so your own district office has the last word.",
+  "answerStyle": "tiles",""")
+rep("(PDF, 2018-08-30)\", \"href\": \"https://sustainability.korea.ac.kr","(PDF, 2018-08-30; a copy hosted by Korea University)\", \"href\": \"https://sustainability.korea.ac.kr")
+rep("\"These are the rules for South Korea as published by Seoul. They vary by district","\"These answers follow Seoul's rules (2025) and the Ministry of Environment's guide (2018). They vary by district")
+# broken demo
+rep("- the rule `paper-cup-soiled` removed: 8 gaps, `kind=paper-cup, coated=no, soiled=yes`, with `broken`, `glass-type` and `clear-drink` free;","- the rule `paper-cup-soiled` removed: 16 gaps, `kind=paper-cup, coated=no, soiled=yes`, with `broken`, `amount`, `glass-type` and `clear-drink` free;")
+rep("**The demo shows `gaps: 8`, not 1.** A rule covers a block of combinations. The removed rule `paper-cup-soiled` names `kind`, `coated` and `soiled`; the 8 combinations it covered differ only in `broken`, `glass-type` and `clear-drink`, so it is one hole with eight example combinations.","**The demo shows `gaps: 16`, not 1.** A rule covers a block of combinations. The removed rule `paper-cup-soiled` names `kind`, `coated` and `soiled`; the 16 combinations it covered differ only in `broken`, `amount`, `glass-type` and `clear-drink`, so it is one hole with sixteen example combinations (8 before the `amount` condition).")
+# golden
+rep("| 4 | Broken drinking glass | kind=glass, glass-type=ordinary, broken=yes | general-waste | `glass-broken` | seoul-2025 A2 다 (비해당) | 3 |","| 4 | Broken drinking glass, a few pieces | kind=glass, glass-type=ordinary, broken=yes, amount=small | general-waste | `glass-broken-small` | seoul-2025 A2 다 (비해당) | 4 |")
+rep("| 5 | Insulated delivery box |","| 9 | Broken drinking glass, a large amount | kind=glass, glass-type=ordinary, broken=yes, amount=large | special-sack | `glass-broken-large` | seoul-2025 A1 3 | 3 |\n| 5 | Insulated delivery box |")
+rep("| 6 | Dirty clear water bottle (soiled does not matter) | kind=plastic-bottle, clear-drink=yes, soiled=yes | clear-pet | `pet-clear` | seoul-2025 A2 마 | 2 |","| 6 | Dirty clear water bottle (soiled does not matter) | kind=plastic-bottle, clear-drink=yes, soiled=yes | clear-pet | `pet-clear-dirty` | moe-2018 FAQ p.23 (페트병 이물질) | 2 |")
+rep("| docs/sources/README.md, note below the quote table | 2 |","| sources-silent | 2 |")
+rep("(Item 5 replaces","(Item 9 is the large-amount case: `glass-type` is never asked, because large broken glass of either type goes in the special sack, so the walk is 3. Without `soiled`, the \"why\" for a can, glass or bottle lists the clean and the dirty rule. Item 5 replaces")
+rep("- `which-bin table`\n  - validates and checks with the pinned counts and no warning (2.3, 2.5, 2.6).\n  - golden items, `it.each` over the 8 rows","- `which-bin table`\n  - validates and checks with the pinned counts and no warning (2.3, 2.5, 2.6).\n  - golden items, `it.each` over the 9 rows")
+rep("every rule except `plastic-container-soiled` has an `at` that is a README Ref beginning with its `ref`; every README Ref is some rule's `at` or appears verbatim in some rule's `note`;","every rule except `plastic-container-soiled` has an `at` that is a README Ref beginning with its `ref`; every README Ref is some rule's `at` or appears verbatim in a value `hint`; no note names the other source; the four dirty rules cite `moe-2018 FAQ p.23`;")
+rep("`which-bin broken example`: equals the which-bin table minus `paper-cup-soiled` plus `receipt-as-paper` (compared as objects); `check` gives 8 gaps","`which-bin broken example`: equals the which-bin table minus `paper-cup-soiled` plus `receipt-as-paper` (compared as objects); `check` gives 16 gaps")
+rep("the table named by `table.title` has 27 body rows","the table named by `table.title` has 33 body rows")
+rep("the skipped list has 4 entries |","the skipped list has 5 entries |")
+rep("`which-bin/#kind=glass&glass-type=ordinary&broken=yes`: result `General waste bag` shown with no interaction, focus on its heading, 3 steps.","`which-bin/#kind=glass&glass-type=ordinary&broken=yes&amount=small`: result `General waste bag` shown with no interaction, focus on its heading, 4 steps.")
+rep("(2 and 3 questions, 27 and 7 rows)","(2 and 3 questions, 33 and 7 rows)")
+open(p,'w',encoding='utf8').write(s)
+EOF
+grep -n "27 rules\|8 gaps\|480" .kiro/specs/apps/design.md | cut -c1-160
+    36:The owner's answers are at the end of `requirements.md`. They changed this design as follows: `soiled` no longer matters for glass, cans and plastic bottles 
+    40:The owner's amendment is the last item of `requirements.md` ("Owner answers: amendment after the x-ray audit"). It supersedes the which-bin tables below wher
+    exit 0
+
+The golden table has item 9 sitting before item 5. I'll move it to the end.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='.kiro/specs/apps/design.md'
+s=open(p,encoding='utf8').read()
+line=[l for l in s.split('\n') if l.startswith('| 9 | Broken drinking glass, a large amount')][0]
+s=s.replace(line+'\n','',1)
+b=[l for l in s.split('\n') if l.startswith('| 8 | Battery')][0]
+s=s.replace(b,b+'\n'+line,1)
+open(p,'w',encoding='utf8').write(s)
+EOF
+grep -n "^| [0-9] | " .kiro/specs/apps/design.md | cut -c1-70 | head -12
+npm run bones -- check apps/which-bin/table.json && npm run typecheck 2>&1 | tail -2 && npm test 2>&1 | grep -E "Test Files|Tests " ; npm run test:e2e 2>&1 | tail -25
+    … (17 earlier lines not shown)
+    ok: 7 conditions, 960 combinations, 33 rules
+    > tsc --noEmit
+    
+     Test Files  11 passed (11)
+          Tests  93 passed (93)
+    > test:e2e
+    > npm run build && playwright test
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 12 tests using 6 workers
+    
+      ✓   3 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (508ms)
+      ✓   4 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (648ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (166ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (132ms)
+      ✓   9 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (200ms)
+      ✓  10 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (176ms)
+      ✓  11 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (205ms)
+      ✓  12 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (243ms)
+      ✓   5 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.3s)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.3s)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.4s)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.5s)
+    
+      12 passed (2.2s)
+    exit 0
+
+All five changes are in `apps/which-bin/`. Every command in your Verify line passed. I haven't opened the rebuilt page in a browser to look at the new `amount` question and hints.
+
+```
+$ npm run bones -- check apps/which-bin/table.json
+gaps: 0
+ok: 7 conditions, 960 combinations, 33 rules
+$ npm run typecheck        → exit 0
+$ npm test                 → Test Files  11 passed (11) / Tests  93 passed (93)
+$ npm run test:e2e         → 12 passed (2.2s)
+```
+
+I wrote the updated tests first and saw them fail. The demo table `skeleton/examples/which-bin-broken.table.json` is regenerated from the new table and still has exactly its two defects (`paper-cup-soiled` removed, `receipt-as-paper` added).
+
+Amounts (item 1):
+- `glass-broken` and `lamp-broken` each became a `-small` and a `-large` rule.
+- Special glass still goes to the special sack, with the "no broken/whole split" sentence in its note.
+
+One source per rule (item 2):
+- `glass-clean`, `can`, `pet-clear` and `plastic-bottle` now take `soiled=no`.
+- The new `glass-dirty`, `can-dirty`, `pet-clear-dirty` and `plastic-bottle-dirty` take `soiled=yes` and cite the matching `moe-2018 FAQ p.23` row.
+- `soiled` is still not asked for these items, and the "why" lists both rules. A test checks that.
+
+The other items:
+- `plastic-container-soiled` now cites `sources-silent`.
+- Hints, details and the `clear-drink` question are as you specified.
+- `copy.json` is updated, and the Ministry footer link says it is a copy hosted by Korea University.
+- The STRETCHED notes now say which source line they extend and how.
+
+Things that moved beyond what you listed:
+- **Large broken glass:** it needs only 3 questions, not 4, because `glass-type` doesn't matter once the amount is large. I first expected 4, and the engine's 3 is correct.
+- **Broken demo:** its gaps rose from 8 to 16. That is still one hole, now also free in `amount`.
+- **Spec numbers:** the requirements amendment sets the golden items to 9 and the e2e walks to 5 skipped questions, 4 steps in the shared link, and 33 table rows.
+- **`moe-2018 FAQ p.22 (유리잔)`:** this Ref is now used only in the `glass-type` `ordinary` hint, so the traceability test accepts a Ref in a value hint.
+
+One thing for you to decide: the `moe-2018 FAQ p.23` row for plastic bottles says to put the bottle out as PET. `plastic-bottle-dirty` applies it to bottles that aren't colourless drink bottles and keeps them in `plastics`. The note says so plainly, but it is another stretch of a source line. Say if you'd rather route that case to `ask-district`.
+
+I did not check the README's quotes against the original Korean sources.
+
+Files changed:
+- `apps/which-bin/table.json`
+- `apps/which-bin/copy.json`
+- `skeleton/examples/which-bin-broken.table.json`
+- `test/apps.test.ts`
+- `e2e/walk.spec.ts`
+- `e2e/table.spec.ts`
+- `e2e/link.spec.ts`
+- `.kiro/specs/apps/requirements.md`
+- `.kiro/specs/apps/design.md`
+
+I left `.kiro/specs/apps/tasks.md` alone, and I did not stage or commit anything.
+
+--- run success (end_turn); credits reported by this session: 6.43 ---
+--- exit 0; account credit meter before 3465.89, after 3472.48 (shared account) ---

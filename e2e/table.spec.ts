@@ -20,7 +20,7 @@ async function checkTable(page: Page, name: AppName, rows: number, ruleId: strin
 }
 
 test('which-bin: whole table', async ({ page }) => {
-  await checkTable(page, 'which-bin', 27, 'receipt');
+  await checkTable(page, 'which-bin', 33, 'receipt');
 });
 
 test('which-licence: whole table', async ({ page }) => {
