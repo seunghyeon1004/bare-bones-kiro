@@ -5,12 +5,19 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest --run",
-    "test:props": "vitest --run test/props"
+    "test:props": "vitest --run test/props",
+    "build": "tsx skeleton/build/build.ts",
+    "bones": "tsx skeleton/cli/bones.ts",
+    "mcp": "tsx skeleton/mcp/server.ts"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
     "fast-check": "4.10.2",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "vitest": "5.1.0"
+    "vitest": "5.1.0",
+    "zod": "4.6.7"
   }
 }

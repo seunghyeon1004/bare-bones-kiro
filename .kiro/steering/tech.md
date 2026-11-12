@@ -20,6 +20,7 @@ inclusion: always
 | @axe-core/playwright | 4.14.0 |
 | @modelcontextprotocol/sdk | 1.32.2 |
 | zod | 4.6.7 |
+| @types/node | 22.20.5 (owner, added for the shell-and-cli spec) |
 
 No other package is added without the user's say-so.
 
@@ -32,6 +33,7 @@ No other package is added without the user's say-so.
 | `test:props` | `vitest --run test/props` (fast-check properties only) |
 | `test:e2e` | `playwright test` over `e2e/` (builds first) |
 | `build` | `tsx skeleton/build/build.ts`: checks every table under `apps/`, then writes `dist/` |
+| `mcp` | `tsx skeleton/mcp/server.ts`, the dev-only stdio MCP server |
 | `bones` | `tsx skeleton/cli/bones.ts`, used as `npm run bones -- check <table.json>` and `-- new <name>` |
 
 ## Rules for Kiro

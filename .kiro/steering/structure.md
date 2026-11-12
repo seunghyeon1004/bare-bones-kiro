@@ -22,7 +22,7 @@ docs/               brief, sources, evidence
 ## Dependency direction
 
 - `engine` imports nothing (no Node built-ins, no packages, no other skeleton folder).
-- `shell`, `build`, `cli`, `mcp` import `engine`. They do not import each other.
+- `shell`, `build`, `cli`, `mcp` import `engine`. They do not import each other, with one exception: `build` may `import type` the `Copy` type from `shell` (owner decision, shell-and-cli spec).
 - `apps/` contains no code. `test/` and `e2e/` may import anything.
 - `examples/` tables are never built into `dist/`.
 

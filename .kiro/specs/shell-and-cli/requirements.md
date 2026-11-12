@@ -10,7 +10,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 - **Step**: one answer given by the user, `{ condition, value }`. The page keeps an ordered list of steps. The engine's `Answers` object is built from it.
 - **Hash**: the URL fragment that stores the steps, `#condition=value&condition=value`, in the order the steps were given.
 - **Ignored entry**: a hash entry that is not a pair, names a condition or value not in the table, or repeats a condition already taken.
-- **Contract properties**: the twelve CSS custom properties of requirement 3.
+- **Contract properties**: the thirteen CSS custom properties of requirement 3.
 - **Data block**: a `<script type="application/json">` element holding JSON the page reads at start.
 
 ## Requirement 1: Repo tooling
@@ -23,7 +23,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 1.3 WHEN `npm run typecheck` runs THE SYSTEM SHALL pass with `strict: true` and the engine spec's other flags unchanged, with the `DOM` lib and the `node` types added.
 
-1.4 WHERE a file is in `skeleton/shell/`, `skeleton/build/`, `skeleton/cli/` or `skeleton/mcp/` THE SYSTEM SHALL import from the engine only through `skeleton/engine/index.ts` and from no other of those four folders. Packages are allowed only in `build` (`esbuild`) and `mcp` (`@modelcontextprotocol/sdk`, `zod`); Node built-ins only in `build`, `cli` and `mcp`.
+1.4 WHERE a file is in `skeleton/shell/`, `skeleton/build/`, `skeleton/cli/` or `skeleton/mcp/` THE SYSTEM SHALL import from the engine only through `skeleton/engine/index.ts` and from no other of those four folders. Packages are allowed only in `build` (`esbuild`) and `mcp` (`@modelcontextprotocol/sdk`, `zod`); Node built-ins only in `build`, `cli` and `mcp`. The one exception to the folder rule: `build` may `import type` the `Copy` type from `skeleton/shell/copy-type.ts` (no value import from `shell`).
 
 ## Requirement 2: copy.json format
 
@@ -33,7 +33,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 2.2 WHEN `copy.json` is validated THE SYSTEM SHALL require `title`, `tagline`, `intro` and `resultLead` to be non-empty strings (after trimming) and `answerStyle` to be `"tiles"` or `"list"`.
 
-2.3 WHEN `copy.json` is validated THE SYSTEM SHALL require `labels` to be an object with exactly these keys, each a non-empty string: `startOver`, `change`, `why`, `rule`, `whatMattered`, `source`, `published`, `readOn`, `notAsked`, `copyLink`, `linkCopied`, `showTable`, `hideTable`, `any`, `outcome`, `yourAnswers`, `questionOf`, `badLink`.
+2.3 WHEN `copy.json` is validated THE SYSTEM SHALL require `labels` to be an object with exactly these keys, each a non-empty string: `startOver`, `change`, `why`, `rule`, `whatMattered`, `source`, `published`, `readOn`, `notAsked`, `copyLink`, `linkCopied`, `showTable`, `hideTable`, `any`, `outcome`, `yourAnswers`, `noscript`, `questionOf`, `badLink`.
 
 2.4 WHEN `copy.json` is validated THE SYSTEM SHALL require `labels.questionOf` to contain `{n}` and `{max}`, and `labels.badLink` to contain `{count}`.
 
@@ -47,13 +47,13 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 **User story:** As an app author, I want a theme file that can restyle colours and fonts and cannot change layout logic.
 
-3.1 THE SYSTEM SHALL define the contract properties as `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--accent-text`, `--border`, `--focus` (colours), `--font-body`, `--font-heading` (font stacks), `--radius` and `--space` (one spacing unit).
+3.1 THE SYSTEM SHALL define the contract properties as `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--accent-text`, `--border`, `--focus` (colours), `--font-body`, `--font-heading` (font stacks), `--radius`, `--space` (one spacing unit) and `--font-size` (the base font size; `shell.css` sets it as the root font size).
 
 3.2 WHEN `theme.css` is validated (comments removed) THE SYSTEM SHALL accept as a rule prelude only `:root` and `@media (prefers-color-scheme: dark)` (whitespace-insensitive), and SHALL report any other prelude as `theme.css: selector "<text>" is not allowed`.
 
 3.3 WHEN `theme.css` is validated THE SYSTEM SHALL require every declaration to be a custom property whose name is a contract property, and SHALL reject a value containing `url(`.
 
-3.4 WHEN `theme.css` is validated THE SYSTEM SHALL require all twelve contract properties in the top-level `:root` rule, and the eight colour properties in the `:root` rule inside the dark media block.
+3.4 WHEN `theme.css` is validated THE SYSTEM SHALL require all thirteen contract properties in the top-level `:root` rule, and the eight colour properties in the `:root` rule inside the dark media block.
 
 3.5 THE SYSTEM SHALL write the shell's own CSS (`shell.css`) using only `var(--<contract property>)` for colour, font, radius and spacing values: no colour literal (`#`, `rgb(`, `hsl(`), no `var()` of another name.
 
@@ -65,7 +65,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 4.2 WHEN the build writes a data block THE SYSTEM SHALL write `JSON.stringify` of the value with `<`, `>`, `&`, U+2028 and U+2029 replaced by `\u003c`, `\u003e`, `\u0026`, `\u2028`, `\u2029`, so that the block's text contains none of those five characters and parses to the original value.
 
-4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks. The page sets `document.title` from `copy.title` at start.
+4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks, except one static block `<div id="boot">` holding `copy.title` (as `h1`), `copy.tagline`, `copy.intro` and `copy.labels.noscript`, HTML-escaped, so the page is not blank without JavaScript. The script removes the block at start and renders its own `h1`. The page sets `document.title` from `copy.title` at start.
 
 4.4 THE SYSTEM SHALL include in each page a `<meta http-equiv="Content-Security-Policy">` with `default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'`, and SHALL use no inline event handler, no inline `<script>` with code, no `style` attribute and no `javascript:` URL in the HTML template or the shell.
 
@@ -159,7 +159,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 **User story:** As a visitor, I want one page that lists the apps.
 
-10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html` with `app.js`, `shell.css` and `theme.css` beside it, built as in 4.1 to 4.7 with data blocks `data-landing` (`skeleton/shell/landing.json`) and `data-apps` (a list of `{ id, title, tagline }` in folder-name order).
+10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html` (with a static block `<div id="boot">` holding `landing.title` as `h1`, `landing.tagline` and one link per app) with `app.js`, `shell.css` and `theme.css` beside it, built as in 4.1 to 4.7 with data blocks `data-landing` (`skeleton/shell/landing.json`) and `data-apps` (a list of `{ id, title, tagline }` in folder-name order).
 
 10.2 WHEN the landing page renders THE SYSTEM SHALL show one `h1` (`landing.title`), `landing.tagline`, one list item per app with a link to `./<id>/` whose text is the app's `title` and the app's `tagline`, and `landing.footer` as in 2.5.
 
@@ -177,7 +177,7 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 
 11.3 WHEN an app folder is processed THE SYSTEM SHALL require that it contains exactly `table.json`, `copy.json` and `theme.css`, that the folder name matches the id pattern and equals the table's `id`, and SHALL report each violation as `<dir>: <message>`.
 
-11.4 WHEN an app folder is processed THE SYSTEM SHALL run `bones check` on its `table.json` as a separate process, and IF the exit code is not 0 THEN THE SYSTEM SHALL report the command's output unchanged under the heading `<path>/table.json`.
+11.4 WHEN an app folder is processed THE SYSTEM SHALL check its `table.json` in process with the engine and the engine's report formatter (the same text `bones check` prints), and IF the table does not pass THEN THE SYSTEM SHALL report that text under the heading `== <path>/table.json ==`. The build does not spawn the CLI.
 
 11.5 WHEN an app folder is processed THE SYSTEM SHALL validate `copy.json` (requirement 2) and `theme.css` (requirement 3), and SHALL reject a table whose `sources[].url` does not start with `http://` or `https://`.
 
@@ -250,3 +250,16 @@ Out of scope: any file under `apps/` (the `apps` spec), Playwright and axe tests
 16.1 WHEN a table of 100,000 combinations (five conditions of ten values) with 200 rules, each naming five conditions, is given to `decide` with no answers THE SYSTEM SHALL return in at most 1,000 ms (median of five runs, in Node, on the development machine), and the measured time SHALL be recorded in the task report.
 
 16.2 IF 16.1 is not met THEN the task SHALL stop and report the number to the owner, and SHALL NOT add a cache or change the engine.
+
+## Owner answers
+
+Given after the spec session; they override anything above that they contradict, and the body above has been adjusted to match.
+
+1. Shared pieces. The check report formatter lives in `skeleton/engine/format.ts` (pure, no imports outside the engine, exported from `index.ts`) and is used by the CLI and the build. The build does not spawn the CLI. The build may `import type` from `skeleton/shell` (the `Copy` type) and nothing else; value imports from `shell` into `build` stay forbidden. There is one `Copy` type, in `skeleton/shell/copy-type.ts`.
+2. Labels `published`, `outcome`, `yourAnswers` accepted. New label `noscript` (19 labels). The build writes `copy.title` (as `h1`), `tagline`, `intro` and `labels.noscript` into the static HTML (4.3), so the page is not blank without JavaScript.
+3. Dark colours are required in every `theme.css`.
+4. Accepted: the CSP meta tag, http(s)-only links, unknown `copy.json` keys are errors, `new` sets the table title.
+5. No jsdom. Browser behaviour is tested in the `apps` spec.
+6. Confirmed: invalid JSON exits 1; the table view scrolls in its own region; tiles show hints.
+7. The theme contract gains `--font-size` (13 properties; the dark block stays at 8 colours). The owner's `--heading-font` is taken to be the existing `--font-heading` (the `apps` spec uses that name); no second heading property is added. Heading weight is set by `shell.css`, not by the theme, so the stack is weight-free.
+8. `@types/node` stays pinned at 22.20.5.

@@ -1,0 +1,229 @@
+/* Written against the theme contract only: colours, fonts, radius, spacing and base size all come from var(--…). */
+
+html {
+  font-size: var(--font-size);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+}
+
+.page {
+  box-sizing: border-box;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: calc(var(--space) * 2);
+  overflow-wrap: anywhere;
+}
+
+.tagline,
+.meta,
+.hint,
+.progress {
+  color: var(--muted);
+}
+
+.plain {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input {
+  font: inherit;
+  color: var(--text);
+}
+
+button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+button:hover,
+button:focus-visible {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+button:hover .hint,
+button:focus-visible .hint {
+  color: var(--accent-text);
+}
+
+button.small {
+  padding: calc(var(--space) / 2) var(--space);
+}
+
+input {
+  box-sizing: border-box;
+  min-height: 44px;
+  max-width: 100%;
+  margin-top: var(--space);
+  padding: calc(var(--space) / 2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+.choice .label {
+  display: block;
+  font-weight: bold;
+}
+
+.choice .hint {
+  display: block;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.notice {
+  padding: var(--space);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.steps ol {
+  padding-left: calc(var(--space) * 2);
+}
+
+.steps li {
+  margin-bottom: calc(var(--space) / 2);
+}
+
+.why,
+.skipped {
+  margin-top: calc(var(--space) * 2);
+}
+
+.source {
+  margin-bottom: var(--space);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+  margin-top: calc(var(--space) * 2);
+}
+
+.table-section {
+  margin-top: calc(var(--space) * 2);
+}
+
+.table-region {
+  margin-top: var(--space);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+caption {
+  padding: var(--space);
+  text-align: left;
+  font-family: var(--font-heading);
+  font-weight: bold;
+}
+
+th,
+td {
+  padding: calc(var(--space) / 2) var(--space);
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+}
+
+.footer {
+  margin-top: calc(var(--space) * 3);
+  color: var(--muted);
+  font-size: 0.875em;
+}
+
+.apps {
+  padding: 0;
+  list-style: none;
+}
+
+.apps li {
+  margin-bottom: calc(var(--space) * 2);
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

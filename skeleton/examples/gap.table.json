@@ -1,0 +1,99 @@
+{
+  "id": "gap-example",
+  "title": "Gap example",
+  "conditions": [
+    {
+      "id": "size",
+      "question": "How big is it?",
+      "values": [
+        {
+          "id": "small",
+          "label": "Small"
+        },
+        {
+          "id": "large",
+          "label": "Large",
+          "hint": "Bigger than a shoebox"
+        }
+      ]
+    },
+    {
+      "id": "wet",
+      "question": "Is it wet?",
+      "values": [
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "yes",
+          "label": "Yes"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "tray-a",
+      "label": "Tray A",
+      "detail": "Use tray A."
+    },
+    {
+      "id": "tray-b",
+      "label": "Tray B",
+      "detail": "Use tray B."
+    },
+    {
+      "id": "tray-c",
+      "label": "Tray C",
+      "detail": "Use tray C."
+    }
+  ],
+  "rules": [
+    {
+      "id": "small-dry",
+      "when": {
+        "size": "small",
+        "wet": "no"
+      },
+      "then": "tray-a",
+      "source": {
+        "ref": "example-source",
+        "at": "row 1"
+      }
+    },
+    {
+      "id": "small-wet",
+      "when": {
+        "size": "small",
+        "wet": "yes"
+      },
+      "then": "tray-b",
+      "source": {
+        "ref": "example-source",
+        "at": "row 2"
+      }
+    },
+    {
+      "id": "large-dry",
+      "when": {
+        "size": "large",
+        "wet": "no"
+      },
+      "then": "tray-c",
+      "source": {
+        "ref": "example-source",
+        "at": "row 3"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "example-source",
+      "title": "Example source",
+      "url": "https://example.com/",
+      "published": "unknown",
+      "read": "2026-11-12"
+    }
+  ]
+}

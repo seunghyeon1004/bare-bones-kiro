@@ -1,0 +1,31 @@
+{
+  "title": "Which tray?",
+  "tagline": "Answer a few questions to find the right tray.",
+  "intro": "Answer the questions one at a time. The answer shows which rule it came from.",
+  "answerStyle": "tiles",
+  "labels": {
+    "startOver": "Start over",
+    "change": "Change",
+    "why": "Why this answer",
+    "rule": "Rule",
+    "whatMattered": "What mattered",
+    "source": "Source",
+    "published": "Published",
+    "readOn": "Read on",
+    "notAsked": "Questions that did not matter",
+    "copyLink": "Copy link to this answer",
+    "linkCopied": "Link copied",
+    "showTable": "Show all rules",
+    "hideTable": "Hide all rules",
+    "any": "any",
+    "outcome": "Answer",
+    "yourAnswers": "Your answers",
+    "noscript": "This page needs JavaScript to ask the questions.",
+    "questionOf": "Question {n} of at most {max}",
+    "badLink": "{count} part(s) of the link were not understood and were ignored."
+  },
+  "resultLead": "Put it in",
+  "footer": [
+    { "text": "Made with Bare Bones." }
+  ]
+}

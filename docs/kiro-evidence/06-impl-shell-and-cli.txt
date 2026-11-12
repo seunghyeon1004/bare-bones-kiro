@@ -1,0 +1,2229 @@
+# Kiro CLI 3.2.1, 2026-11-12T05:08:22Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --agent bonesetter --trust-all-tools --trust-workspace --model auto "$(cat docs/kiro-evidence/prompts/06-impl-shell-and-cli.md)"
+
+--- prompt ---
+Implement the spec in .kiro/specs/shell-and-cli/: tasks 1 to 8, in order. Read requirements.md, design.md and tasks.md fully first, the steering, and the engine code in skeleton/engine/ (done and tested; do not change its behaviour).
+
+Owner answers to your spec session. Record them first in a short "Owner answers" section at the end of requirements.md and adjust design.md and tasks.md where they change something:
+1. Shared pieces: move the check report formatter to skeleton/engine/format.ts (pure, no imports outside the engine, exported from index.ts) and use it from both the CLI and the build; the build does not spawn the CLI. The build may `import type` from skeleton/shell (the Copy type) and nothing else from it; change the task 8 grep so it still forbids value imports from shell into build.
+2. Extra labels `published`, `outcome`, `yourAnswers` accepted. Add `noscript`: the build writes the copy title (as the h1), tagline, intro and `labels.noscript` into the static HTML, so the page is not blank without JavaScript; the script takes over from there.
+3. Dark colours are required in every theme.css.
+4. Additions accepted: the CSP meta tag, http(s)-only links, unknown copy.json keys are errors, `new` sets the table title.
+5. No jsdom. Browser behaviour is tested in the apps spec.
+6. Behaviours confirmed: invalid JSON exits 1; table view scrolls in its own region; tiles show hints.
+7. New, from the apps spec session: add `--font-size` (base font size, used as the root font size) and `--heading-font` weight-free stack to the theme contract, so a theme can set larger type.
+8. @types/node is pinned as you found it.
+
+Tasks 3 and 4 may be done together. Task 7 (timing decide on a 100,000-combination table) must report the measured time; if it is over 1,000 ms on the first call, say so and stop there, do not add a cache.
+
+npm install is allowed (network for npm only). Work one task at a time; after each, run its Verify command and only then tick it, quoting the result line. Never weaken a check. Do not stage, commit or push. Do not create anything under apps/.
+
+End with the real output of `npm run typecheck && npm test` (last 15 lines), `npm run bones -- check skeleton/examples/gap.table.json` and `npm run bones -- check skeleton/examples/conflict.table.json` (full output), the files you created, and anything left open.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the spec files and the steering.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:execute] $ cat package.json tsconfig.json vitest.config.ts .gitignore; ls skeleton/engine test test/props scripts docs docs/sources; wc -l skeleton/engine/*.ts; cat skeleton/engine/index.ts; cat .kiro/specs/engine/tasks.md | grep -n "\[ \]"; ls .kiro .kiro/hooks 2>/dev/null
+    … (73 earlier lines not shown)
+    decide.test.ts
+    props
+    tables.ts
+    validate.test.ts
+    
+    test/props:
+    check.props.test.ts
+    decide.props.test.ts
+    generators.ts
+    oracle.ts
+    purity.props.test.ts
+          80 skeleton/engine/check.ts
+         185 skeleton/engine/decide.ts
+           4 skeleton/engine/index.ts
+         113 skeleton/engine/space.ts
+          75 skeleton/engine/types.ts
+         221 skeleton/engine/validate.ts
+         678 total
+    export * from './types.ts';
+    export { validate } from './validate.ts';
+    export { check } from './check.ts';
+    export { decide, evaluate } from './decide.ts';
+    .kiro:
+    agents
+    hooks
+    specs
+    steering
+    
+    .kiro/hooks:
+    check-table-on-save.json
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/engine/types.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/engine/check.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/engine/validate.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/props/generators.ts
+[tool:execute] $ cat .kiro/hooks/check-table-on-save.json; ls .kiro/specs .kiro/specs/*; sed -n 1,60p skeleton/engine/decide.ts
+    … (61 earlier lines not shown)
+      }
+      if (errors.length > 0) {
+        errors.sort((a, b) => (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0));
+        return { status: 'error', errors: errors.map(({ kind, path, message }) => ({ kind, path, message })) };
+      }
+    
+      // 2. Candidate rules: those accepting every answered value, with only their free tests left.
+      interface Candidate { index: number; rule: CompiledRule; freeTests: CompiledRule['tests'] }
+      const candidates: Candidate[] = [];
+      space.rules.forEach((rule, index) => {
+        for (const t of rule.tests) {
+          const f = fixed[t.c] ?? -1;
+          if (f >= 0 && t.allowed[f] !== 1) return;
+        }
+        candidates.push({ index, rule, freeTests: rule.tests.filter((t) => (fixed[t.c] ?? -1) < 0) });
+      });
+    
+      // 3. Enumerate the consistent combinations (product of the free conditions).
+      const free: number[] = [];
+      for (let c = 0; c < nCond; c++) if ((fixed[c] ?? -1) < 0) free.push(c);
+      const freeStride: number[] = new Array<number>(free.length).fill(1);
+      let m = 1;
+      for (let k = free.length - 1; k >= 0; k--) {
+        freeStride[k] = m;
+        m *= sizes[free[k] ?? 0] ?? 1;
+      }
+      const digits: number[] = fixed.map((f) => Math.max(f, 0));
+      const out = new Int32Array(m);
+      const describe = (): string => {
+        const combo: Combination = Object.fromEntries(space.conditionIds.map((id, c) => [id, space.valueIds[c]?.[digits[c] ?? 0] ?? '']));
+    exit 0
+[tool:execute] $ ls scripts/hooks; cat scripts/hooks/*.sh | head -60; ls node_modules | head -50; ls node_modules/@types 2>/dev/null; npm view @types/node@22.20.5 version 2>&1 | tail -2
+    … (56 earlier lines not shown)
+    es-module-lexer
+    esbuild
+    estree-walker
+    expect-type
+    fast-check
+    fdir
+    lightningcss
+    lightningcss-darwin-arm64
+    magic-string
+    nanoid
+    obug
+    picocolors
+    picomatch
+    postcss
+    pure-rand
+    rolldown
+    source-map-js
+    std-env
+    tinybench
+    tinyexec
+    tinyglobby
+    tsx
+    typescript
+    vite
+    vitest
+    why-is-node-running
+    chai
+    deep-eql
+    estree
+    22.20.5
+    exit 0
+[tool:search] Grep Search
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+import re
+p='requirements.md'
+s=open(p).read()
+def rep(a,b,cnt=1):
+    global s
+    assert s.count(a)>=1,a
+    s=s.replace(a,b)
+rep("Node built-ins only in `build`, `cli` and `mcp`.","Node built-ins only in `build`, `cli` and `mcp`. The one exception to the folder rule: `build` may `import type` the `Copy` type from `skeleton/shell/copy-type.ts` (no value import from `shell`).")
+rep("`outcome`, `yourAnswers`, `questionOf`, `badLink`.","`outcome`, `yourAnswers`, `noscript`, `questionOf`, `badLink`.")
+rep("the twelve contract properties of requirement 3","the thirteen contract properties of requirement 3")
+rep("`--radius` and `--space` (one spacing unit).","`--radius`, `--space` (one spacing unit) and `--font-size` (the base font size; `shell.css` sets it as the root font size).")
+rep("all twelve contract properties in the top-level `:root` rule","all thirteen contract properties in the top-level `:root` rule")
+rep("4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks. The page sets `document.title` from `copy.title` at start.","4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks, except one static block `<div id=\"boot\">` holding `copy.title` (as `h1`), `copy.tagline`, `copy.intro` and `copy.labels.noscript`, HTML-escaped, so the page is not blank without JavaScript. The script removes the block at start and renders its own `h1`. The page sets `document.title` from `copy.title` at start.")
+rep("11.4 WHEN an app folder is processed THE SYSTEM SHALL run `bones check` on its `table.json` as a separate process, and IF the exit code is not 0 THEN THE SYSTEM SHALL report the command's output unchanged under the heading `<path>/table.json`.","11.4 WHEN an app folder is processed THE SYSTEM SHALL check its `table.json` in process with the engine and the engine's report formatter (the same text `bones check` prints), and IF the table does not pass THEN THE SYSTEM SHALL report that text under the heading `== <path>/table.json ==`. The build does not spawn the CLI.")
+rep("10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html`","10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html` (static block `<div id=\"boot\">` with `landing.title` as `h1`, `landing.tagline` and one link per app)")
+s=s.rstrip('\n')+"""
+
+## Owner answers
+
+Given after the spec session; they override anything above that they contradict, and the body above has been adjusted to match.
+
+1. Shared pieces. The check report formatter lives in `skeleton/engine/format.ts` (pure, no imports outside the engine, exported from `index.ts`) and is used by the CLI and the build. The build does not spawn the CLI. The build may `import type` from `skeleton/shell` (the `Copy` type) and nothing else; value imports from `shell` into `build` stay forbidden. There is one `Copy` type, in `skeleton/shell/copy-type.ts`.
+2. Labels `published`, `outcome`, `yourAnswers` accepted. New label `noscript` (19 labels). The build writes `copy.title` (as `h1`), `tagline`, `intro` and `labels.noscript` into the static HTML (4.3), so the page is not blank without JavaScript.
+3. Dark colours are required in every `theme.css`.
+4. Accepted: the CSP meta tag, http(s)-only links, unknown `copy.json` keys are errors, `new` sets the table title.
+5. No jsdom. Browser behaviour is tested in the `apps` spec.
+6. Confirmed: invalid JSON exits 1; the table view scrolls in its own region; tiles show hints.
+7. The theme contract gains `--font-size` (13 properties; dark block unchanged, 8 colours). The owner's `--heading-font` is taken to be the existing `--font-heading` (the `apps` spec uses that name); no second heading property is added. Heading weight is set by `shell.css`, not by the theme, so the stack is weight-free.
+8. `@types/node` stays pinned at 22.20.5.
+"""
+open(p,'w').write(s)
+EOF
+grep -n "twelve\|12 prop\|18 " requirements.md design.md tasks.md
+    Traceback (most recent call last):
+      File "<stdin>", line 10, in <module>
+      File "<stdin>", line 6, in rep
+    AssertionError: the twelve contract properties of requirement 3
+    requirements.md:13:- **Contract properties**: the twelve CSS custom properties of requirement 3.
+    requirements.md:56:3.4 WHEN `theme.css` is validated THE SYSTEM SHALL require all twelve contract properties in the top-level `:root` rule, and the eight colour properties in the `:root` rule inside the dark media block.
+    design.md:24:4. `labels` has 18 keys. The owner's list gave 15; `published`, `outcome` and `yourAnswers` are added because the result shows a published date, the whole-table view has an outcome column and the steps list needs a heading. Without them a visible word would be hard-coded. Three labels contain placeholders: `{n}` and `{max}` in `questionOf`, `{count}` in `badLink`.
+    design.md:104:6. The light rule must define all 12 properties; the dark rule the 8 colours. A missing one gives `theme.css: <rule>: missing <name>`.
+    design.md:240:(The exact wording is the task's to settle; the shape is fixed.) `neutral-theme.css` defines the 12 properties with a light and a dark block, to pass `validateTheme`.
+    design.md:327:`bones check` prints `gaps: 0` then `ok: 2 conditions, 4 combinations, 4 rules`. `template/copy.json` has plain placeholder wording for every key; `template/theme.css` defines the 12 properties in `:root` and the 8 colours in the dark block with AA-contrast values.
+    tasks.md:12:  - `copy.json` in the template has the 18 labels, `answerStyle` `tiles`, a plain footer entry; `theme.css` has the 12 properties in `:root` and the 8 colours in the dark block.
+    exit 0
+
+Nothing was written (the script asserts before writing). I'll fix the pattern and rerun.
+
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+p='requirements.md'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,(a,s.count(a))
+    s=s.replace(a,b)
+rep("Node built-ins only in `build`, `cli` and `mcp`.","Node built-ins only in `build`, `cli` and `mcp`. The one exception to the folder rule: `build` may `import type` the `Copy` type from `skeleton/shell/copy-type.ts` (no value import from `shell`).")
+rep("`outcome`, `yourAnswers`, `questionOf`, `badLink`.","`outcome`, `yourAnswers`, `noscript`, `questionOf`, `badLink`.")
+rep("the twelve CSS custom properties of requirement 3","the thirteen CSS custom properties of requirement 3")
+rep("`--radius` and `--space` (one spacing unit).","`--radius`, `--space` (one spacing unit) and `--font-size` (the base font size; `shell.css` sets it as the root font size).")
+rep("all twelve contract properties","all thirteen contract properties")
+rep("4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks. The page sets `document.title` from `copy.title` at start.","4.3 THE SYSTEM SHALL write no table text and no copy text into the HTML outside the two data blocks, except one static block `<div id=\"boot\">` holding `copy.title` (as `h1`), `copy.tagline`, `copy.intro` and `copy.labels.noscript`, HTML-escaped, so the page is not blank without JavaScript. The script removes the block at start and renders its own `h1`. The page sets `document.title` from `copy.title` at start.")
+rep("11.4 WHEN an app folder is processed THE SYSTEM SHALL run `bones check` on its `table.json` as a separate process, and IF the exit code is not 0 THEN THE SYSTEM SHALL report the command's output unchanged under the heading `<path>/table.json`.","11.4 WHEN an app folder is processed THE SYSTEM SHALL check its `table.json` in process with the engine and the engine's report formatter (the same text `bones check` prints), and IF the table does not pass THEN THE SYSTEM SHALL report that text under the heading `== <path>/table.json ==`. The build does not spawn the CLI.")
+rep("10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html`","10.1 WHEN the build runs successfully THE SYSTEM SHALL write `dist/index.html` (with a static block `<div id=\"boot\">` holding `landing.title` as `h1`, `landing.tagline` and one link per app)")
+s=s.rstrip('\n')+"""
+
+## Owner answers
+
+Given after the spec session; they override anything above that they contradict, and the body above has been adjusted to match.
+
+1. Shared pieces. The check report formatter lives in `skeleton/engine/format.ts` (pure, no imports outside the engine, exported from `index.ts`) and is used by the CLI and the build. The build does not spawn the CLI. The build may `import type` from `skeleton/shell` (the `Copy` type) and nothing else; value imports from `shell` into `build` stay forbidden. There is one `Copy` type, in `skeleton/shell/copy-type.ts`.
+2. Labels `published`, `outcome`, `yourAnswers` accepted. New label `noscript` (19 labels). The build writes `copy.title` (as `h1`), `tagline`, `intro` and `labels.noscript` into the static HTML (4.3), so the page is not blank without JavaScript.
+3. Dark colours are required in every `theme.css`.
+4. Accepted: the CSP meta tag, http(s)-only links, unknown `copy.json` keys are errors, `new` sets the table title.
+5. No jsdom. Browser behaviour is tested in the `apps` spec.
+6. Confirmed: invalid JSON exits 1; the table view scrolls in its own region; tiles show hints.
+7. The theme contract gains `--font-size` (13 properties; the dark block stays at 8 colours). The owner's `--heading-font` is taken to be the existing `--font-heading` (the `apps` spec uses that name); no second heading property is added. Heading weight is set by `shell.css`, not by the theme, so the stack is weight-free.
+8. `@types/node` stays pinned at 22.20.5.
+"""
+open(p,'w').write(s)
+
+p='design.md'
+s=open(p).read()
+rep("""1. **The CLI message.** The build runs `bones check` as a child process (`process.execPath --import tsx skeleton/cli/bones.ts check <file>`, cwd = repo root) and prints its output unchanged. The build never formats check results itself, so there is one format.
+2. **The `Copy` type.** `skeleton/build/copy-check.ts` defines `Copy` and `validateCopy`. `skeleton/shell/copy-type.ts` defines the same `Copy` interface for the browser code. A compile-time assertion in `test/build.test.ts` (`expectTypeOf<BuildCopy>().toEqualTypeOf<ShellCopy>()`, checked by `npm run typecheck`) keeps the two equal.""",
+"""1. **The report text.** `skeleton/engine/format.ts` (pure, engine imports only) exports `formatProblems`, `formatReport` and `formatInvalidJson`. The CLI prints their output; the build calls them in process and prints the same text under a heading. The build does not spawn the CLI. (Owner answer 1.)
+2. **The `Copy` type.** Defined once in `skeleton/shell/copy-type.ts`. `skeleton/build/copy-check.ts` does `import type { Copy }` from it; that is the only import from `shell` that `build` may have, and it must be a type import. (Owner answer 1.)""")
+rep("4. `labels` has 18 keys. The owner's list gave 15; `published`, `outcome` and `yourAnswers` are added","4. `labels` has 19 keys. The owner's list gave 15; `published`, `outcome`, `yourAnswers` and (owner answer 2) `noscript` are added")
+rep("Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text --muted --accent --accent-text --border --focus` (colours), `--font-body --font-heading`, `--radius --space`.","Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text --muted --accent --accent-text --border --focus` (colours), `--font-body --font-heading` (font stacks, no weight), `--font-size` (base size; `shell.css` sets `html { font-size: var(--font-size) }`), `--radius --space`. Thirteen in all (owner answer 7; `--heading-font` is read as `--font-heading`).")
+rep("The light rule must define all 12 properties","The light rule must define all 13 properties")
+rep("defines the 12 properties with a light","defines the 13 properties with a light")
+rep("defines the 12 properties in `:root`","defines the 13 properties in `:root`")
+open(p,'w').write(s)
+
+p='tasks.md'
+s=open(p).read()
+rep("has the 18 labels","has the 19 labels")
+rep("has the 12 properties in `:root`","has the 13 properties in `:root`")
+open(p,'w').write(s)
+EOF
+    
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+p='design.md'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,(a,s.count(a))
+    s=s.replace(a,b)
+rep("    outcome: string; yourAnswers: string;\n","    outcome: string; yourAnswers: string;\n    noscript: string;     // shown in the static page when scripts are off\n")
+rep("<!--bones:data-->\n<script src=\"app.js\" defer></script>","<!--bones:boot-->\n<!--bones:data-->\n<script src=\"app.js\" defer></script>")
+rep("""export function renderPage(template: string, blocks: Record<string, unknown>): string;
+```
+
+`renderPage` replaces the marker with one""","""export function escapeHtml(text: string): string;     // & < > " ' to entities
+export function bootApp(copy: Copy): string;            // <div id="boot"><h1>…</h1><p>tagline</p><p>intro</p><noscript><p>…</p></noscript></div>
+export function bootLanding(landing: Landing, apps: AppSummary[]): string;  // h1, tagline, ul of links to ./<id>/
+export function renderPage(template: string, blocks: Record<string, unknown>, boot: string): string;
+```
+
+`renderPage` replaces the `<!--bones:boot-->` marker with `boot` (already escaped by `bootApp` / `bootLanding`) and the data marker with one""")
+rep("The title is empty until the script sets `document.title`.","The title is empty until the script sets `document.title`. At start `shell.ts` and `landing.ts` remove `#boot` before rendering their own `h1`, so there is one `h1` when scripts run (9.1).")
+rep("Property 12: for all tables from `arbHostileTable` and copies from `arbHostileCopy`, with `html = renderPage(template, { table, copy })` and the template read from `skeleton/shell/page.html`: (a) `html` has exactly three `<script` and three `</script>`; (b) the body of each data block contains none of `<`, `>`, `&`, U+2028, U+2029; (c) `JSON.parse` of each body deep-equals the input; (d) `html` with both bodies removed equals `renderPage(template, { table: null, copy: null })` with their bodies removed, so the HTML around the blocks does not depend on the input. Validates: 4.2, 4.3",
+"Property 12: for all tables from `arbHostileTable` and copies from `arbHostileCopy`, with `html = renderPage(template, { table, copy }, bootApp(copy))` and the template read from `skeleton/shell/page.html`: (a) `html` has exactly three `<script` and three `</script>`; (b) the body of each data block contains none of `<`, `>`, `&`, U+2028, U+2029; (c) `JSON.parse` of each body deep-equals the input; (d) `html` with the two data bodies and the `#boot` block removed equals the same removal applied to `renderPage(template, { table: null, copy: null }, bootApp(emptyCopy))`, so the HTML around them does not depend on the input; (e) the `#boot` block matches exactly `<div id=\"boot\"><h1>T</h1><p>G</p><p>I</p><noscript><p>N</p></noscript></div>` with `T`, `G`, `I`, `N` free of `<`, and each, with the five entities decoded, equals `copy.title`, `tagline`, `intro`, `labels.noscript`. Validates: 4.2, 4.3")
+rep("Property 12 is a statement about the HTML text.","Property 12 is a statement about the HTML text (the table-derived text never reaches the HTML except in the data blocks).")
+open(p,'w').write(s)
+EOF
+grep -n "spawn\|shells out\|bones check\` as\|Copy\` type\|expectTypeOf\|Dependency direction\|No JS, no page\|Contrast is not\|about half a second\|build/page.ts\|copy-type" design.md
+    16:1. **The report text.** `skeleton/engine/format.ts` (pure, engine imports only) exports `formatProblems`, `formatReport` and `formatInvalidJson`. The CLI prints their output; the build calls them in process and prints the same text under a heading. The build does not spawn the CLI. (Owner answer 1.)
+    17:2. **The `Copy` type.** Defined once in `skeleton/shell/copy-type.ts`. `skeleton/build/copy-check.ts` does `import type { Copy }` from it; that is the only import from `shell` that `build` may have, and it must be a type import. (Owner answer 1.)
+    44:  copy-type.ts                Copy, Landing, AppSummary interfaces (types only)
+    269:The build spawns one `tsx` process per app (about half a second each). That is fine for two to a few apps.
+    278:`main` calls `run(process.argv.slice(2), { cwd: process.cwd() })`, writes `out` to stdout and `err` to stderr and sets `process.exitCode`. Tests call `run` in-process; one test spawns the real process.
+    366:- `test/cli.test.ts` (in-process `run`, plus one spawn):
+    371:  - One `spawnSync` of the real entry point on the gap example: `status` is 1 (covers `main` and the exit code wiring).
+    377:  - Contract checks: every `var(--x)` in `shell.css` is a contract property and it has no colour literal; `neutral-theme.css` and `landing.json` pass their validators; the `expectTypeOf` assertion that the two `Copy` types are equal.
+    422:- **Dependency direction.** The build shells out to the CLI and the `Copy` type is written twice (with a type-level guard). Allowing `import type` from `shell` into `build`, or an exception for a shared formatter, would remove both. I kept `structure.md` as written.
+    424:- **Contrast is not checked at build.** A pure function over the eight colours would be cheap. Left to axe in the `apps` spec.
+    425:- **No JS, no page.** The pages are blank without JavaScript (words may only come from copy and table, so there is no `<noscript>` text).
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && sed -n 236,262p design.md; sed -n 264,300p design.md
+    … (34 earlier lines not shown)
+    ## CLI (`bones.ts`)
+    
+    ```ts
+    export interface RunResult { code: 0 | 1 | 2; out: string; err: string }
+    export function run(argv: string[], opts: { cwd: string }): RunResult;
+    ```
+    
+    `main` calls `run(process.argv.slice(2), { cwd: process.cwd() })`, writes `out` to stdout and `err` to stderr and sets `process.exitCode`. Tests call `run` in-process; one test spawns the real process.
+    
+    ### check
+    
+    ```
+    $ bones check skeleton/examples/gap.table.json
+    gaps: 1
+      size=large, wet=yes
+    failed
+    ```
+    
+    Order: JSON syntax → `$: invalid JSON: <message>` then `failed` (exit 1). `validate` problems → one `path: message` each, `failed` (exit 1). Otherwise `gaps: N`, example lines (two spaces; `, ` between pairs), `  (first 20 shown)` when `count > examples.length`, conflict lines, `warning: <path>: <message>` lines, and the last line `ok: C conditions, K combinations, R rules` (exit 0) or `failed` (exit 1). Condition order inside an example is the table's order, which the engine's combination object keeps.
+    
+    Usage errors (code 2, stderr only, stdout empty): no command, unknown command, `check` without a file, `new` without a name, unknown option, unreadable file. The usage text is the single line `usage: bones check <table.json> | bones new <name> [--apps <dir>]`. `help` and `--help` print it on stdout with code 0.
+    
+    ### new
+    
+    `bones new <name> [--apps <dir>]`:
+    
+    1. `name` must match `^[a-z0-9]+(-[a-z0-9]+)*$` (the same pattern as the engine's ids; the engine does not export it, so it is repeated here and in the build).
+    2. Target is `<apps>/<name>`, where `<apps>` is `--apps` or `<cwd>/apps`. If it exists → code 2, nothing written.
+    3. Read the three template files from the template folder (found relative to `import.meta.url`), set `table.id = name`, `table.title = copy.title = Title(name)`, write JSON with `JSON.stringify(x, null, 2) + '\n'`, copy `theme.css` byte for byte. `Title('my-tool')` is `My tool`.
+    4. Print `created <apps>/<name>` where `<apps>` is as given or `apps`.
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+p='design.md'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,(a,s.count(a))
+    s=s.replace(a,b)
+rep("Spawn `bones check`; if its exit code is not 0, add `== <path>/table.json ==` and its stdout to the errors. Run `validateCopy` and `validateTheme`.","Then `check(table)` in process; if it does not pass, add `== <path>/table.json ==` and `formatReport(report)` (the text `bones check` prints, ending `failed`) to the errors. A structurally invalid table gets `formatProblems(problems)` instead, and bad JSON `formatInvalidJson(message)`. Run `validateCopy` and `validateTheme`.")
+rep("The build spawns one `tsx` process per app (about half a second each). That is fine for two to a few apps.","The build spawns no process. It imports from `shell` only `import type { Copy, Landing, AppSummary }` (a type import is erased, so no shell code enters the build); it reads `page.html`, `shell.css`, `neutral-theme.css`, `landing.json` and the two entry points as files.")
+rep("Write `dist/index.html` (landing) and for each app","Write `dist/index.html` (landing: `renderPage(template, { landing, apps }, bootLanding(landing, apps))`) and for each app (`renderPage(template, { table, copy }, bootApp(copy))`)")
+rep("the `expectTypeOf` assertion that the two `Copy` types are equal.","`build/` has no value import from `shell` (the task 8 grep covers it).")
+rep("Order: JSON syntax → `$: invalid JSON: <message>` then `failed` (exit 1). `validate` problems → one `path: message` each, `failed` (exit 1). Otherwise","The text comes from the engine's `format.ts`: `formatInvalidJson(message)`, `formatProblems(problems)`, `formatReport(report)`; the CLI only reads the file and sets the exit code. Order: JSON syntax → `$: invalid JSON: <message>` then `failed` (exit 1). `validate` problems → one `path: message` each, `failed` (exit 1). Otherwise")
+rep("  copy-type.ts                Copy, Landing, AppSummary interfaces (types only)","  copy-type.ts                Copy, Landing, AppSummary interfaces (types only; build imports them as types)")
+rep("skeleton/build/\n  build.ts                    build(opts) and main\n  page.ts                     renderPage(template, blocks), escapeJson\n  copy-check.ts               Copy type, validateCopy, validateLanding","skeleton/engine/format.ts     formatProblems, formatReport, formatInvalidJson (pure; exported from index.ts)\nskeleton/build/\n  build.ts                    build(opts) and main\n  page.ts                     renderPage, escapeJson, escapeHtml, bootApp, bootLanding\n  copy-check.ts               validateCopy, validateLanding (Copy type comes from shell/copy-type.ts)")
+rep("- **Dependency direction.** The build shells out to the CLI and the `Copy` type is written twice (with a type-level guard). Allowing `import type` from `shell` into `build`, or an exception for a shared formatter, would remove both. I kept `structure.md` as written.\n","- **Dependency direction.** Settled by owner answer 1: shared formatter in the engine, `import type` of `Copy` from `shell` into `build`. `structure.md` says `build` does not import `shell`; the owner is to add this exception there.\n")
+rep("- **No JS, no page.** The pages are blank without JavaScript (words may only come from copy and table, so there is no `<noscript>` text).\n","- **No JS.** Settled by owner answer 2: a static `#boot` block with title, tagline, intro and `labels.noscript`.\n")
+open(p,'w').write(s)
+
+p='tasks.md'
+s=open(p).read()
+rep("- [ ] 2. Template, examples and CLI\n  - `skeleton/template/","- [ ] 2. Template, examples and CLI\n  - First `skeleton/engine/format.ts` (`formatProblems`, `formatReport`, `formatInvalidJson`; pure; exported from `index.ts`; no engine behaviour changes). Then `skeleton/template/")
+rep("`skeleton/build/page.ts` (`escapeJson`, `renderPage`)","`skeleton/build/page.ts` (`escapeJson`, `escapeHtml`, `bootApp`, `bootLanding`, `renderPage`)")
+rep("`skeleton/build/copy-check.ts` (`Copy`, `validateCopy`, `validateLanding`)","`skeleton/build/copy-check.ts` (`validateCopy`, `validateLanding`; `Copy` is imported as a type from `shell/copy-type.ts`)")
+rep("(e) the `shell.css` contract check, `neutral-theme.css` and `landing.json` validation, and the `expectTypeOf` equality of the two `Copy` types.","(e) the `shell.css` contract check, `neutral-theme.css` and `landing.json` validation.")
+rep("&& ! grep -rnE \"from '(\\.\\./)+(shell|cli|mcp)\" skeleton/build &&","&& ! grep -rnE \"from '(\\.\\./)+(cli|mcp)\" skeleton/build && ! grep -rnE \"from '(\\.\\./)+shell\" skeleton/build | grep -v \":import type \" &&")
+open(p,'w').write(s)
+EOF
+grep -n "skeleton/build" tasks.md | tail -2; grep -n "Property 12\|renderPage" tasks.md | head
+    28:  - `skeleton/build/copy-check.ts` (`validateCopy`, `validateLanding`; `Copy` is imported as a type from `shell/copy-type.ts`), `skeleton/build/theme-check.ts` (`THEME_PROPS`, `validateTheme`), `skeleton/build/build.ts` (`build`, `main`), as in design.md; `test/build.test.ts` with exactly these tests: (a) `new` then build a temp app, checking the 8 files, relative links, the parsed `data-table` block and no `template`/`examples` in `dist`; (b) a table with a gap is rejected and a sentinel in `outDir` survives; (c) a `theme.css` with a `body` selector is rejected; (d) one table-driven test with rows for a missing label, bad `answerStyle`, `javascript:` footer `href`, `javascript:` source `url`, an extra file in the app folder, a folder name different from the table id, an empty `apps/`, and `outDir` equal to the repo root; (e) the `shell.css` contract check, `neutral-theme.css` and `landing.json` validation.
+    45:  - Verify: `npm run typecheck && npm test && ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(" skeleton/shell && ! grep -nE "\son[a-z]+=|javascript:|style=" skeleton/shell/page.html && ! grep -nE "url\(|@import" skeleton/shell/shell.css skeleton/shell/neutral-theme.css && ! grep -rnE "from ['\"][^.]" skeleton/shell && ! grep -rnE "from '(\.\./)+(build|cli|mcp)" skeleton/shell && ! grep -rnE "from '(\.\./)+(cli|mcp)" skeleton/build && ! grep -rnE "from '(\.\./)+shell" skeleton/build | grep -v ":import type " && ! grep -rnE "from '(\.\./)+(shell|build|mcp)" skeleton/cli && ! grep -rnE "from '(\.\./)+(shell|build|cli)" skeleton/mcp && ! grep -rl "zod" skeleton/engine skeleton/shell skeleton/build skeleton/cli && ! grep -rnE "from ['\"]([^.]|\.\./)|require\(|import\(" skeleton/engine`
+    16:- [ ] 3. Page renderer and the injection property (Property 12)
+    17:  - `skeleton/shell/page.html`, `skeleton/build/page.ts` (`escapeJson`, `escapeHtml`, `bootApp`, `bootLanding`, `renderPage`), `test/props/shell-generators.ts` (`arbHostileText`, `arbHostileTable`, `arbHostileCopy`, `arbSteps`), and `test/props/shell.props.test.ts` with Property 12 named `Property 12 page holds table text only as escaped JSON`. Import `arbTable` from `test/props/generators.ts`; do not edit that file.
+    19:  - Verify: `npx vitest --run test/props/shell.props.test.ts -t "Property 12"`
+    exit 0
+[tool:execute] $ cat > package.json <<'EOF'
+{
+  "name": "barebones",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run",
+    "test:props": "vitest --run test/props",
+    "build": "tsx skeleton/build/build.ts",
+    "bones": "tsx skeleton/cli/bones.ts",
+    "mcp": "tsx skeleton/mcp/server.ts"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
+    "fast-check": "4.10.2",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0",
+    "zod": "4.6.7"
+  }
+}
+EOF
+sed -i '' 's/"lib": \["ES2023"\]/"lib": ["ES2023", "DOM"]/; s/"types": \[\]/"types": ["node"]/' tsconfig.json
+grep -n '"lib"\|"types"' tsconfig.json
+npm install 2>&1 | tail -8
+    9:    "lib": ["ES2023", "DOM"],
+    14:    "types": ["node"]
+    
+    added 123 packages, removed 2 packages, and audited 163 packages in 879ms
+    
+    49 packages are looking for funding
+      run `npm fund` for details
+    
+    found 0 vulnerabilities
+    exit 0
+[tool:execute] $ node --input-type=module -e "import { readFileSync as r } from 'node:fs'; const p = JSON.parse(r('package.json','utf8')); const want = {typescript:'6.0.3',tsx:'4.23.15',vitest:'5.1.0','fast-check':'4.10.2',esbuild:'0.28.2','@modelcontextprotocol/sdk':'1.32.2',zod:'4.6.7','@types/node':'22.20.5'}; const ok = p.type==='module' && p.dependencies===undefined && JSON.stringify(Object.entries(p.devDependencies).sort())===JSON.stringify(Object.entries(want).sort()) && Object.keys(p.scripts).sort().join()==='build,bones,mcp,test,test:props,typecheck'; if (ok===false) { console.error('package.json mismatch'); process.exit(1); }" && npm run typecheck; echo rc=$?
+    package.json mismatch
+    rc=1
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && sed -i '' "s/join()==='build,bones,mcp,test,test:props,typecheck'/join()==='bones,build,mcp,test,test:props,typecheck'/" tasks.md && grep -c "bones,build,mcp" tasks.md; cd ../../.. && node -e "console.log(Object.keys(require('./package.json').scripts).sort().join())"
+    1
+    bones,build,mcp,test,test:props,typecheck
+    exit 0
+[tool:execute] $ node --input-type=module -e "import { readFileSync as r } from 'node:fs'; const p = JSON.parse(r('package.json','utf8')); const want = {typescript:'6.0.3',tsx:'4.23.15',vitest:'5.1.0','fast-check':'4.10.2',esbuild:'0.28.2','@modelcontextprotocol/sdk':'1.32.2',zod:'4.6.7','@types/node':'22.20.5'}; const ok = p.type==='module' && p.dependencies===undefined && JSON.stringify(Object.entries(p.devDependencies).sort())===JSON.stringify(Object.entries(want).sort()) && Object.keys(p.scripts).sort().join()==='bones,build,mcp,test,test:props,typecheck'; if (ok===false) { console.error('package.json mismatch'); process.exit(1); }" && npm run typecheck; echo rc=$?
+    
+    > typecheck
+    > tsc --noEmit
+    
+    rc=0
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+s=open('tasks.md').read()
+a="- [ ] 1. Tooling\n"
+assert a in s
+s=s.replace(a,"- [x] 1. Tooling — Verify passed: package.json check exited 0, `npm run typecheck` exit 0 (tsc, no errors). Note: the Verify's expected script list was written `build,bones,...`, which is not the sorted order of the keys (`bones` sorts before `build`), so I corrected that string; the set of scripts is as specified. Owner to add the `@types/node` row and the `mcp` script to `tech.md`.\n")
+open('tasks.md','w').write(s)
+EOF
+    
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/engine/format.ts
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/engine/index.ts
+[tool:execute] $ mkdir -p skeleton/template skeleton/examples && cd skeleton/template && cat > table.json <<'EOF'
+{
+  "id": "template",
+  "title": "Which tray?",
+  "conditions": [
+    {
+      "id": "size",
+      "question": "How big is it?",
+      "values": [
+        { "id": "small", "label": "Small" },
+        { "id": "large", "label": "Large", "hint": "Bigger than a shoebox" }
+      ]
+    },
+    {
+      "id": "wet",
+      "question": "Is it wet?",
+      "values": [
+        { "id": "no", "label": "No" },
+        { "id": "yes", "label": "Yes" }
+      ]
+    }
+  ],
+  "outcomes": [
+    { "id": "tray-a", "label": "Tray A", "detail": "Use tray A." },
+    { "id": "tray-b", "label": "Tray B", "detail": "Use tray B." },
+    { "id": "tray-c", "label": "Tray C", "detail": "Use tray C." }
+  ],
+  "rules": [
+    { "id": "small-dry", "when": { "size": "small", "wet": "no" }, "then": "tray-a", "source": { "ref": "example-source", "at": "row 1" } },
+    { "id": "small-wet", "when": { "size": "small", "wet": "yes" }, "then": "tray-b", "source": { "ref": "example-source", "at": "row 2" } },
+    { "id": "large-dry", "when": { "size": "large", "wet": "no" }, "then": "tray-c", "source": { "ref": "example-source", "at": "row 3" } },
+    { "id": "large-wet", "when": { "size": "large", "wet": "yes" }, "then": "tray-b", "note": "Wet things go in tray B whatever their size.", "source": { "ref": "example-source", "at": "row 4" } }
+  ],
+  "sources": [
+    { "id": "example-source", "title": "Example source", "url": "https://example.com/", "published": "unknown", "read": "2026-11-12" }
+  ]
+}
+EOF
+cat > copy.json <<'EOF'
+{
+  "title": "Which tray?",
+  "tagline": "Answer a few questions to find the right tray.",
+  "intro": "Answer the questions one at a time. The answer shows which rule it came from.",
+  "answerStyle": "tiles",
+  "labels": {
+    "startOver": "Start over",
+    "change": "Change",
+    "why": "Why this answer",
+    "rule": "Rule",
+    "whatMattered": "What mattered",
+    "source": "Source",
+    "published": "Published",
+    "readOn": "Read on",
+    "notAsked": "Questions that did not matter",
+    "copyLink": "Copy link to this answer",
+    "linkCopied": "Link copied",
+    "showTable": "Show all rules",
+    "hideTable": "Hide all rules",
+    "any": "any",
+    "outcome": "Answer",
+    "yourAnswers": "Your answers",
+    "noscript": "This page needs JavaScript to ask the questions.",
+    "questionOf": "Question {n} of at most {max}",
+    "badLink": "{count} part(s) of the link were not understood and were ignored."
+  },
+  "resultLead": "Put it in",
+  "footer": [
+    { "text": "Made with Bare Bones." }
+  ]
+}
+EOF
+cat > theme.css <<'EOF'
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --text: #1a1a1a;
+  --muted: #4a4a4a;
+  --accent: #0b57d0;
+  --accent-text: #ffffff;
+  --border: #767676;
+  --focus: #0b57d0;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size: 1rem;
+  --radius: 0.5rem;
+  --space: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --text: #f2f2f2;
+    --muted: #b8b8b8;
+    --accent: #8ab4f8;
+    --accent-text: #0b1b33;
+    --border: #8a8a8a;
+    --focus: #8ab4f8;
+  }
+}
+EOF
+cd ../examples
+python3 - <<'EOF'
+import json
+t=json.load(open('../template/table.json'))
+g=json.loads(json.dumps(t)); g['id']='gap-example'; g['title']='Gap example'
+g['rules']=[r for r in g['rules'] if r['id']!='large-wet']
+c=json.loads(json.dumps(t)); c['id']='conflict-example'; c['title']='Conflict example'
+c['rules']=[
+ {"id":"small","when":{"size":"small"},"then":"tray-a","source":{"ref":"example-source","at":"row 1"}},
+ {"id":"wet","when":{"wet":"yes"},"then":"tray-b","source":{"ref":"example-source","at":"row 2"}},
+ {"id":"large-dry","when":{"size":"large","wet":"no"},"then":"tray-c","source":{"ref":"example-source","at":"row 3"}},
+]
+json.dump(g,open('gap.table.json','w'),indent=2); open('gap.table.json','a').write('\n')
+json.dump(c,open('conflict.table.json','w'),indent=2); open('conflict.table.json','a').write('\n')
+EOF
+ls
+    conflict.table.json
+    gap.table.json
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/cli/bones.ts
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/test/cli.test.ts
+[tool:execute] $ npx vitest --run test/cli.test.ts 2>&1 | tail -30; npm run -s typecheck; echo tc=$?
+    
+    ⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+    Error: Cannot find native binding. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+        at file://~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/binding-DXnWtC_4.mjs:599:34
+        at file://~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/rolldown-runtime-DYf_mQCB.mjs:9:49
+        ... 3 lines matching cause stack trace ...
+        at async start (file://~/hackathons-2026/kiroween/barebones/node_modules/vitest/dist/chunks/cac.BYbt0aJp.js:2381:27) {
+      cause: Error: Cannot find module '@rolldown/binding-wasm32-wasi'
+      Require stack:
+      - ~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/rolldown-runtime-DYf_mQCB.mjs
+          at file://~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/binding-DXnWtC_4.mjs:487:18
+          ... 7 lines matching cause stack trace ...
+          at async start (file://~/hackathons-2026/kiroween/barebones/node_modules/vitest/dist/chunks/cac.BYbt0aJp.js:2381:27) {
+        cause: Error: Cannot find module './rolldown-binding.wasi.cjs'
+        Require stack:
+        - ~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/rolldown-runtime-DYf_mQCB.mjs
+            at file://~/hackathons-2026/kiroween/barebones/node_modules/rolldown/dist/shared/binding-DXnWtC_4.mjs:487:18
+            ... 7 lines matching cause stack trace ...
+            at async start (file://~/hackathons-2026/kiroween/barebones/node_modules/vitest/dist/chunks/cac.BYbt0aJp.js:2381:27) {
+          cause: [Error]
+        }
+      }
+    }
+    
+    
+    
+    tc=0
+    exit 0
+[tool:execute] $ ls node_modules/@rolldown node_modules/@esbuild; git status --short | head; git diff --stat package-lock.json | tail -2; grep -n "binding-darwin-arm64\"" package-lock.json | head -3; node -p "process.arch+' '+process.platform"
+    node_modules/@esbuild:
+    darwin-arm64
+    
+    node_modules/@rolldown:
+    pluginutils
+     M .kiro/specs/shell-and-cli/design.md
+     M .kiro/specs/shell-and-cli/requirements.md
+     M .kiro/specs/shell-and-cli/tasks.md
+     M docs/kiro-evidence/hook-fires.log
+     M package-lock.json
+     M package.json
+     M skeleton/engine/index.ts
+     M tsconfig.json
+    ?? .kiro/agents/x-ray.json
+    ?? docs/kiro-evidence/06-impl-shell-and-cli.txt
+     package-lock.json | 1815 +++++++++++++++++++++++++++++++++++++----------------
+     1 file changed, 1263 insertions(+), 552 deletions(-)
+    1910:        "@rolldown/binding-darwin-arm64": "1.2.19",
+    arm64 darwin
+    exit 0
+[tool:execute] $ grep -n "node_modules/@rolldown" package-lock.json; git show HEAD:package-lock.json | grep -n "node_modules/@rolldown"
+    554:    "node_modules/@rolldown/pluginutils": {
+    556:    "node_modules/@rolldown/binding-android-arm-eabi": {
+    574:    "node_modules/@rolldown/binding-android-arm64": {
+    592:    "node_modules/@rolldown/binding-darwin-arm64": {
+    610:    "node_modules/@rolldown/binding-darwin-x64": {
+    628:    "node_modules/@rolldown/binding-freebsd-x64": {
+    646:    "node_modules/@rolldown/binding-linux-arm-gnueabihf": {
+    664:    "node_modules/@rolldown/binding-linux-arm64-gnu": {
+    682:    "node_modules/@rolldown/binding-linux-arm64-musl": {
+    700:    "node_modules/@rolldown/binding-linux-ppc64-gnu": {
+    718:    "node_modules/@rolldown/binding-linux-s390x-gnu": {
+    736:    "node_modules/@rolldown/binding-linux-x64-gnu": {
+    754:    "node_modules/@rolldown/binding-linux-x64-musl": {
+    772:    "node_modules/@rolldown/binding-openharmony-arm64": {
+    790:    "node_modules/@rolldown/binding-wasm32-wasi": {
+    810:    "node_modules/@rolldown/binding-win32-arm64-msvc": {
+    828:    "node_modules/@rolldown/binding-win32-x64-msvc": {
+    846:    "node_modules/@rolldown/pluginutils": {
+    exit 0
+[tool:execute] $ npm install 2>&1 | tail -5; ls node_modules/@rolldown; sed -n 592,609p package-lock.json
+    
+    49 packages are looking for funding
+      run `npm fund` for details
+    
+    found 0 vulnerabilities
+    pluginutils
+          "license": "MIT",
+          "dependencies": {
+            "undici-types": "~6.21.0"
+          }
+        },
+        "node_modules/@vitest/mocker": {
+          "version": "5.1.0",
+          "resolved": "https://registry.npmjs.org/@vitest/mocker/-/mocker-5.1.0.tgz",
+          "integrity": "sha512-5umB9/jlWcqVS6fsrFmv5Gdnpu6wAUio/lEOwAmvB7v+lFo/IW2B9FhAD0p19GCULTgMzLCdUmuCDCnAzWgppQ==",
+          "dev": true,
+          "license": "MIT",
+          "dependencies": {
+            "@jridgewell/trace-mapping": "0.3.31",
+            "@vitest/spy": "5.1.0",
+            "estree-walker": "^3.0.3",
+            "magic-string": "^1.4.3"
+          },
+          "funding": {
+    exit 0
+[tool:execute] $ rm -rf node_modules package-lock.json && npm install 2>&1 | tail -4; ls node_modules/@rolldown; grep -c "node_modules/@rolldown/binding" package-lock.json; grep -n '"version"' node_modules/@vitest/mocker/package.json node_modules/vitest/package.json node_modules/esbuild/package.json | head
+    61 packages are looking for funding
+      run `npm fund` for details
+    
+    found 0 vulnerabilities
+    binding-darwin-arm64
+    pluginutils
+    16
+    node_modules/@vitest/mocker/package.json:4:  "version": "5.1.0",
+    node_modules/vitest/package.json:4:  "version": "5.1.0",
+    node_modules/esbuild/package.json:3:  "version": "0.28.2",
+    exit 0
+[tool:execute] $ npx vitest --run test/cli.test.ts 2>&1 | tail -30; npm run -s typecheck; echo tc=$?
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  1 passed (1)
+          Tests  14 passed (14)
+       Start at  14:11:28
+       Duration  181ms (tests 72%, transform 21%, import 6%, worker 1%)
+    
+    tc=0
+    exit 0
+[tool:execute] $ cat > /tmp/tick.py <<'EOF'
+import sys
+n, note = sys.argv[1], sys.argv[2]
+p='~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md'
+lines=open(p).read().split('\n')
+for i,l in enumerate(lines):
+    if l.startswith(f'- [ ] {n}. '):
+        lines[i]=l.replace('- [ ]','- [x]',1)+' — Verify passed: '+note
+        break
+else: raise SystemExit('not found')
+open(p,'w').write('\n'.join(lines))
+EOF
+python3 /tmp/tick.py 2 '`npx vitest --run test/cli.test.ts` → `Tests  14 passed (14)`. Also added `skeleton/engine/format.ts` (owner answer 1). `npm install` first dropped the rolldown platform bindings from the lock (npm optional-deps bug), so I deleted `node_modules` and `package-lock.json` and reinstalled; the lock is regenerated.'
+    
+    exit 0
+[tool:execute] $ mkdir -p skeleton/shell skeleton/build && cd skeleton/shell && cat > copy-type.ts <<'EOF'
+/** Types shared by the browser code and, as `import type` only, by the build. No values live here. */
+
+export interface Labels {
+  startOver: string;
+  change: string;
+  why: string;
+  rule: string;
+  whatMattered: string;
+  source: string;
+  published: string;
+  readOn: string;
+  notAsked: string;
+  copyLink: string;
+  linkCopied: string;
+  showTable: string;
+  hideTable: string;
+  any: string;
+  outcome: string;
+  yourAnswers: string;
+  noscript: string;
+  questionOf: string; // must contain {n} and {max}
+  badLink: string; // must contain {count}
+}
+
+export interface FooterEntry { text: string; href?: string }
+
+export interface Copy {
+  title: string;
+  tagline: string;
+  intro: string;
+  answerStyle: 'tiles' | 'list';
+  labels: Labels;
+  resultLead: string;
+  footer: FooterEntry[];
+}
+
+export interface Landing { title: string; tagline: string; footer: FooterEntry[] }
+
+export interface AppSummary { id: string; title: string; tagline: string }
+EOF
+cat > dom.ts <<'EOF'
+import type { FooterEntry } from './copy-type.ts';
+
+export type Child = Node | string;
+
+/** Creates an element. Text goes in as text nodes and attributes through setAttribute, never as markup. */
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string> = {},
+  ...children: Child[]
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, value);
+  for (const child of children) node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  return node;
+}
+
+export function text(value: string): Text {
+  return document.createTextNode(value);
+}
+
+/** Replaces each `{name}` that has a value. Unknown names are left as they are. */
+export function fill(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{([a-z]+)\}/g, (whole, name: string) =>
+    Object.hasOwn(values, name) ? String(values[name]) : whole,
+  );
+}
+
+/** The URL if it is http(s), otherwise undefined. */
+export function safeHref(url: string): string | undefined {
+  return /^https?:\/\//i.test(url) ? url : undefined;
+}
+
+/** A link when the URL is safe, otherwise plain text. */
+export function linkOrText(label: string, url: string): Node {
+  const href = safeHref(url);
+  return href === undefined ? text(label) : el('a', { href, rel: 'noopener noreferrer' }, label);
+}
+
+export function readJson<T>(id: string): T {
+  const block = document.getElementById(id);
+  return JSON.parse(block?.textContent ?? 'null') as T;
+}
+
+export function renderFooter(entries: readonly FooterEntry[]): HTMLElement {
+  return el(
+    'footer',
+    { class: 'footer' },
+    ...entries.map((entry) => el('p', {}, entry.href === undefined ? entry.text : linkOrText(entry.text, entry.href))),
+  );
+}
+EOF
+cat > hash.ts <<'EOF'
+import type { Table } from '../engine/index.ts';
+
+export interface Step { condition: string; value: string }
+
+/** `#condition=value&…` in step order; empty for no steps. Ids are kebab-case, so nothing is encoded. */
+export function writeHash(steps: readonly Step[]): string {
+  if (steps.length === 0) return '';
+  return '#' + steps.map((s) => `${s.condition}=${s.value}`).join('&');
+}
+
+/** Keeps the entries that name a known condition and one of its values, once each. Never throws. */
+export function readHash(table: Table, hash: string): { steps: Step[]; ignored: number } {
+  const body = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (body === '') return { steps: [], ignored: 0 };
+
+  const values = new Map<string, Set<string>>();
+  for (const condition of table.conditions) values.set(condition.id, new Set(condition.values.map((v) => v.id)));
+
+  const steps: Step[] = [];
+  const taken = new Set<string>();
+  let ignored = 0;
+  for (const part of body.split('&')) {
+    const pieces = part.split('=');
+    const [condition, value] = pieces;
+    const allowed = condition === undefined ? undefined : values.get(condition);
+    if (
+      pieces.length !== 2 ||
+      condition === undefined ||
+      value === undefined ||
+      condition === '' ||
+      value === '' ||
+      allowed === undefined ||
+      !allowed.has(value) ||
+      taken.has(condition)
+    ) {
+      ignored += 1;
+      continue;
+    }
+    taken.add(condition);
+    steps.push({ condition, value });
+  }
+  return { steps, ignored };
+}
+EOF
+cat > landing.json <<'EOF'
+{
+  "title": "Bare Bones",
+  "tagline": "Small decision tools, each one a table that has been checked for gaps and conflicts.",
+  "footer": [{ "text": "Every answer comes from a checked decision table." }]
+}
+EOF
+cp ../template/theme.css neutral-theme.css
+cat > landing.ts <<'EOF'
+import type { AppSummary, Landing } from './copy-type.ts';
+import { el, readJson, renderFooter } from './dom.ts';
+
+function start(): void {
+  const landing = readJson<Landing>('data-landing');
+  const apps = readJson<AppSummary[]>('data-apps');
+  document.getElementById('boot')?.remove();
+  document.title = landing.title;
+
+  const page = el(
+    'div',
+    { class: 'page' },
+    el('header', {}, el('h1', {}, landing.title), el('p', { class: 'tagline' }, landing.tagline)),
+    el(
+      'main',
+      {},
+      el(
+        'ul',
+        { class: 'apps' },
+        ...apps.map((app) =>
+          el('li', {}, el('a', { href: `./${app.id}/` }, app.title), el('p', { class: 'tagline' }, app.tagline)),
+        ),
+      ),
+    ),
+    renderFooter(landing.footer),
+  );
+  document.body.insertBefore(page, document.body.firstChild);
+}
+
+start();
+EOF
+
+    
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/shell.ts
+[tool:execute] $ npm run -s typecheck 2>&1 | head -30
+    
+    exit 0
+[tool:execute] $ cd skeleton/shell && cat > page.html <<'EOF'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+<title></title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<!--bones:boot-->
+<!--bones:data-->
+<script src="app.js" defer></script>
+</body>
+</html>
+EOF
+cat > shell.css <<'EOF'
+/* Written against the theme contract only: colours, fonts, radius, spacing and base size all come from var(--…). */
+
+html {
+  font-size: var(--font-size);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+}
+
+.page,
+body > div:not(.page) {
+  box-sizing: border-box;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: calc(var(--space) * 2);
+  overflow-wrap: anywhere;
+}
+
+.tagline,
+.meta,
+.hint,
+.progress {
+  color: var(--muted);
+}
+
+.plain {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input {
+  font: inherit;
+  color: var(--text);
+}
+
+button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+button:hover,
+button:focus-visible {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+button:hover .hint,
+button:focus-visible .hint {
+  color: var(--accent-text);
+}
+
+button.small {
+  padding: calc(var(--space) / 2) var(--space);
+}
+
+input {
+  box-sizing: border-box;
+  min-height: 44px;
+  max-width: 100%;
+  margin-top: var(--space);
+  padding: calc(var(--space) / 2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+.choice .label {
+  display: block;
+  font-weight: bold;
+}
+
+.choice .hint {
+  display: block;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.notice {
+  padding: var(--space);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.steps ol {
+  padding-left: calc(var(--space) * 2);
+}
+
+.steps li {
+  margin-bottom: calc(var(--space) / 2);
+}
+
+.why,
+.skipped {
+  margin-top: calc(var(--space) * 2);
+}
+
+.source {
+  margin-bottom: var(--space);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+  margin-top: calc(var(--space) * 2);
+}
+
+.table-section {
+  margin-top: calc(var(--space) * 2);
+}
+
+.table-region {
+  margin-top: var(--space);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+caption {
+  padding: var(--space);
+  text-align: left;
+  font-family: var(--font-heading);
+  font-weight: bold;
+}
+
+th,
+td {
+  padding: calc(var(--space) / 2) var(--space);
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: normal;
+}
+
+.footer {
+  margin-top: calc(var(--space) * 3);
+  color: var(--muted);
+  font-size: 0.875em;
+}
+
+.apps {
+  padding: 0;
+  list-style: none;
+}
+
+.apps li {
+  margin-bottom: calc(var(--space) * 2);
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+EOF
+
+    
+    exit 0
+[tool:execute] $ cd skeleton/shell && python3 - <<'EOF'
+s=open('shell.css').read()
+s=s.replace(".page,\nbody > div:not(.page) {",".page {")
+open('shell.css','w').write(s)
+d=open('../../.kiro/specs/shell-and-cli/design.md').read()
+d=d.replace('<div id=\\"boot\\"><h1>T</h1>','<div id=\\"boot\\" class=\\"page\\"><h1>T</h1>')
+d=d.replace('<div id="boot"><h1>…</h1>','<div id="boot" class="page"><h1>…</h1>')
+open('../../.kiro/specs/shell-and-cli/design.md','w').write(d)
+EOF
+grep -n 'class=\\\?"page' ../../.kiro/specs/shell-and-cli/design.md | cut -c1-120
+    139:export function bootApp(copy: Copy): string;            // <div id="boot" class="page"><h1>…</h1><p>tagline</p><p>in
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && grep -n 'matches exactly' design.md | cut -c1-400
+    396:Property 12: for all tables from `arbHostileTable` and copies from `arbHostileCopy`, with `html = renderPage(template, { table, copy }, bootApp(copy))` and the template read from `skeleton/shell/page.html`: (a) `html` has exactly three `<script` and three `</script>`; (b) the body of each data block contains none of `<`, `>`, `&`, U+2028, U+2029; (c) `JSON.parse` of each body deep-equals the i
+    exit 0
+[tool:execute] $ cd .kiro/specs/shell-and-cli && python3 - <<'EOF'
+d=open('design.md').read()
+a='`<div id="boot"><h1>T</h1>'
+print(d.count(a))
+d=d.replace(a,'`<div id="boot" class="page"><h1>T</h1>')
+open('design.md','w').write(d)
+EOF
+    1
+    exit 0
+[tool:execute] $ cat > skeleton/build/page.ts <<'EOF'
+import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+
+const KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** JSON text that is safe inside a `<script type="application/json">` element. */
+export function escapeJson(value: unknown): string {
+  return (JSON.stringify(value) ?? 'null')
+    .replaceAll('<', '\\u003c')
+    .replaceAll('>', '\\u003e')
+    .replaceAll('&', '\\u0026')
+    .replaceAll('\u2028', '\\u2028')
+    .replaceAll('\u2029', '\\u2029');
+}
+
+export function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+/** The static block for an app page: shown without JavaScript, removed by the script at start. */
+export function bootApp(copy: Copy): string {
+  return (
+    '<div id="boot" class="page">' +
+    `<h1>${escapeHtml(copy.title)}</h1>` +
+    `<p>${escapeHtml(copy.tagline)}</p>` +
+    `<p>${escapeHtml(copy.intro)}</p>` +
+    `<noscript><p>${escapeHtml(copy.labels.noscript)}</p></noscript>` +
+    '</div>'
+  );
+}
+
+/** The static block for the landing page: the title, the tagline and a link per app. */
+export function bootLanding(landing: Landing, apps: readonly AppSummary[]): string {
+  const items = apps
+    .map((a) => `<li><a href="./${escapeHtml(a.id)}/">${escapeHtml(a.title)}</a><p>${escapeHtml(a.tagline)}</p></li>`)
+    .join('');
+  return (
+    '<div id="boot" class="page">' +
+    `<h1>${escapeHtml(landing.title)}</h1>` +
+    `<p>${escapeHtml(landing.tagline)}</p>` +
+    `<ul class="apps">${items}</ul>` +
+    '</div>'
+  );
+}
+
+/** Puts `boot` and one JSON data block per entry of `blocks` into the template. */
+export function renderPage(template: string, blocks: Record<string, unknown>, boot: string): string {
+  const data = Object.entries(blocks)
+    .map(([key, value]) => {
+      if (!KEY_PATTERN.test(key)) throw new Error(`bad data block key: ${key}`);
+      return `<script type="application/json" id="data-${key}">${escapeJson(value)}</script>`;
+    })
+    .join('\n');
+  return template.replace('<!--bones:boot-->', () => boot).replace('<!--bones:data-->', () => data);
+}
+EOF
+
+    
+    exit 0
+[tool:execute] $ cat > test/props/shell-generators.ts <<'EOF'
+import fc from 'fast-check';
+import type { Copy } from '../../skeleton/shell/copy-type.ts';
+import type { Step } from '../../skeleton/shell/hash.ts';
+import type { Table } from '../../skeleton/engine/index.ts';
+import { arbTable } from './generators.ts';
+
+const nasty = [
+  '</script><script>alert(1)</script>',
+  '<!--',
+  '-->',
+  '&amp;',
+  '<img src=x onerror=alert(1)>',
+  '\u2028',
+  '\u2029',
+  '"',
+  '\\',
+  "'",
+];
+
+/** Arbitrary strings mixed with strings that break out of HTML, scripts and JSON. */
+export const arbHostileText: fc.Arbitrary<string> = fc.oneof(
+  fc.string(),
+  fc.string({ unit: 'binary' }),
+  fc.constantFrom(...nasty),
+  fc.tuple(fc.string(), fc.constantFrom(...nasty), fc.string()).map(([a, b, c]) => a + b + c),
+);
+
+const POOL = 120;
+
+/** `arbTable` with every free-text field replaced by hostile text. Ids are left alone. */
+export const arbHostileTable: fc.Arbitrary<Table> = fc
+  .tuple(arbTable, fc.array(arbHostileText, { minLength: POOL, maxLength: POOL }))
+  .map(([table, pool]) => {
+    let next = 0;
+    const take = (): string => {
+      const value = pool[next++];
+      if (value === undefined) throw new Error('hostile text pool exhausted');
+      return value;
+    };
+    return {
+      id: table.id,
+      title: take(),
+      conditions: table.conditions.map((c) => ({
+        id: c.id,
+        question: take(),
+        help: take(),
+        values: c.values.map((v) => ({ id: v.id, label: take(), hint: take() })),
+      })),
+      outcomes: table.outcomes.map((o) => ({ id: o.id, label: take(), detail: take() })),
+      rules: table.rules.map((r) => ({
+        id: r.id,
+        when: r.when,
+        then: r.then,
+        note: take(),
+        source: { ref: r.source.ref, at: take() },
+      })),
+      sources: table.sources.map((s) => ({
+        id: s.id,
+        title: take(),
+        url: take(),
+        published: take(),
+        read: take(),
+      })),
+    };
+  });
+
+export const LABEL_KEYS = [
+  'startOver',
+  'change',
+  'why',
+  'rule',
+  'whatMattered',
+  'source',
+  'published',
+  'readOn',
+  'notAsked',
+  'copyLink',
+  'linkCopied',
+  'showTable',
+  'hideTable',
+  'any',
+  'outcome',
+  'yourAnswers',
+  'noscript',
+  'questionOf',
+  'badLink',
+] as const;
+
+/** A `Copy` with hostile text in every string field. */
+export const arbHostileCopy: fc.Arbitrary<Copy> = fc
+  .record({
+    title: arbHostileText,
+    tagline: arbHostileText,
+    intro: arbHostileText,
+    resultLead: arbHostileText,
+    answerStyle: fc.constantFrom<'tiles' | 'list'>('tiles', 'list'),
+    labels: fc.tuple(...LABEL_KEYS.map(() => arbHostileText)),
+    footer: fc.array(fc.record({ text: arbHostileText, href: arbHostileText }), { maxLength: 3 }),
+  })
+  .map(({ labels, ...rest }) => ({
+    ...rest,
+    labels: Object.fromEntries(LABEL_KEYS.map((key, i) => [key, labels[i] ?? ''])) as unknown as Copy['labels'],
+  }));
+
+/** A random subset of the conditions in random order, each with a random value of its own. */
+export function arbSteps(table: Table): fc.Arbitrary<Step[]> {
+  return fc.shuffledSubarray(table.conditions).chain((conditions) =>
+    fc
+      .tuple(...conditions.map((c) => fc.constantFrom(...c.values.map((v) => v.id))))
+      .map((values) => conditions.map((c, i) => ({ condition: c.id, value: values[i] ?? '' }))),
+  );
+}
+EOF
+cat > test/props/shell.props.test.ts <<'EOF'
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import fc from 'fast-check';
+import { describe, it, expect } from 'vitest';
+import { bootApp, renderPage } from '../../skeleton/build/page.ts';
+import type { Copy } from '../../skeleton/shell/copy-type.ts';
+import { readHash, writeHash } from '../../skeleton/shell/hash.ts';
+import { arbTable } from './generators.ts';
+import { arbHostileCopy, arbHostileTable, arbSteps, LABEL_KEYS } from './shell-generators.ts';
+
+const template = readFileSync(path.resolve(import.meta.dirname, '../../skeleton/shell/page.html'), 'utf8');
+const runs = { numRuns: 200 };
+
+describe('shell properties', () => {
+  it('Property 11 hash round trip', () => {
+    fc.assert(
+      fc.property(
+        arbTable.chain((table) => arbSteps(table).map((steps) => ({ table, steps }))),
+        ({ table, steps }) => {
+          const hash = writeHash(steps);
+          expect(hash).toMatch(/^(#[a-z0-9-]+=[a-z0-9-]+(&[a-z0-9-]+=[a-z0-9-]+)*)?$/);
+          expect(readHash(table, hash)).toEqual({ steps, ignored: 0 });
+        },
+      ),
+      runs,
+    );
+  });
+
+  it('Property 12 page holds table text only as escaped JSON', () => {
+    const emptyCopy: Copy = {
+      title: '',
+      tagline: '',
+      intro: '',
+      answerStyle: 'tiles',
+      labels: Object.fromEntries(LABEL_KEYS.map((key) => [key, ''])) as unknown as Copy['labels'],
+      resultLead: '',
+      footer: [],
+    };
+    const blockPattern = /<script type="application\/json" id="data-([a-z]+)">([^]*?)<\/script>/g;
+    const bootPattern = /<div id="boot" class="page">[^]*?<\/div>/;
+    const strip = (html: string): string =>
+      html.replace(blockPattern, '<script data>').replace(bootPattern, '<boot>');
+    const baseline = strip(renderPage(template, { table: null, copy: null }, bootApp(emptyCopy)));
+    const unescape = (s: string): string =>
+      s.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&amp;', '&');
+
+    fc.assert(
+      fc.property(arbHostileTable, arbHostileCopy, (table, copy) => {
+        const html = renderPage(template, { table, copy }, bootApp(copy));
+
+        // (a) three script elements: two data blocks and the app script
+        expect(html.split('<script').length - 1).toBe(3);
+        expect(html.split('</script>').length - 1).toBe(3);
+
+        // (b) and (c) the data blocks hold no markup characters and parse back to the input
+        const blocks = [...html.matchAll(blockPattern)];
+        expect(blocks.map((b) => b[1])).toEqual(['table', 'copy']);
+        for (const block of blocks) expect(block[2]).not.toMatch(/[<>&\u2028\u2029]/);
+        expect(JSON.parse(blocks[0]?.[2] ?? '')).toEqual(table);
+        expect(JSON.parse(blocks[1]?.[2] ?? '')).toEqual(copy);
+
+        // (d) the rest of the page does not depend on the input
+        expect(strip(html)).toBe(baseline);
+
+        // (e) the static block has a fixed shape and holds the four texts, escaped
+        const boot = html.match(bootPattern)?.[0] ?? '';
+        const parts = boot.match(
+          /^<div id="boot" class="page"><h1>([^<]*)<\/h1><p>([^<]*)<\/p><p>([^<]*)<\/p><noscript><p>([^<]*)<\/p><\/noscript><\/div>$/,
+        );
+        expect(parts).not.toBeNull();
+        expect((parts ?? []).slice(1).map(unescape)).toEqual([
+          copy.title,
+          copy.tagline,
+          copy.intro,
+          copy.labels.noscript,
+        ]);
+      }),
+      runs,
+    );
+  });
+});
+EOF
+npx vitest --run test/props/shell.props.test.ts -t "Property 12" 2>&1 | tail -30
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  1 passed (1)
+          Tests  1 passed | 1 skipped (2)
+       Start at  14:13:41
+       Duration  335ms (import 68%, tests 24%, transform 8%)
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 3 '`npx vitest --run test/props/shell.props.test.ts -t "Property 12"` → `Tests  1 passed | 1 skipped (2)` (the skipped one is Property 11, filtered out by `-t`).'; npx vitest --run test/props/shell.props.test.ts -t "Property 11" 2>&1 | grep -E "Tests|Fail|Error"; npm run typecheck 2>&1 | tail -3; echo rc=$?
+          Tests  1 passed | 1 skipped (2)
+    > typecheck
+    > tsc --noEmit
+    
+    rc=0
+    exit 0
+[tool:execute] $ grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(" skeleton/shell; echo "g1=$?"; grep -nE "\son[a-z]+=|javascript:|style=" skeleton/shell/page.html; echo "g2=$?"; grep -nE "url\(|@import" skeleton/shell/shell.css skeleton/shell/neutral-theme.css; echo "g3=$?"; grep -rnE "from ['\"][^.]" skeleton/shell; echo "g4=$?"
+    g1=1
+    g2=1
+    g3=1
+    g4=1
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 4 '`npx vitest --run test/props/shell.props.test.ts -t "Property 11" && npm run typecheck` → `Tests  1 passed | 1 skipped (2)`, typecheck exit 0. The task 8 shell greps already return nothing. Not run in a browser (apps spec).'
+    
+    exit 0
+[tool:execute] $ cat > skeleton/build/copy-check.ts <<'EOF'
+import type { Copy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';
+
+// `satisfies` makes the compiler fail if this list and `Labels` ever differ.
+const LABEL_KEYS = {
+  startOver: true,
+  change: true,
+  why: true,
+  rule: true,
+  whatMattered: true,
+  source: true,
+  published: true,
+  readOn: true,
+  notAsked: true,
+  copyLink: true,
+  linkCopied: true,
+  showTable: true,
+  hideTable: true,
+  any: true,
+  outcome: true,
+  yourAnswers: true,
+  noscript: true,
+  questionOf: true,
+  badLink: true,
+} satisfies Record<keyof Labels, true>;
+
+const COPY_KEYS = ['title', 'tagline', 'intro', 'answerStyle', 'labels', 'resultLead', 'footer'] as const satisfies readonly (keyof Copy)[];
+const LANDING_KEYS = ['title', 'tagline', 'footer'] as const satisfies readonly (keyof Landing)[];
+const PLACEHOLDERS: Partial<Record<keyof Labels, string[]>> = { questionOf: ['{n}', '{max}'], badLink: ['{count}'] };
+
+type Obj = Record<string, unknown>;
+
+function isObj(x: unknown): x is Obj {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+function nonEmptyString(value: unknown, path: string, problems: string[]): value is string {
+  if (typeof value !== 'string') {
+    problems.push(`${path}: must be a string`);
+    return false;
+  }
+  if (value.trim() === '') {
+    problems.push(`${path}: must not be empty`);
+    return false;
+  }
+  return true;
+}
+
+function unknownKeys(o: Obj, known: readonly string[], prefix: string, problems: string[]): void {
+  for (const key of Object.keys(o)) {
+    if (!known.includes(key)) problems.push(`${prefix}${key}: unknown key`);
+  }
+}
+
+function checkFooter(value: unknown, problems: string[]): void {
+  if (!Array.isArray(value)) {
+    problems.push('footer: must be an array');
+    return;
+  }
+  value.forEach((entry: unknown, i) => {
+    const path = `footer[${i}]`;
+    if (!isObj(entry)) {
+      problems.push(`${path}: must be an object`);
+      return;
+    }
+    nonEmptyString(entry['text'], `${path}.text`, problems);
+    if (Object.hasOwn(entry, 'href')) {
+      const href = entry['href'];
+      if (typeof href !== 'string') problems.push(`${path}.href: must be a string`);
+      else if (!/^https?:\/\//.test(href)) problems.push(`${path}.href: must start with https:// or http://`);
+    }
+    unknownKeys(entry, ['text', 'href'] satisfies (keyof FooterEntry)[], `${path}.`, problems);
+  });
+}
+
+/** Problems with a copy.json value as `<path>: <message>`; an empty list means valid. */
+export function validateCopy(input: unknown): string[] {
+  const problems: string[] = [];
+  if (!isObj(input)) return ['$: must be an object'];
+
+  for (const key of COPY_KEYS) {
+    if (!Object.hasOwn(input, key)) {
+      problems.push(`${key}: missing`);
+      continue;
+    }
+    const value = input[key];
+    if (key === 'answerStyle') {
+      if (value !== 'tiles' && value !== 'list') problems.push('answerStyle: must be "tiles" or "list"');
+    } else if (key === 'labels') {
+      if (!isObj(value)) {
+        problems.push('labels: must be an object');
+        continue;
+      }
+      for (const name of Object.keys(LABEL_KEYS) as (keyof Labels)[]) {
+        if (!Object.hasOwn(value, name)) {
+          problems.push(`labels.${name}: missing`);
+        } else if (nonEmptyString(value[name], `labels.${name}`, problems)) {
+          for (const placeholder of PLACEHOLDERS[name] ?? []) {
+            if (!(value[name] as string).includes(placeholder)) {
+              problems.push(`labels.${name}: must contain ${placeholder}`);
+            }
+          }
+        }
+      }
+      unknownKeys(value, Object.keys(LABEL_KEYS), 'labels.', problems);
+    } else if (key === 'footer') {
+      checkFooter(value, problems);
+    } else {
+      nonEmptyString(value, key, problems);
+    }
+  }
+  unknownKeys(input, COPY_KEYS, '', problems);
+  return problems;
+}
+
+/** Problems with landing.json: `title`, `tagline` and `footer`. */
+export function validateLanding(input: unknown): string[] {
+  const problems: string[] = [];
+  if (!isObj(input)) return ['$: must be an object'];
+  for (const key of LANDING_KEYS) {
+    if (!Object.hasOwn(input, key)) problems.push(`${key}: missing`);
+    else if (key === 'footer') checkFooter(input[key], problems);
+    else nonEmptyString(input[key], key, problems);
+  }
+  unknownKeys(input, LANDING_KEYS, '', problems);
+  return problems;
+}
+EOF
+cat > skeleton/build/theme-check.ts <<'EOF'
+export const COLOUR_PROPS = [
+  '--bg',
+  '--surface',
+  '--text',
+  '--muted',
+  '--accent',
+  '--accent-text',
+  '--border',
+  '--focus',
+] as const;
+
+export const THEME_PROPS = [...COLOUR_PROPS, '--font-body', '--font-heading', '--font-size', '--radius', '--space'] as const;
+
+const PRELUDE = /^(:root|@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\))$/;
+const DARK = /^@media/;
+
+interface Block {
+  prelude: string;
+  hasChild: boolean;
+  decls: string;
+  parent: Block | undefined;
+}
+
+/** Problems with a theme.css text as `theme.css: <message>`; an empty list means valid. */
+export function validateTheme(css: string): string[] {
+  const problems: string[] = [];
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  if (/url\(/i.test(text)) problems.push('theme.css: url( is not allowed');
+  if (/@import/i.test(text)) problems.push('theme.css: @import is not allowed');
+
+  const light = new Set<string>();
+  const dark = new Set<string>();
+  const known = new Set<string>(THEME_PROPS);
+
+  const readDeclarations = (body: string, into: Set<string>): void => {
+    for (const raw of body.split(';')) {
+      const declaration = raw.trim();
+      if (declaration === '') continue;
+      const colon = declaration.indexOf(':');
+      const name = colon < 0 ? '' : declaration.slice(0, colon).trim();
+      const value = colon < 0 ? '' : declaration.slice(colon + 1).trim();
+      if (colon < 0 || value === '') {
+        problems.push(`theme.css: declaration "${declaration}" is not "name: value"`);
+      } else if (!known.has(name)) {
+        problems.push(`theme.css: ${name}: not a contract property`);
+      } else {
+        into.add(name);
+      }
+    }
+  };
+
+  let current: Block | undefined;
+  let buffer = '';
+  for (const ch of text) {
+    if (ch === '{') {
+      const prelude = buffer.trim().replace(/\s+/g, ' ');
+      buffer = '';
+      if (current !== undefined) current.hasChild = true;
+      const block: Block = { prelude, hasChild: false, decls: '', parent: current };
+      if (!PRELUDE.test(prelude)) problems.push(`theme.css: selector "${prelude}" is not allowed`);
+      else if (current === undefined && prelude !== ':root' && !DARK.test(prelude)) problems.push(`theme.css: selector "${prelude}" is not allowed`);
+      else if (current !== undefined && !(DARK.test(current.prelude) && prelude === ':root')) {
+        problems.push(`theme.css: "${prelude}" is not allowed inside "${current.prelude}"`);
+      }
+      current = block;
+    } else if (ch === '}') {
+      if (current === undefined) {
+        problems.push('theme.css: unbalanced braces');
+        buffer = '';
+        continue;
+      }
+      const block = current;
+      if (block.hasChild) {
+        if (buffer.trim() !== '') problems.push(`theme.css: unexpected text "${buffer.trim()}"`);
+      } else if (PRELUDE.test(block.prelude)) {
+        if (block.prelude === ':root') {
+          readDeclarations(buffer, block.parent === undefined ? light : dark);
+        } else if (buffer.trim() !== '') {
+          problems.push(`theme.css: declarations are not allowed directly in "${block.prelude}"`);
+        }
+      }
+      buffer = '';
+      current = block.parent;
+    } else {
+      buffer += ch;
+    }
+  }
+  if (current !== undefined) problems.push('theme.css: unbalanced braces');
+  if (buffer.trim() !== '') problems.push(`theme.css: unexpected text "${buffer.trim()}"`);
+
+  for (const name of THEME_PROPS) if (!light.has(name)) problems.push(`theme.css: :root: missing ${name}`);
+  for (const name of COLOUR_PROPS) if (!dark.has(name)) problems.push(`theme.css: dark :root: missing ${name}`);
+  return problems;
+}
+EOF
+npm run -s typecheck 2>&1 | head
+    
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/skeleton/build/theme-check.ts
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/build/build.ts
+[tool:execute] $ npm run -s typecheck 2>&1 | head -20
+    
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/test/build.test.ts
+[tool:execute] $ python3 - <<'EOF'
+p='test/build.test.ts'
+s=open(p).read()
+s=s.replace("import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync }","import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync }")
+s=s.replace("""function editJson(file: string, edit: (json: Record<string, any>) => void): void {
+  const json = JSON.parse(readFileSync(file, 'utf8')) as Record<string, any>;
+  edit(json);""","""interface CopyDoc { labels: Record<string, string>; answerStyle: string; footer: { text: string; href?: string }[] }
+interface TableDoc { id: string; rules: { id: string }[]; sources: { url: string }[] }
+
+function editJson<T>(file: string, edit: (json: T) => void): void {
+  const json: T = JSON.parse(readFileSync(file, 'utf8'));
+  edit(json);""")
+s=s.replace("""    editJson(path.join(w.app, 'table.json'), (t) => {
+      t['rules'] = t['rules'].filter((r: { id: string }) => r.id !== 'large-wet');
+    });""","""    editJson<TableDoc>(path.join(w.app, 'table.json'), (t) => {
+      t.rules = t.rules.filter((r) => r.id !== 'large-wet');
+    });""")
+s=s.replace("editJson(path.join(w.app, 'copy.json'), (c) => delete c['labels'].change)","editJson<CopyDoc>(path.join(w.app, 'copy.json'), (c) => delete c.labels['change'])")
+s=s.replace("editJson(path.join(w.app, 'copy.json'), (c) => (c['answerStyle'] = 'grid'))","editJson<CopyDoc>(path.join(w.app, 'copy.json'), (c) => (c.answerStyle = 'grid'))")
+s=s.replace("editJson(path.join(w.app, 'copy.json'), (c) => (c['footer'] = [{ text: 'x', href: 'javascript:alert(1)' }]))","editJson<CopyDoc>(path.join(w.app, 'copy.json'), (c) => (c.footer = [{ text: 'x', href: 'javascript:alert(1)' }]))")
+s=s.replace("editJson(path.join(w.app, 'table.json'), (t) => (t['sources'][0].url = 'javascript:alert(1)'))","editJson<TableDoc>(path.join(w.app, 'table.json'), (t) => (t.sources[0]!.url = 'javascript:alert(1)'))")
+s=s.replace("editJson(path.join(w.app, 'table.json'), (t) => (t['id'] = 'other'))","editJson<TableDoc>(path.join(w.app, 'table.json'), (t) => (t.id = 'other'))")
+s=s.replace("""
+// `renameSync` is kept out of the rows above; the folder-name row changes the table id instead.
+void renameSync;
+""","")
+open(p,'w').write(s)
+EOF
+npm run -s typecheck 2>&1 | head; npx vitest --run test/build.test.ts 2>&1 | tail -40
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  1 passed (1)
+          Tests  12 passed (12)
+       Start at  14:15:42
+       Duration  117ms (tests 43%, transform 36%, import 20%, worker 2%)
+    exit 0
+[tool:execute FAILED] $ cd /tmp && rm -rf bt && mkdir bt && cd bt && mkdir apps && cd ~/hackathons-2026/kiroween/barebones && npm run -s bones -- new demo --apps /tmp/bt/apps && cat > /tmp/bt/run.ts <<'EOF'
+import { build } from '~/hackathons-2026/kiroween/barebones/skeleton/build/build.ts';
+console.log(await build({ appsDir: '/tmp/bt/apps', outDir: '/tmp/bt/dist', repoRoot: '/tmp/bt' }));
+EOF
+npx tsx /tmp/bt/run.ts && ls -la /tmp/bt/dist /tmp/bt/dist/demo && head -c 1500 /tmp/bt/dist/demo/index.html
+    created /tmp/bt/apps/demo
+    node:internal/modules/run_main:107
+        triggerUncaughtException(
+        ^
+    
+    Error: Transform failed with 1 error:
+    /private/tmp/bt/run.ts:2:12: ERROR: Top-level await is currently not supported with the "cjs" output format
+        at failureErrorWithLog (~/hackathons-2026/kiroween/barebones/node_modules/esbuild/lib/main.js:1752:15)
+        at ~/hackathons-2026/kiroween/barebones/node_modules/esbuild/lib/main.js:1019:50
+        at responseCallbacks.<computed> (~/hackathons-2026/kiroween/barebones/node_modules/esbuild/lib/main.js:886:9)
+        at handleIncomingPacket (~/hackathons-2026/kiroween/barebones/node_modules/esbuild/lib/main.js:941:12)
+        at Socket.readFromStdout (~/hackathons-2026/kiroween/barebones/node_modules/esbuild/lib/main.js:864:7)
+        at Socket.emit (node:events:507:28)
+        at addChunk (node:internal/streams/readable:559:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+        at Readable.push (node:internal/streams/readable:390:5)
+        at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+      name: 'TransformError',
+      code: 'ERR_REQUIRE_ASYNC_MODULE'
+    }
+    
+    Node.js v24.5.0
+    exit 1
+
+Temp script is outside the package (CJS); use .mts.
+
+[tool:execute] $ mv /tmp/bt/run.ts /tmp/bt/run.mts && npx tsx /tmp/bt/run.mts && ls -la /tmp/bt/dist /tmp/bt/dist/demo && head -c 1200 /tmp/bt/dist/demo/index.html; echo; head -c 700 /tmp/bt/dist/index.html
+    … (17 earlier lines not shown)
+    -rw-r--r--  1 user  wheel   3487 11월 12 14:15 shell.css
+    -rw-r--r--  1 user  wheel    623 11월 12 14:15 theme.css
+    <!doctype html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+    <title></title>
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="shell.css">
+    </head>
+    <body>
+    <div id="boot" class="page"><h1>Demo</h1><p>Answer a few questions to find the right tray.</p><p>Answer the questions one at a time. The answer shows which rule it came from.</p><noscript><p>This page needs JavaScript to ask the questions.</p></noscript></div>
+    <script type="application/json" id="data-table">{"id":"demo","title":"Demo","conditions":[{"id":"size","question":"How big is it?","values":[{"id":"small","label":"Small"},{"id":"large","label":"Large","hint":"Bigger than a shoebox"}]},{"id":"wet","question":"Is it wet?","values":[{"id":"no","label":"No"},{"id":"yes","label":"Yes"}]}],"outcomes":[{"id":"tray-a","label":"Tray A","detail":"Use tray A."},{"id":"tray-b","label":"Tray B","detail":"Use tray B."},{"id":"tray-c","label":"Tray C","detai
+    <!doctype html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+    <title></title>
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="shell.css">
+    </head>
+    <body>
+    <div id="boot" class="page"><h1>Bare Bones</h1><p>Small decision tools, each one a table that has been checked for gaps and conflicts.</p><ul class="apps"><li><a href="./demo/">Demo</a><p>Answer a few questions to find the right tray.</p></li></ul></div>
+    <scri
+    exit 0
+[tool:execute FAILED] $ rm -rf /tmp/bt; npx vitest --run test/build.test.ts 2>&1 | grep -E "Test Files|Tests"; npm run -s typecheck; echo tc=$?
+    Output:
+    Blocked by a permission rule (deny shell matching "git add*, git commit*, git push*, git reset*, git clean*, git checkout*, git stash*, rm -rf /*, rm -rf ~*, sudo *, cat .env*, cat *secret*"); the user did not reject it. Source: agent-profile. Triggered by: "rm -rf /tmp/bt".
+    
+    Exit Code: -1
+    exit ?
+[tool:execute] $ npx vitest --run test/build.test.ts 2>&1 | grep -E "Test Files|Tests"; npm run -s typecheck; echo tc=$?
+     Test Files  1 passed (1)
+          Tests  12 passed (12)
+    tc=0
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 5 '`npx vitest --run test/build.test.ts && npm run typecheck` → `Tests  12 passed (12)`, typecheck exit 0. The spec said "exactly these tests"; (d) is one `it.each` with 8 rows, so vitest counts 12 (a, b, c, 8 rows, e). Left behind: /tmp/bt (my manual build check; the sandbox blocked deleting it).'
+    
+    exit 0
+[tool:execute] $ cd node_modules/@modelcontextprotocol/sdk && cat package.json | grep -E '"version"|"./server|"./client|"./\*"' ; ls dist/esm/server | head -30; grep -n "registerTool" dist/esm/server/mcp.d.ts | head -5; grep -n "zod" package.json
+    … (13 earlier lines not shown)
+    index.d.ts
+    index.d.ts.map
+    index.js
+    index.js.map
+    mcp.d.ts
+    mcp.d.ts.map
+    mcp.js
+    mcp.js.map
+    middleware
+    requestBody.d.ts
+    requestBody.d.ts.map
+    requestBody.js
+    requestBody.js.map
+    sse.d.ts
+    sse.d.ts.map
+    sse.js
+    sse.js.map
+    sseKeepAlive.d.ts
+    sseKeepAlive.d.ts.map
+    sseKeepAlive.js
+    sseKeepAlive.js.map
+    121:     * @deprecated Use `registerTool` instead.
+    126:     * @deprecated Use `registerTool` instead.
+    135:     * @deprecated Use `registerTool` instead.
+    145:     * @deprecated Use `registerTool` instead.
+    150:     * @deprecated Use `registerTool` instead.
+    119:        "zod": "^3.25 || ^4.0",
+    120:        "zod-to-json-schema": "^3.25.1"
+    124:        "zod": "^3.25 || ^4.0"
+    130:        "zod": {
+    exit 0
+[tool:execute] $ cd node_modules/@modelcontextprotocol/sdk && sed -n 100,125p dist/esm/server/mcp.d.ts; grep -n "registerTool<" -A12 dist/esm/server/mcp.d.ts | head -30; grep -n '"\./\*"' -A4 package.json
+    … (14 earlier lines not shown)
+        registerResource(name: string, uriOrTemplate: ResourceTemplate, config: ResourceMetadata, readCallback: ReadResourceTemplateCallback): RegisteredResourceTemplate;
+        private _createRegisteredResource;
+        private _createRegisteredResourceTemplate;
+        private _createRegisteredPrompt;
+        private _createRegisteredTool;
+        /**
+         * Registers a zero-argument tool `name`, which will run the given function when the client calls it.
+         * @deprecated Use `registerTool` instead.
+         */
+        tool(name: string, cb: ToolCallback): RegisteredTool;
+        /**
+         * Registers a zero-argument tool `name` (with a description) which will run the given function when the client calls it.
+    161:    registerTool<OutputArgs extends ZodRawShapeCompat | AnySchema, InputArgs extends undefined | ZodRawShapeCompat | AnySchema = undefined>(name: string, config: {
+    162-        title?: string;
+    163-        description?: string;
+    164-        inputSchema?: InputArgs;
+    165-        outputSchema?: OutputArgs;
+    166-        annotations?: ToolAnnotations;
+    167-        _meta?: Record<string, unknown>;
+    168-    }, cb: ToolCallback<InputArgs>): RegisteredTool;
+    169-    /**
+    170-     * Registers a zero-argument prompt `name`, which will run the given function when the client calls it.
+    171-     * @deprecated Use `registerPrompt` instead.
+    172-     */
+    173-    prompt(name: string, cb: PromptCallback): RegisteredPrompt;
+    62:        "./*": {
+    63-            "types": "./dist/esm/*.d.ts",
+    64-            "import": "./dist/esm/*",
+    65-            "require": "./dist/cjs/*"
+    66-        }
+    exit 0
+[tool:execute] $ mkdir -p skeleton/mcp && cat > skeleton/mcp/server.ts <<'EOF'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { readFile, realpath, stat } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
+import { check, decide, validate } from '../engine/index.ts';
+
+const MAX_BYTES = 1_000_000;
+const REPO_ROOT = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
+
+type ToolResult = { content: { type: 'text'; text: string }[]; isError?: boolean };
+
+function reply(payload: unknown, isError = false): ToolResult {
+  const result: ToolResult = { content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }] };
+  if (isError) result.isError = true;
+  return result;
+}
+
+function outside(root: string, target: string): boolean {
+  const relative = path.relative(root, target);
+  return relative.startsWith('..') || path.isAbsolute(relative);
+}
+
+/** Reads a JSON file inside the repository. Throws an Error whose message never contains file content. */
+export async function readRepoJson(repoRoot: string, p: string): Promise<unknown> {
+  // Lexical check first, so a probe cannot learn whether a file outside the repository exists.
+  const absolute = path.resolve(repoRoot, p);
+  if (outside(repoRoot, absolute)) throw new Error('path is outside the repository');
+
+  let real: string;
+  try {
+    real = await realpath(absolute);
+  } catch {
+    throw new Error('file does not exist');
+  }
+  if (outside(await realpath(repoRoot), real)) throw new Error('path is outside the repository');
+  if (path.extname(real).toLowerCase() !== '.json') throw new Error('file must end in .json');
+
+  const info = await stat(real);
+  if (!info.isFile()) throw new Error('path is not a regular file');
+  if (info.size > MAX_BYTES) throw new Error(`file is larger than ${MAX_BYTES} bytes`);
+
+  const text = await readFile(real, 'utf8');
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    // V8's message quotes part of the input; keep only the position.
+    const position = error instanceof Error ? /at position \d+(?: \(line \d+ column \d+\))?/.exec(error.message)?.[0] : undefined;
+    throw new Error(position === undefined ? 'invalid JSON' : `invalid JSON ${position}`);
+  }
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : 'unknown error';
+}
+
+export function createServer(repoRoot: string): McpServer {
+  const server = new McpServer({ name: 'bare-bones', version: '0.1.0' });
+
+  server.registerTool(
+    'check_table',
+    {
+      description:
+        'Check a decision table for structural problems, gaps and conflicts. Give exactly one of `path` (a .json file inside the repository) or `table` (the table itself).',
+      inputSchema: { path: z.string().optional(), table: z.unknown().optional() },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ path: file, table }) => {
+      if ((file === undefined) === (table === undefined)) {
+        return reply({ error: 'give exactly one of path and table' }, true);
+      }
+      let input: unknown = table;
+      if (file !== undefined) {
+        try {
+          input = await readRepoJson(repoRoot, file);
+        } catch (error) {
+          return reply({ error: errorText(error) }, true);
+        }
+      }
+      const result = validate(input);
+      if (!result.ok) return reply({ valid: false, problems: result.problems });
+      return reply({ valid: true, report: check(result.table) });
+    },
+  );
+
+  server.registerTool(
+    'evaluate',
+    {
+      description:
+        'Give answers (condition id to value id) to a table that passes the check, and get the decision: decided with the outcome and why, or open with the next question.',
+      inputSchema: { path: z.string(), answers: z.record(z.string(), z.string()) },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ path: file, answers }) => {
+      let input: unknown;
+      try {
+        input = await readRepoJson(repoRoot, file);
+      } catch (error) {
+        return reply({ error: errorText(error) }, true);
+      }
+      const result = validate(input);
+      if (!result.ok) return reply({ valid: false, passed: false, problems: result.problems }, true);
+      const report = check(result.table);
+      if (!report.passed) {
+        return reply({ valid: true, passed: false, gaps: report.gaps.count, conflicts: report.conflicts.length }, true);
+      }
+      return reply(decide(result.table, answers));
+    },
+  );
+
+  return server;
+}
+
+if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await createServer(REPO_ROOT).connect(new StdioServerTransport());
+  process.stderr.write('bare-bones MCP server ready\n');
+}
+EOF
+cat > test/mcp.test.ts <<'EOF'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import path from 'node:path';
+import { expect, it } from 'vitest';
+
+const repo = path.resolve(import.meta.dirname, '..');
+
+interface ToolReply { isError?: boolean; content: { type: string; text: string }[] }
+
+async function call(client: Client, name: string, args: Record<string, unknown>): Promise<{ isError: boolean; json: any }> {
+  const reply = (await client.callTool({ name, arguments: args })) as ToolReply;
+  return { isError: reply.isError === true, json: JSON.parse(reply.content[0]?.text ?? 'null') };
+}
+
+it('serves check_table and evaluate over stdio', { timeout: 30000 }, async () => {
+  const client = new Client({ name: 'test', version: '0.0.0' });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: ['--import', 'tsx', 'skeleton/mcp/server.ts'],
+    cwd: repo,
+  });
+  try {
+    await client.connect(transport);
+
+    const gap = await call(client, 'check_table', { path: 'skeleton/examples/gap.table.json' });
+    expect(gap.isError).toBe(false);
+    expect(gap.json.valid).toBe(true);
+    expect(gap.json.report.gaps.count).toBe(1);
+    expect(gap.json.report.passed).toBe(false);
+
+    const bad = await call(client, 'check_table', {
+      table: { id: 'x', title: 'X', conditions: [], outcomes: [], rules: [{ id: 'r' }], sources: [] },
+    });
+    expect(bad.json.valid).toBe(false);
+    expect(bad.json.problems[0].path).toMatch(/^rules\[0\]/);
+
+    const decided = await call(client, 'evaluate', { path: 'skeleton/template/table.json', answers: { wet: 'yes' } });
+    expect(decided.json.status).toBe('decided');
+    expect(decided.json.outcome.id).toBe('tray-b');
+    expect(decided.json.skipped.map((s: { condition: string }) => s.condition)).toEqual(['size']);
+
+    const outside = await call(client, 'check_table', { path: '../outside.json' });
+    expect(outside.isError).toBe(true);
+  } finally {
+    await client.close();
+  }
+});
+EOF
+npm run -s typecheck 2>&1 | head -20; npx vitest --run test/mcp.test.ts 2>&1 | tail -30
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    bare-bones MCP server ready
+    
+     Test Files  1 passed (1)
+          Tests  1 passed (1)
+       Start at  14:16:30
+       Duration  264ms (tests 74%, import 21%, transform 4%, worker 1%)
+    exit 0
+[tool:execute] $ python3 - <<'EOF'
+p='test/mcp.test.ts'
+s=open(p).read()
+s=s.replace("""async function call(client: Client, name: string, args: Record<string, unknown>): Promise<{ isError: boolean; json: any }> {""","""interface Payload {
+  valid?: boolean;
+  report?: { passed: boolean; gaps: { count: number } };
+  problems?: { path: string }[];
+  status?: string;
+  outcome?: { id: string };
+  skipped?: { condition: string }[];
+}
+
+async function call(client: Client, name: string, args: Record<string, unknown>): Promise<{ isError: boolean; json: Payload }> {""")
+s=s.replace("expect(gap.json.report.gaps.count)","expect(gap.json.report?.gaps.count)").replace("expect(gap.json.report.passed)","expect(gap.json.report?.passed)")
+s=s.replace("bad.json.problems[0].path","bad.json.problems?.[0]?.path")
+s=s.replace("decided.json.outcome.id","decided.json.outcome?.id")
+s=s.replace("decided.json.skipped.map((s: { condition: string }) => s.condition)","decided.json.skipped?.map((s) => s.condition)")
+open(p,'w').write(s)
+EOF
+grep -rn "\bany\b\|as any\|@ts-" test skeleton --include=*.ts | grep -v "^test/props/generators\|//" | head; npm run -s typecheck; npx vitest --run test/mcp.test.ts 2>&1 | grep -E "Test Files|Tests"
+    zsh:20: no matches found: --include=*.ts
+     Test Files  1 passed (1)
+          Tests  1 passed (1)
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 6 '`npx vitest --run test/mcp.test.ts` → `Tests  1 passed (1)`. SDK 1.32.2 `registerTool` and the `server/mcp.js`, `server/stdio.js` paths matched design.md. One deviation: a JSON syntax error reports only `invalid JSON at position N (line L column C)`, because V8'"'"'s message quotes part of the file (15.5).'; grep -rnE "\bany\b|@ts-|as any" test skeleton --include='*.ts' | head
+    test/decide.test.ts:39:        { kind: 'unknown-value', path: 'answers.kind', message: expect.any(String) },
+    test/decide.test.ts:40:        { kind: 'unknown-condition', path: 'answers.zeta', message: expect.any(String) },
+    test/props/shell-generators.ts:81:  'any',
+    test/cli.test.ts:41:  it('reports structural problems before any check', () => {
+    skeleton/shell/copy-type.ts:17:  any: string;
+    skeleton/shell/shell.ts:259:        if (!Object.hasOwn(rule.when, c.id)) return el('td', {}, labels.any);
+    skeleton/build/copy-check.ts:18:  any: true,
+    skeleton/engine/types.ts:25:export type Answers = Readonly<Record<string, string>>; // any subset of the conditions
+    exit 0
+[tool:execute] $ cat > scripts/time-decide.ts <<'EOF'
+// Measurement helper (requirement 16): how long does `decide` take on the largest table the engine accepts?
+// Five conditions of ten values (100,000 combinations), 200 rules that each name all five conditions.
+import { check, decide, validate } from '../skeleton/engine/index.ts';
+import type { Table } from '../skeleton/engine/index.ts';
+
+const ten = Array.from({ length: 10 }, (_, v) => v);
+const valueId = (c: number, v: number): string => `c${c}-v${v}`;
+
+const rules: Table['rules'] = [];
+for (const copy of ['a', 'b']) {
+  for (const i of ten) {
+    for (const j of ten) {
+      rules.push({
+        id: `${copy}-${i}-${j}`,
+        when: {
+          c0: valueId(0, i),
+          c1: valueId(1, j),
+          c2: ten.map((v) => valueId(2, v)),
+          c3: ten.map((v) => valueId(3, v)),
+          c4: ten.map((v) => valueId(4, v)),
+        },
+        then: `o${(i + j) % 4}`,
+        source: { ref: 's0', at: `row ${i}-${j}` },
+      });
+    }
+  }
+}
+
+const candidate: Table = {
+  id: 'large',
+  title: 'Large',
+  conditions: [0, 1, 2, 3, 4].map((c) => ({
+    id: `c${c}`,
+    question: `Question ${c}?`,
+    values: ten.map((v) => ({ id: valueId(c, v), label: `Value ${c}.${v}` })),
+  })),
+  outcomes: [0, 1, 2, 3].map((o) => ({ id: `o${o}`, label: `Outcome ${o}`, detail: `Detail ${o}` })),
+  rules,
+  sources: [{ id: 's0', title: 'Generated', url: 'https://example.com/', published: 'unknown', read: '2026-01-01' }],
+};
+
+const valid = validate(candidate);
+if (!valid.ok) {
+  console.error('table is not valid:', JSON.stringify(valid.problems.slice(0, 3)));
+  process.exit(1);
+}
+const report = check(valid.table);
+if (!report.passed) {
+  console.error(`table does not pass check: ${report.gaps.count} gaps, ${report.conflicts.length} conflicts`);
+  process.exit(1);
+}
+
+const times: number[] = [];
+for (let run = 0; run < 5; run++) {
+  const start = performance.now();
+  const result = decide(valid.table, {});
+  times.push(performance.now() - start);
+  if (result.status === 'error') {
+    console.error('decide returned an error');
+    process.exit(1);
+  }
+}
+const first = times[0] ?? 0;
+const median = [...times].sort((a, b) => a - b)[2] ?? 0;
+console.log(`combinations: ${report.counts.combinations}, rules: ${report.counts.rules}`);
+console.log(`decide first call ms: ${first.toFixed(1)}; all: ${times.map((t) => t.toFixed(1)).join(', ')}`);
+console.log(`decide median ms: ${median.toFixed(1)}`);
+if (first > 1000 || median > 1000) {
+  console.error('over 1000 ms');
+  process.exit(1);
+}
+EOF
+npx tsx scripts/time-decide.ts; echo exit=$?
+    combinations: 100000, rules: 200
+    decide first call ms: 79.8; all: 79.8, 81.1, 87.1, 80.1, 80.3
+    decide median ms: 80.3
+    exit=0
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 7 '`npx tsx scripts/time-decide.ts` → exit 0, `decide median ms: 80.3` (first call 79.8 ms; five runs 79.8, 81.1, 87.1, 80.1, 80.3; 100000 combinations, 200 rules; Node v24.5.0 on this Mac). Well under 1,000 ms; no cache added.'
+    
+    exit 0
+[tool:execute] $ npm run typecheck && npm test && ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(" skeleton/shell && ! grep -nE "\son[a-z]+=|javascript:|style=" skeleton/shell/page.html && ! grep -nE "url\(|@import" skeleton/shell/shell.css skeleton/shell/neutral-theme.css && ! grep -rnE "from ['\"][^.]" skeleton/shell && ! grep -rnE "from '(\.\./)+(build|cli|mcp)" skeleton/shell && ! grep -rnE "from '(\.\./)+(cli|mcp)" skeleton/build && ! grep -rnE "from '(\.\./)+shell" skeleton/build | grep -v ":import type " && ! grep -rnE "from '(\.\./)+(shell|build|mcp)" skeleton/cli && ! grep -rnE "from '(\.\./)+(shell|build|cli)" skeleton/mcp && ! grep -rl "zod" skeleton/engine skeleton/shell skeleton/build skeleton/cli && ! grep -rnE "from ['\"]([^.]|\.\./)|require\(|import\(" skeleton/engine; echo "GATE exit=$?"
+    
+    > typecheck
+    > tsc --noEmit
+    
+    
+    > test
+    > vitest --run
+    
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    bare-bones MCP server ready
+    
+     Test Files  10 passed (10)
+          Tests  60 passed (60)
+       Start at  14:16:58
+       Duration  462ms (tests 51%, import 31%, transform 16%, worker 1%)
+    
+    GATE exit=0
+    exit 0
+[tool:execute] $ python3 /tmp/tick.py 8 'the whole Verify chain exited 0: typecheck exit 0, `Test Files  10 passed (10)`, `Tests  60 passed (60)`, and every grep returned nothing.'; (npm run typecheck && npm test) 2>&1 | tail -15; echo ---; npm run bones -- check skeleton/examples/gap.table.json; echo "exit=$?"; echo ---; npm run bones -- check skeleton/examples/conflict.table.json; echo "exit=$?"; git status --short | grep -v "^ M docs/kiro-evidence"; ls apps 2>&1 | head -1
+    … (26 earlier lines not shown)
+    > bones
+    > tsx skeleton/cli/bones.ts check skeleton/examples/conflict.table.json
+    
+    gaps: 0
+    conflict: small -> tray-a vs wet -> tray-b, e.g. size=small, wet=yes
+    failed
+    exit=1
+     M .kiro/specs/shell-and-cli/design.md
+     M .kiro/specs/shell-and-cli/requirements.md
+     M .kiro/specs/shell-and-cli/tasks.md
+     M package-lock.json
+     M package.json
+     M skeleton/engine/index.ts
+     M tsconfig.json
+    ?? .kiro/agents/x-ray.json
+    ?? docs/kiro-evidence/06-impl-shell-and-cli.txt
+    ?? scripts/time-decide.ts
+    ?? skeleton/build/
+    ?? skeleton/cli/
+    ?? skeleton/engine/format.ts
+    ?? skeleton/examples/
+    ?? skeleton/mcp/
+    ?? skeleton/shell/
+    ?? skeleton/template/
+    ?? test/build.test.ts
+    ?? test/cli.test.ts
+    ?? test/mcp.test.ts
+    ?? test/props/shell-generators.ts
+    ?? test/props/shell.props.test.ts
+    ls: apps: No such file or directory
+    exit 0
+
+All eight tasks are done and ticked in `tasks.md`, each after its own Verify command passed. Nothing is staged or committed, and there is no `apps/` folder.
+
+The last 15 lines of `npm run typecheck && npm test` are the `> test` block through `Duration  444ms`. Typecheck printed nothing before it and exited 0. The suite shows `Test Files  10 passed (10)` and `Tests  60 passed (60)`.
+
+`npm run bones -- check skeleton/examples/gap.table.json` (exit 1):
+```
+gaps: 1
+  size=large, wet=yes
+failed
+```
+`npm run bones -- check skeleton/examples/conflict.table.json` (exit 1):
+```
+gaps: 0
+conflict: small -> tray-a vs wet -> tray-b, e.g. size=small, wet=yes
+failed
+```
+
+**Task 7 timing:** `decide` on the 100,000-combination, 200-rule table took 79.8 ms on the first call and a median of 80.3 ms over five runs, on Node v24.5.0. That is well under 1,000 ms, so no cache was added.
+
+**Owner answers:** I recorded them at the end of `requirements.md` and adjusted `design.md` and `tasks.md`. The task 8 grep now forbids value imports from `shell` into `build` but allows `import type`. Answer 7 needed a decision from me, see below.
+
+**Decisions for you**
+- **`--heading-font`:** the contract already has `--font-heading`, and the apps spec uses that name. I added only `--font-size`, so the contract has 13 properties and `shell.css` sets `html { font-size: var(--font-size) }`. If you meant a second property, say so.
+- **`noscript` block:** every page gets a static `<div id="boot" class="page">`. For apps it holds the title as `h1`, the tagline, the intro and `labels.noscript`, HTML-escaped. The landing page gets its title, tagline and a link per app instead. The script removes the block at start. Property 12 now also checks this block.
+- **Task 1 Verify string:** it expected the scripts as `build,bones,…`, which is not sorted order, so I corrected it to `bones,build,…`. The scripts are as specified.
+- **Lockfile:** the first `npm install` dropped the rolldown platform bindings from `package-lock.json` (an npm optional-dependency bug) and vitest stopped starting. I deleted `node_modules` and the lock and reinstalled, so the lock is regenerated. Transitive versions may differ from the old lock.
+- **MCP JSON errors:** a syntax error reports only `invalid JSON at position N (line L column C)`. V8's own message quotes part of the file, which requirement 15.5 forbids.
+- **Build tests:** task (d) is one `it.each` with 8 rows, so vitest counts 12 tests in `build.test.ts`, not 5.
+
+**Files created**
+- Engine: `skeleton/engine/format.ts`, plus the export line in `skeleton/engine/index.ts`.
+- Template and examples: `skeleton/template/{table.json,copy.json,theme.css}` and `skeleton/examples/{gap,conflict}.table.json`.
+- CLI: `skeleton/cli/bones.ts`.
+- Shell: `skeleton/shell/{page.html,shell.ts,landing.ts,dom.ts,hash.ts,copy-type.ts,shell.css,neutral-theme.css,landing.json}`.
+- Build: `skeleton/build/{build.ts,page.ts,copy-check.ts,theme-check.ts}`.
+- MCP: `skeleton/mcp/server.ts`.
+- Script: `scripts/time-decide.ts`.
+- Tests: `test/{cli,build,mcp}.test.ts`, `test/props/shell-generators.ts` and `test/props/shell.props.test.ts`.
+- Edited existing files: `package.json`, `package-lock.json`, `tsconfig.json`, and the three spec files.
+
+**Open items**
+- **Owner edits:** add the `@types/node` row and the `mcp` script to `tech.md`, and note the `build` → `shell` type-import exception in `structure.md`. I may not edit steering.
+- **Not verified:** the DOM code in `shell.ts` and `landing.ts` has never run in a browser. It is covered by typecheck, by the build bundling it, and by the greps; behaviour, focus handling and axe are for the apps spec.
+- **Not verified:** `npm run build` itself, because it fails with `no apps found` until the apps spec adds apps. I did build a temp app with `build()` and inspected the output.
+- **Empty title:** the static `<title>` is empty until the script runs, so a no-JavaScript page has no title. The spec does not cover this.
+- **Leftover:** `/tmp/bt` is left over from my manual build check. The sandbox blocked deleting it, and it is outside the repo.
+
+--- run success (end_turn); credits reported by this session: 22.97 ---
+--- exit 0; account credit meter before 3411.65, after 3434.15 (shared account) ---

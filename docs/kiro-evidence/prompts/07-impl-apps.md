@@ -11,3 +11,5 @@ Owner answers to your spec session. Record them first in a short "Owner answers"
 npm install and `npx playwright install chromium` are allowed (network for npm and the browser download only). Playwright runs headless Chromium only. Work one task at a time; after each, run its Verify command and only then tick it, quoting the result line. Never weaken a check or an axe rule. Do not stage, commit or push.
 
 End with the real output of `npm run typecheck && npm test && npm run test:e2e` (last 20 lines), `npm run bones -- check apps/which-bin/table.json` and `npm run bones -- check skeleton/examples/which-bin-broken.table.json` (full output), the files you created, and anything left open.
+
+One more owner request, from the shell-and-cli session: the static `<title>` is empty until the script runs. Make the build write the copy title (apps) or the landing title into `<title>`, HTML-escaped, and extend the existing Property 12 check to cover it. Record it as an amendment in the shell-and-cli spec's Owner answers.

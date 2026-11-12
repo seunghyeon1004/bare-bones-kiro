@@ -13,15 +13,15 @@ The engine API used is the one in `.kiro/specs/engine/design.md`: `validate`, `c
 
 Because the shell and the build may not import each other, two things are shared by agreement and not by import:
 
-1. **The CLI message.** The build runs `bones check` as a child process (`process.execPath --import tsx skeleton/cli/bones.ts check <file>`, cwd = repo root) and prints its output unchanged. The build never formats check results itself, so there is one format.
-2. **The `Copy` type.** `skeleton/build/copy-check.ts` defines `Copy` and `validateCopy`. `skeleton/shell/copy-type.ts` defines the same `Copy` interface for the browser code. A compile-time assertion in `test/build.test.ts` (`expectTypeOf<BuildCopy>().toEqualTypeOf<ShellCopy>()`, checked by `npm run typecheck`) keeps the two equal.
+1. **The report text.** `skeleton/engine/format.ts` (pure, engine imports only) exports `formatProblems`, `formatReport` and `formatInvalidJson`. The CLI prints their output; the build calls them in process and prints the same text under a heading. The build does not spawn the CLI. (Owner answer 1.)
+2. **The `Copy` type.** Defined once in `skeleton/shell/copy-type.ts`. `skeleton/build/copy-check.ts` does `import type { Copy }` from it; that is the only import from `shell` that `build` may have, and it must be a type import. (Owner answer 1.)
 
 ## Departures from steering
 
 1. `@types/node` is added, pinned to 22.20.5 (`npm view @types/node@22 version` on 2026-11-12 listed 22.20.5 last). **The owner adds it to `tech.md`'s table.** `esbuild`, `@modelcontextprotocol/sdk` and `zod` are already in the table; they are installed here.
 2. The script `mcp` is not in `tech.md`'s script table. The owner adds it.
 3. `tsconfig.json` gains `"DOM"` in `lib` and `"node"` in `types` (the engine design said later specs would). Consequence: the engine could type-check against DOM or Node globals by mistake. Engine purity stays enforced by the import grep in the engine spec's last task and by Property 10, not by the type system.
-4. `labels` has 18 keys. The owner's list gave 15; `published`, `outcome` and `yourAnswers` are added because the result shows a published date, the whole-table view has an outcome column and the steps list needs a heading. Without them a visible word would be hard-coded. Three labels contain placeholders: `{n}` and `{max}` in `questionOf`, `{count}` in `badLink`.
+4. `labels` has 19 keys. The owner's list gave 15; `published`, `outcome`, `yourAnswers` and (owner answer 2) `noscript` are added because the result shows a published date, the whole-table view has an outcome column and the steps list needs a heading. Without them a visible word would be hard-coded. Three labels contain placeholders: `{n}` and `{max}` in `questionOf`, `{count}` in `badLink`.
 5. `bones new` sets the table's `title` as well as `id` and the copy `title`, so the two titles cannot disagree.
 6. The build refuses an app folder whose name differs from the table `id` and an app folder with any file besides the three. This enforces `product.md` ("exactly `table.json`, `copy.json`, `theme.css`") and `structure.md` ("app folder name = app id").
 7. A `<meta http-equiv="Content-Security-Policy">` in every page and a rule that only `http(s)` URLs become links (the engine accepts any string for `source.url`, so `javascript:` would otherwise be a working link). Neither was asked for; both follow from "a table cannot inject markup".
@@ -41,14 +41,15 @@ skeleton/shell/
   landing.ts                  landing page
   dom.ts                      el(), text(), fill(), safeHref()
   hash.ts                     Step, writeHash, readHash (pure, no DOM)
-  copy-type.ts                Copy, Landing, AppSummary interfaces (types only)
+  copy-type.ts                Copy, Landing, AppSummary interfaces (types only; build imports them as types)
   shell.css                   layout, uses only var(--contract property)
   neutral-theme.css           built-in theme for the landing page
   landing.json                fixed landing copy
+skeleton/engine/format.ts     formatProblems, formatReport, formatInvalidJson (pure; exported from index.ts)
 skeleton/build/
   build.ts                    build(opts) and main
-  page.ts                     renderPage(template, blocks), escapeJson
-  copy-check.ts               Copy type, validateCopy, validateLanding
+  page.ts                     renderPage, escapeJson, escapeHtml, bootApp, bootLanding
+  copy-check.ts               validateCopy, validateLanding (Copy type comes from shell/copy-type.ts)
   theme-check.ts              THEME_PROPS, validateTheme
 skeleton/cli/bones.ts         run(argv, opts) and main
 skeleton/template/            table.json, copy.json, theme.css
@@ -78,6 +79,7 @@ interface Copy {
     source: string; published: string; readOn: string; notAsked: string;
     copyLink: string; linkCopied: string; showTable: string; hideTable: string; any: string;
     outcome: string; yourAnswers: string;
+    noscript: string;     // shown in the static page when scripts are off
     questionOf: string;   // must contain {n} and {max}
     badLink: string;      // must contain {count}
   };
@@ -92,7 +94,7 @@ interface Copy {
 
 ## theme.css
 
-Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text --muted --accent --accent-text --border --focus` (colours), `--font-body --font-heading`, `--radius --space`.
+Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text --muted --accent --accent-text --border --focus` (colours), `--font-body --font-heading` (font stacks, no weight), `--font-size` (base size; `shell.css` sets `html { font-size: var(--font-size) }`), `--radius --space`. Thirteen in all (owner answer 7; `--heading-font` is read as `--font-heading`).
 
 `validateTheme(css: string): string[]`:
 
@@ -101,7 +103,7 @@ Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text 
 3. Scan the text character by character with a depth counter (`{` +1, `}` -1; unbalanced braces are an error). The text accumulated before each `{` is that rule's prelude; the text between the braces of a rule with no nested block is its declarations, split on `;`.
 4. Each prelude, trimmed with whitespace collapsed, must match `/^(:root|@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\))$/`. This is the one regex check of requirement 3.2. A `:root` at depth 0 is the light rule; a `:root` inside the dark media block is the dark rule; a `:root` anywhere else, or a nested `@media`, is an error. Anything else gives `theme.css: selector "<prelude>" is not allowed`.
 5. Each declaration is `name: value` where `name` is a contract property; otherwise `theme.css: <name>: not a contract property`.
-6. The light rule must define all 12 properties; the dark rule the 8 colours. A missing one gives `theme.css: <rule>: missing <name>`.
+6. The light rule must define all 13 properties; the dark rule the 8 colours. A missing one gives `theme.css: <rule>: missing <name>`.
 
 `shell.css` uses `var(--bg)`, `var(--space)` and so on. A test (task 5) reads it and checks every `var(--x)` is a contract property and that no `#`, `rgb(` or `hsl(` colour literal appears. Spacing is `calc(var(--space) * n)`.
 
@@ -122,20 +124,24 @@ Contract properties (`THEME_PROPS` in `theme-check.ts`): `--bg --surface --text 
 <link rel="stylesheet" href="shell.css">
 </head>
 <body>
+<!--bones:boot-->
 <!--bones:data-->
 <script src="app.js" defer></script>
 </body>
 </html>
 ```
 
-`<html lang="en">` is fixed (translations are a non-goal). The title is empty until the script sets `document.title`. `page.ts`:
+`<html lang="en">` is fixed (translations are a non-goal). The title is empty until the script sets `document.title`. At start `shell.ts` and `landing.ts` remove `#boot` before rendering their own `h1`, so there is one `h1` when scripts run (9.1). `page.ts`:
 
 ```ts
 export function escapeJson(value: unknown): string;   // JSON.stringify + the five replacements
-export function renderPage(template: string, blocks: Record<string, unknown>): string;
+export function escapeHtml(text: string): string;     // & < > " ' to entities
+export function bootApp(copy: Copy): string;            // <div id="boot" class="page"><h1>…</h1><p>tagline</p><p>intro</p><noscript><p>…</p></noscript></div>
+export function bootLanding(landing: Landing, apps: AppSummary[]): string;  // h1, tagline, ul of links to ./<id>/
+export function renderPage(template: string, blocks: Record<string, unknown>, boot: string): string;
 ```
 
-`renderPage` replaces the marker with one `<script type="application/json" id="data-<key>">…</script>` per entry, in key order, joined with newlines. Keys must match the id pattern (`table`, `copy`, `landing`, `apps`). It is pure: the template text is an argument.
+`renderPage` replaces the `<!--bones:boot-->` marker with `boot` (already escaped by `bootApp` / `bootLanding`) and the data marker with one `<script type="application/json" id="data-<key>">…</script>` per entry, in key order, joined with newlines. Keys must match the id pattern (`table`, `copy`, `landing`, `apps`). It is pure: the template text is an argument.
 
 The app page uses `table` and `copy`; the landing page uses `landing` and `apps`. Both load `app.js` (in `dist/` the landing bundle, in `dist/<name>/` the app bundle).
 
@@ -237,7 +243,7 @@ Reads `data-landing` and `data-apps`, sets `document.title`, renders `h1`, tagli
 }
 ```
 
-(The exact wording is the task's to settle; the shape is fixed.) `neutral-theme.css` defines the 12 properties with a light and a dark block, to pass `validateTheme`.
+(The exact wording is the task's to settle; the shape is fixed.) `neutral-theme.css` defines the 13 properties with a light and a dark block, to pass `validateTheme`.
 
 ## Build (`build.ts`)
 
@@ -253,15 +259,15 @@ Steps, in order. Steps 1 to 4 only collect `errors`; nothing is written until st
 
 1. List the directories in `appsDir`, sorted with plain `<`. Ignore names starting with `.`. None → `no apps found in <dir>`.
 2. For each app: list its files. Anything other than the three → `<dir>: unexpected file <name>` / `missing <name>`. Name must match the id pattern.
-3. Parse `table.json` and `copy.json` (a syntax error is `<file>: invalid JSON: <message>`). `table.id` must equal the folder name. Run `validate` from the engine for the typed table and the `sources[].url` scheme check. Spawn `bones check`; if its exit code is not 0, add `== <path>/table.json ==` and its stdout to the errors. Run `validateCopy` and `validateTheme`.
+3. Parse `table.json` and `copy.json` (a syntax error is `<file>: invalid JSON: <message>`). `table.id` must equal the folder name. Run `validate` from the engine for the typed table and the `sources[].url` scheme check. Then `check(table)` in process; if it does not pass, add `== <path>/table.json ==` and `formatReport(report)` (the text `bones check` prints, ending `failed`) to the errors. A structurally invalid table gets `formatProblems(problems)` instead, and bad JSON `formatInvalidJson(message)`. Run `validateCopy` and `validateTheme`.
 4. `validateLanding(landing.json)` and `validateTheme(neutral-theme.css)`.
 5. If `errors` is not empty return `{ ok: false, errors }`. Otherwise check the output-directory guard (11.9: the resolved `outDir` must not equal `repoRoot` and must not be a parent of `appsDir`), `rm -rf outDir`, `mkdir`.
 6. Bundle both entry points once with `esbuild.build({ entryPoints, bundle: true, format: 'iife', platform: 'browser', target: 'es2022', minify: true, write: false, legalComments: 'none' })`. `shell.ts` imports the engine, so the engine is bundled in.
-7. Write `dist/index.html` (landing) and for each app `dist/<name>/{index.html, app.js, shell.css, theme.css}`. `theme.css` is the app's own file; `shell.css` is the shell's. The landing gets the neutral theme as `dist/theme.css`.
+7. Write `dist/index.html` (landing: `renderPage(template, { landing, apps }, bootLanding(landing, apps))`) and for each app (`renderPage(template, { table, copy }, bootApp(copy))`) `dist/<name>/{index.html, app.js, shell.css, theme.css}`. `theme.css` is the app's own file; `shell.css` is the shell's. The landing gets the neutral theme as `dist/theme.css`.
 
 Relative paths: the page template only contains `theme.css`, `shell.css`, `app.js`. The landing links to `<id>/` at runtime. Nothing in `dist/` is absolute. `skeleton/examples/` and `skeleton/template/` are never listed, because the only input directory is `appsDir`.
 
-The build spawns one `tsx` process per app (about half a second each). That is fine for two to a few apps.
+The build spawns no process. It imports from `shell` only `import type { Copy, Landing, AppSummary }` (a type import is erased, so no shell code enters the build); it reads `page.html`, `shell.css`, `neutral-theme.css`, `landing.json` and the two entry points as files.
 
 ## CLI (`bones.ts`)
 
@@ -281,7 +287,7 @@ gaps: 1
 failed
 ```
 
-Order: JSON syntax → `$: invalid JSON: <message>` then `failed` (exit 1). `validate` problems → one `path: message` each, `failed` (exit 1). Otherwise `gaps: N`, example lines (two spaces; `, ` between pairs), `  (first 20 shown)` when `count > examples.length`, conflict lines, `warning: <path>: <message>` lines, and the last line `ok: C conditions, K combinations, R rules` (exit 0) or `failed` (exit 1). Condition order inside an example is the table's order, which the engine's combination object keeps.
+The text comes from the engine's `format.ts`: `formatInvalidJson(message)`, `formatProblems(problems)`, `formatReport(report)`; the CLI only reads the file and sets the exit code. Order: JSON syntax → `$: invalid JSON: <message>` then `failed` (exit 1). `validate` problems → one `path: message` each, `failed` (exit 1). Otherwise `gaps: N`, example lines (two spaces; `, ` between pairs), `  (first 20 shown)` when `count > examples.length`, conflict lines, `warning: <path>: <message>` lines, and the last line `ok: C conditions, K combinations, R rules` (exit 0) or `failed` (exit 1). Condition order inside an example is the table's order, which the engine's combination object keeps.
 
 Usage errors (code 2, stderr only, stdout empty): no command, unknown command, `check` without a file, `new` without a name, unknown option, unreadable file. The usage text is the single line `usage: bones check <table.json> | bones new <name> [--apps <dir>]`. `help` and `--help` print it on stdout with code 0.
 
@@ -324,7 +330,7 @@ Usage errors (code 2, stderr only, stdout empty): no command, unknown command, `
 }
 ```
 
-`bones check` prints `gaps: 0` then `ok: 2 conditions, 4 combinations, 4 rules`. `template/copy.json` has plain placeholder wording for every key; `template/theme.css` defines the 12 properties in `:root` and the 8 colours in the dark block with AA-contrast values.
+`bones check` prints `gaps: 0` then `ok: 2 conditions, 4 combinations, 4 rules`. `template/copy.json` has plain placeholder wording for every key; `template/theme.css` defines the 13 properties in `:root` and the 8 colours in the dark block with AA-contrast values.
 
 `skeleton/examples/gap.table.json`: the template table with `id` `gap-example`, `title` `Gap example` and the rule `large-wet` removed. One gap: `size=large, wet=yes`. `tray-b` is still used by `small-wet`, so there is no warning.
 
@@ -369,7 +375,7 @@ The engine design left this to this spec. `scripts/time-decide.ts` builds the ta
   - Rejects a table with a gap (the `large-wet` rule deleted): `ok: false`, an error contains `gaps: 1`, and a sentinel file pre-placed in `outDir` is still there.
   - Rejects a `theme.css` with a selector (`body { color: red }` appended): error contains `selector "body" is not allowed`.
   - Table-driven rejections, one row each: a missing label (`labels.change: missing`); `answerStyle: "grid"`; a footer `href` of `javascript:alert(1)`; a source `url` of `javascript:alert(1)`; an extra file in the app folder; a folder name different from the table id; an empty `apps/` (`no apps found`); an `outDir` equal to the repo root (refused, nothing removed).
-  - Contract checks: every `var(--x)` in `shell.css` is a contract property and it has no colour literal; `neutral-theme.css` and `landing.json` pass their validators; the `expectTypeOf` assertion that the two `Copy` types are equal.
+  - Contract checks: every `var(--x)` in `shell.css` is a contract property and it has no colour literal; `neutral-theme.css` and `landing.json` pass their validators; `build/` has no value import from `shell` (the task 8 grep covers it).
 - `test/mcp.test.ts`: one test. Starts the server with the SDK's `Client` and `StdioClientTransport` (command `process.execPath`, args `--import tsx skeleton/mcp/server.ts`, cwd the repo root), then: `check_table` with `path: 'skeleton/examples/gap.table.json'` returns `valid: true` and `report.gaps.count` 1 and `passed` false; `check_table` with inline `table` and a bad rule returns `valid: false` with a problem path; `evaluate` on `skeleton/template/table.json` with `{ wet: 'yes' }` returns `status: 'decided'`, outcome `tray-b`, `skipped` listing `size`; `check_table` with `path: '../outside.json'` has `isError: true`. Closes the client in `finally`.
 
 **Generators** (`test/props/shell-generators.ts`; the engine's `generators.ts` is imported, not changed):
@@ -387,9 +393,9 @@ The engine spec owns Properties 1 to 10 (I1 to I10). These continue the numberin
 
 Property 11: for all tables from `arbTable` and all step lists from `arbSteps`, `readHash(table, writeHash(steps))` equals `{ steps, ignored: 0 }` (same steps, same order), and `writeHash(steps)` matches `^(#[a-z0-9-]+=[a-z0-9-]+(&[a-z0-9-]+=[a-z0-9-]+)*)?$`. Validates: 7.1, 7.3
 
-Property 12: for all tables from `arbHostileTable` and copies from `arbHostileCopy`, with `html = renderPage(template, { table, copy })` and the template read from `skeleton/shell/page.html`: (a) `html` has exactly three `<script` and three `</script>`; (b) the body of each data block contains none of `<`, `>`, `&`, U+2028, U+2029; (c) `JSON.parse` of each body deep-equals the input; (d) `html` with both bodies removed equals `renderPage(template, { table: null, copy: null })` with their bodies removed, so the HTML around the blocks does not depend on the input. Validates: 4.2, 4.3
+Property 12: for all tables from `arbHostileTable` and copies from `arbHostileCopy`, with `html = renderPage(template, { table, copy }, bootApp(copy))` and the template read from `skeleton/shell/page.html`: (a) `html` has exactly three `<script` and three `</script>`; (b) the body of each data block contains none of `<`, `>`, `&`, U+2028, U+2029; (c) `JSON.parse` of each body deep-equals the input; (d) `html` with the two data bodies and the `#boot` block removed equals the same removal applied to `renderPage(template, { table: null, copy: null }, bootApp(emptyCopy))`, so the HTML around them does not depend on the input; (e) the `#boot` block matches exactly `<div id="boot" class="page"><h1>T</h1><p>G</p><p>I</p><noscript><p>N</p></noscript></div>` with `T`, `G`, `I`, `N` free of `<`, and each, with the five entities decoded, equals `copy.title`, `tagline`, `intro`, `labels.noscript`. Validates: 4.2, 4.3
 
-Property 12 is a statement about the HTML text. It does not run a browser; the DOM side of "no injection" (text nodes only) is enforced by the grep in the final task (4.6) and by the `apps` spec's e2e.
+Property 12 is a statement about the HTML text (the table-derived text never reaches the HTML except in the data blocks). It does not run a browser; the DOM side of "no injection" (text nodes only) is enforced by the grep in the final task (4.6) and by the `apps` spec's e2e.
 
 ## Traceability of the example-only and command-only criteria
 
@@ -414,10 +420,10 @@ Property 12 is a statement about the HTML text. It does not run a browser; the D
 
 ## Points the owner may want to change
 
-- **Dependency direction.** The build shells out to the CLI and the `Copy` type is written twice (with a type-level guard). Allowing `import type` from `shell` into `build`, or an exception for a shared formatter, would remove both. I kept `structure.md` as written.
+- **Dependency direction.** Settled by owner answer 1: shared formatter in the engine, `import type` of `Copy` from `shell` into `build`. `structure.md` says `build` does not import `shell`; the owner is to add this exception there.
 - **Required dark block.** `theme.css` must define the dark colours. The brief says "colours for light and dark", so I made it a requirement; a light-only theme would be a one-line relaxation.
 - **Contrast is not checked at build.** A pure function over the eight colours would be cheap. Left to axe in the `apps` spec.
-- **No JS, no page.** The pages are blank without JavaScript (words may only come from copy and table, so there is no `<noscript>` text).
+- **No JS.** Settled by owner answer 2: a static `#boot` block with title, tagline, intro and `labels.noscript`.
 - **The whole-table region scrolls inside itself.** At 360 px the table is wider than the screen; the page does not scroll sideways, the table region does and takes keyboard focus.
 - **`read on` as a date label.** I took "read on" in the owner's label list to mean "Read on <date>" for the source's `read` date and added `published` beside it.
 - **Invalid JSON exits 1, not 2.** A file that parses badly is a table that does not pass; 2 is kept for usage errors.

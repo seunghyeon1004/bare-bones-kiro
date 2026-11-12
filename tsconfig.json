@@ -6,12 +6,12 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "types": []
+    "types": ["node"]
   },
   "include": ["skeleton", "test", "e2e", "vitest.config.ts"]
 }

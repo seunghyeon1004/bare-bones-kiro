@@ -1,0 +1,28 @@
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --text: #1a1a1a;
+  --muted: #4a4a4a;
+  --accent: #0b57d0;
+  --accent-text: #ffffff;
+  --border: #767676;
+  --focus: #0b57d0;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size: 1rem;
+  --radius: 0.5rem;
+  --space: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --text: #f2f2f2;
+    --muted: #b8b8b8;
+    --accent: #8ab4f8;
+    --accent-text: #0b1b33;
+    --border: #8a8a8a;
+    --focus: #8ab4f8;
+  }
+}
