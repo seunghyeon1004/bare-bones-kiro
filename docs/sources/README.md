@@ -42,7 +42,9 @@ The lines the table relies on, quoted, with an English gloss:
 | seoul-2025 A2 차 | 전지류: 전지를 제품에서 분리하여 배출 ... 주요 거점에 비치된 수거함에 배출 | Batteries: take them out of the device, put them in a battery collection box |
 | seoul-2025 A2 카, A1 9 | 형광등: 지자체별 형광등 분리배출용기에 배출 / 깨진 형광등: (소량) 종량제봉투, (다량) 특수규격마대 | Fluorescent lamps: lamp collection box; broken ones: general bag (small amounts) or special sack |
 
-Not found in either source, so not in the table as an answer: what to do with a plastic container that still has food or grease on it after rinsing. The table sends that case to "Ask your district office" instead of guessing.
+How the bins are named: Annex 2 of `seoul-2025` lists recyclables in sections (가 골판지류 cardboard, 나 골판지 외 종이류 other paper including 종이팩 cartons and 종이컵 cups, 다 유리병 glass bottles, 라 금속캔 cans, 마 무색 PET병 clear PET bottles, 바 합성수지 용기 plastic containers, 사 비닐류 plastic film, 아 발포 합성수지 styrofoam, 차 전지류 batteries, 카 형광등 lamps). An item listed in a section goes out with that section's recyclables; the app's bin names are those section names in English. Cardboard and other paper are shown as one "Paper" bin, cartons as their own bin, as the carton row asks.
+
+Ref `sources-silent`: not found in either source, so not in the table as an answer: what to do with a plastic container that still has food or grease on it after rinsing. The table sends that case to "Ask your district office" instead of guessing.
 
 ## Which licence?
 
