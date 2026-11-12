@@ -1,0 +1,105 @@
+# Kiro CLI 3.2.1, 2026-11-12T04:27:17Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --mode spec --trust-all-tools --trust-workspace --model claude-sonnet-5.5 "$(cat docs/kiro-evidence/prompts/04-spec-apps.md)"
+
+--- prompt ---
+Write the spec `apps` in .kiro/specs/apps/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, docs/sources/README.md, docs/sources/choosealicense/*.yml, all steering, and the engine and shell-and-cli specs first. Write nothing outside .kiro/specs/apps/.
+
+Owner answers to the shell-and-cli spec session (they will be recorded in that spec before it is implemented): the check report formatter moves to skeleton/engine/format.ts (pure) so the CLI and build share it; build may `import type` from the shell; dark colours are required in every theme.css; no jsdom; the build writes the title, intro and a `labels.noscript` sentence into the HTML so the page is not blank without JavaScript.
+
+Scope:
+1. **apps/which-bin/** table.json, copy.json, theme.css. Conditions, in this order: `kind` (what the item is: paper or cardboard box, newspaper/books/flyers, paper cup, drink carton, receipt, glass, can, aluminium foil, plastic bottle, other plastic container or tray, plastic film or bag, styrofoam, battery, fluorescent lamp), `soiled` (food or grease on it that rinsing will not remove: yes/no), `broken` (yes/no), `glass-type` (bottle, jar or ordinary drinking glass / heat-resistant, crystal, ceramic or window glass), `coated` (paper cup coated on both sides: yes/no), `clear-drink` (colourless see-through water or drink bottle: yes/no). Outcomes: paper, cartons, glass bottles, cans, clear PET bottles, plastics, plastic film, styrofoam, battery box, lamp box, general waste bag (종량제봉투, explain it in English), special sack for non-combustibles (특수규격마대), ask your district office. Write every rule from the quote table in docs/sources/README.md, with `source.at` set to that row's Ref and the instruction (rinse, peel the label, wrap broken glass in newspaper...) in `note`. Use "any" (leave the condition out of `when`) wherever a condition does not matter for that item, so the app asks as little as possible. The case the sources are silent on (a plastic container with food it will not lose by rinsing) goes to "ask your district office", citing the README note. If a combination is not covered by any quoted row, do not invent a rule: list it in the design as an open question and route it to "ask your district office" only if I agree; for now, design it that way and flag each such combination. Copy: friendly, plain English, tiles, says "South Korea, as published by Seoul in 2025", names both sources with dates and links, and says the rules vary by district.
+2. **apps/which-licence/** from choosealicense data only: conditions `copyleft` (none / changed files only / the library only / the whole program), `network` (should running it as a network service count as distributing: yes/no), `patent` (do you want an explicit patent grant from contributors: yes/no), `credit` (must copies keep your copyright notice: yes/no). Outcomes: MIT, Apache-2.0, Unlicense, MPL-2.0, LGPL-3.0, GPL-3.0, AGPL-3.0, each with its choosealicense description. Rules cite the .yml file and the permission or condition key that decides it (for example `mit.yml: no patent-use`). Where no licence of the seven fits an answer set (for example no copyleft, patent grant wanted, no notice required), the rule says which nearest licence is offered and why in `note`, citing the yml facts. Copy: precise, list style, a short "not legal advice" line, attribution "Licence data from choosealicense.com, CC BY 3.0" with links.
+3. The two theme.css files must look clearly different (which-bin: warm, rounded, large type; which-licence: ink on paper, square, a serif heading font from the system stack) and both pass WCAG AA in light and dark. No web fonts.
+4. **skeleton/examples/which-bin-broken.table.json**: the which-bin table with exactly one rule removed (creating one gap) and one rule added that contradicts another (one conflict), for the demo. Its file says which.
+5. **e2e/** (Playwright + @axe-core/playwright, Chromium only, against `dist/` served by a tiny static server in scripts/serve.mjs started by Playwright's webServer): per app one walk to a result by keyboard only, checking the number of questions asked; one shared-link test (open with a hash, the result is shown; an invalid answer in the hash shows the notice); the whole-table view; axe with no violations on the question and result screens in light and dark; no horizontal scroll at 360 px. One test for the landing page. Keep it to about 12 tests.
+6. **Golden examples**: test/apps.test.ts with 8 items per app evaluated through the engine (for example a greasy pizza box, a clean paper cup, a broken drinking glass, a clear water bottle; GPL-3.0 for whole program without network, AGPL-3.0 with network), each expected outcome traceable to a source row.
+7. **.github/workflows/pages.yml**: on push to main: npm ci, typecheck, test, build, Playwright e2e (install chromium), upload dist and deploy to GitHub Pages with the official actions.
+
+Properties: none new unless a real universal claim appears (the engine's I1-I10 already cover the tables). Tasks: at most 7, each with one Verify command. End with a summary: criteria, tasks, every combination you flagged as not covered by a source, and open questions.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the brief, sources, steering and the existing specs.
+
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/product-brief.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/sources/README.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && find .kiro -type f | sort && wc -c .kiro/specs/*/* docs/sources/choosealicense/* && git status --short | head
+    … (5 earlier lines not shown)
+    .kiro/specs/shell-and-cli/tasks.md
+    .kiro/steering/invariants.md
+    .kiro/steering/kiro-workflow.md
+    .kiro/steering/product.md
+    .kiro/steering/structure.md
+    .kiro/steering/table-format.md
+    .kiro/steering/tech.md
+       23142 .kiro/specs/engine/design.md
+       11764 .kiro/specs/engine/requirements.md
+        3735 .kiro/specs/engine/tasks.md
+       34479 .kiro/specs/shell-and-cli/design.md
+       22187 .kiro/specs/shell-and-cli/requirements.md
+        6734 .kiro/specs/shell-and-cli/tasks.md
+        1420 docs/sources/choosealicense/agpl-3.0.yml
+        1266 docs/sources/choosealicense/apache-2.0.yml
+        1258 docs/sources/choosealicense/gpl-3.0.yml
+        1499 docs/sources/choosealicense/lgpl-3.0.yml
+         919 docs/sources/choosealicense/mit.yml
+        1377 docs/sources/choosealicense/mpl-2.0.yml
+         789 docs/sources/choosealicense/unlicense.yml
+      110569 total
+    ?? .kiro/
+    ?? docs/kiro-evidence/01-steering.txt
+    ?? docs/kiro-evidence/02-spec-engine.txt
+    ?? docs/kiro-evidence/03-spec-shell-and-cli.txt
+    ?? docs/kiro-evidence/04-spec-apps.txt
+    ?? docs/kiro-evidence/credits.log
+    ?? docs/kiro-evidence/prompts/02-spec-engine.md
+    ?? docs/kiro-evidence/prompts/03-spec-shell-and-cli.md
+    ?? docs/kiro-evidence/prompts/04-spec-apps.md
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/docs/sources/choosealicense && for f in *.yml; do echo "=== $f"; cat $f; done; ls -la ~/hackathons-2026/kiroween/barebones ~/hackathons-2026/kiroween/barebones/.kiro/agents; cat ~/hackathons-2026/kiroween/barebones/.gitignore
+    … (232 earlier lines not shown)
+    conditions: []
+    
+    limitations:
+      - liability
+      - warranty
+    
+    ---
+    ~/hackathons-2026/kiroween/barebones:
+    total 16
+    drwxr-xr-x   8 user  staff   256 11월 12 13:07 .
+    drwxr-xr-x@  8 user  staff   256 11월 12 13:05 ..
+    drwxr-xr-x  12 user  staff   384 11월 12 13:27 .git
+    -rw-r--r--   1 user  staff   105 11월 12 13:07 .gitignore
+    drwxr-xr-x   5 user  staff   160 11월 12 13:15 .kiro
+    drwxr-xr-x   5 user  staff   160 11월 12 13:06 docs
+    -rw-r--r--   1 user  staff  1072 11월 12 13:07 LICENSE
+    drwxr-xr-x   5 user  staff   160 11월 12 13:07 scripts
+    
+    ~/hackathons-2026/kiroween/barebones/.kiro/agents:
+    total 0
+    drwxr-xr-x  2 user  staff   64 11월 12 13:07 .
+    drwxr-xr-x  5 user  staff  160 11월 12 13:15 ..
+    node_modules/
+    dist/
+    test-results/
+    playwright-report/
+    coverage/
+    .DS_Store
+    *.log
+    !docs/kiro-evidence/*.log
+    exit 0
+--- run unknown; credits reported by this session: 1.47 ---
+--- kiro-cli exited 1; last lines of its stderr ---
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=11
+--- exit 1; account credit meter before 3354.76, after 3356.73 (shared account) ---

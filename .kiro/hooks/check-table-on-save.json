@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Check app tables when a table is saved",
+      "description": "Runs `bones check` on every apps/*/table.json, so a gap or a conflict is reported with an example combination as soon as it is written.",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)(apps/[^/]+/table\\.json|skeleton/template/table\\.json)$",
+      "action": { "type": "command", "command": "bash scripts/hooks/check-table.sh", "timeout": 60 }
+    }
+  ]
+}

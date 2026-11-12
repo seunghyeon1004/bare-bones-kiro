@@ -1,0 +1,171 @@
+# Kiro CLI 3.2.1, 2026-11-12T04:18:08Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --mode spec --trust-all-tools --trust-workspace --model claude-sonnet-5.5 "$(cat docs/kiro-evidence/prompts/03-spec-shell-and-cli.md)"
+
+--- prompt ---
+Write the spec `shell-and-cli` in .kiro/specs/shell-and-cli/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, all steering and .kiro/specs/engine/ (its design is the API you build on; the engine is not implemented yet, so design against design.md). Write nothing outside .kiro/specs/shell-and-cli/.
+
+Owner answers to the engine spec session: add `@types/node` (run `npm view @types/node@22 version` and pin it; add it to tech.md's table is the owner's job, list it in Departures) and `esbuild` in this spec. Criterion 8.2 of the engine gets its own example test in the engine spec; not your concern.
+
+Scope:
+1. **copy.json format**, defined here and validated at build time (a hand-written check in skeleton/build, no zod): `title`, `tagline`, `intro`, `answerStyle` (`tiles` or `list`), `labels` (start over, change, why, rule, what mattered, source, read on, not asked, copy link, link copied, show the whole table, hide the table, any, question n of at most m, bad link answers ignored), `resultLead` (e.g. "Put it in"), `footer` as a list of `{ text, href? }`. Every visible word on the page comes from copy.json or the table.
+2. **theme.css contract**: only custom properties on `:root` and inside `@media (prefers-color-scheme: dark)`: colours (bg, surface, text, muted, accent, accent-text, border, focus), font stacks for body and headings, radius, a spacing unit. The build rejects a theme.css that contains a selector other than `:root` (one regex check). The shell's own CSS uses only these properties.
+3. **The page shell** (skeleton/shell/): `shell.ts` bundled by esbuild into `app.js`, `shell.css`, an HTML template. The build inlines the table and copy as `<script type="application/json">` blocks, so the page makes no requests beyond its own files. Behaviour as in the brief: one question at a time with real buttons, answers so far with "change", result with outcome, detail, note, why (rule ids, what mattered as "question: answer", source title linked, published and read dates), skipped questions, share link in the URL hash with a copy button (the hash is updated with `history.replaceState`; opening a link applies valid answers and shows a notice if any were ignored), the whole-table view as a real `<table>` with `<th scope>` headers. Focus moves to the new question heading or the result heading (tabindex -1). One `h1`. A live region announces the new question. Tiles grid at least 44 px targets; works at 360 px with no horizontal scroll; `prefers-reduced-motion` respected. No inline event handlers, no `innerHTML` with table or copy text (text nodes only), so a table cannot inject markup.
+4. **Landing page**: `dist/index.html` lists every app (title, tagline, link) using a small fixed copy in skeleton/shell/landing.json and a neutral built-in theme.
+5. **Build** (skeleton/build/build.ts, `npm run build`): for each folder in apps/: validate and check the table (any error, gap or conflict stops the build with the CLI's message and exit 1), validate copy.json and theme.css, write dist/<app>/index.html, app.js, shell.css, theme.css. Then the landing page. Relative links only. Never builds skeleton/examples/ or skeleton/template/.
+6. **CLI** (skeleton/cli/bones.ts, `npm run bones -- ...`): `check <table.json>` and `new <name>` as in the brief; output format for check: one line per structural error (`path: message`), then `gaps: N` with the examples as `condition=value, ...`, then each conflict as `conflict: rule-a -> outcome-x vs rule-b -> outcome-y, e.g. condition=value, ...`, then warnings, then `ok: C conditions, K combinations, R rules` or `failed`. Exit codes 0, 1, 2.
+7. **Template** (skeleton/template/): a tiny valid app (2 conditions, 3 outcomes, 4 rules) with copy.json and theme.css; `new` copies it to apps/<name>/ and sets the table id and copy title from the name. Name must match the id pattern; refuse an existing folder.
+8. **Examples** (skeleton/examples/): `gap.table.json` (one gap), `conflict.table.json` (one conflict). The apps spec adds a broken copy of which-bin later.
+9. **MCP server** (skeleton/mcp/server.ts, stdio, dev only, `npm run mcp`): tools `check_table` (input: `path` to a JSON file inside the repo, or `table` inline; output: validate errors or the check result, as JSON text) and `evaluate` (input: `path`, `answers` object; output: the decide result). Paths outside the repo root are refused. zod for tool input schemas only.
+
+Tests, proportionate: a few build tests (builds a temp copy of the template; rejects a table with a gap; rejects a theme.css with a selector), CLI tests (check exit codes on the two examples and the template; new into a temp apps dir, then the built output exists; refuses an existing name), one MCP test that starts the server over stdio with the SDK client and calls both tools. No browser tests here: e2e with axe belongs to the `apps` spec. Correctness properties only where there is a real universal claim (for example: for all valid tables, copy and answers, the hash written by the shell decodes back to the same answers; for all table text, the built page contains it only as escaped JSON). Keep it to at most 3 properties, numbered from 11.
+
+Tasks: at most 8, each with one Verify command. End with a summary: criteria, properties, tasks, and open questions.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the brief, the steering files and the engine spec.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/product-brief.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/.kiro && find . -type f | sort && ls -la ..
+    ./specs/engine/design.md
+    ./specs/engine/requirements.md
+    ./specs/engine/tasks.md
+    ./steering/invariants.md
+    ./steering/kiro-workflow.md
+    ./steering/product.md
+    ./steering/structure.md
+    ./steering/table-format.md
+    ./steering/tech.md
+    total 16
+    drwxr-xr-x   8 user  staff   256 11월 12 13:07 .
+    drwxr-xr-x@  8 user  staff   256 11월 12 13:05 ..
+    drwxr-xr-x  12 user  staff   384 11월 12 13:07 .git
+    -rw-r--r--   1 user  staff   105 11월 12 13:07 .gitignore
+    drwxr-xr-x   5 user  staff   160 11월 12 13:15 .kiro
+    drwxr-xr-x   5 user  staff   160 11월 12 13:06 docs
+    -rw-r--r--   1 user  staff  1072 11월 12 13:07 LICENSE
+    drwxr-xr-x   5 user  staff   160 11월 12 13:07 scripts
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat .gitignore && ls .kiro/agents && ls package.json tsconfig.json 2>&1 | head; npm view @types/node@22 version 2>&1 | tail -3
+    node_modules/
+    dist/
+    test-results/
+    playwright-report/
+    coverage/
+    .DS_Store
+    *.log
+    !docs/kiro-evidence/*.log
+    ls: package.json: No such file or directory
+    ls: tsconfig.json: No such file or directory
+    @types/node@22.20.3 '22.20.3'
+    @types/node@22.20.4 '22.20.4'
+    @types/node@22.20.5 '22.20.5'
+    exit 0
+
+Before writing, I'll check the pinned `@types/node` version and the MCP SDK's API surface.
+
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/sources/README.md
+[tool:execute] $ cd /tmp && npm view @types/node@22 version --json 2>&1 | tail -4; npm view @modelcontextprotocol/sdk@1.32.2 version peerDependencies dependencies.zod --json 2>&1 | head -30; npm view esbuild@0.28.2 version 2>&1 | tail -1; npm view zod@4.6.7 version 2>&1|tail -1
+      "22.20.3",
+      "22.20.4",
+      "22.20.5"
+    ]
+    {
+      "version": "1.32.2",
+      "peerDependencies": {
+        "zod": "^3.25 || ^4.0",
+        "@cfworker/json-schema": "^4.1.1"
+      },
+      "dependencies.zod": "^3.25 || ^4.0"
+    }
+    0.28.2
+    4.6.7
+    exit 0
+
+I have what I need. Writing requirements.md first.
+
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+
+Now design.md.
+
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+
+Two spots in the design need fixing: the "if time allows" hedge in the traceability table, and a vague theme-parsing step.
+
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+
+Now tasks.md.
+
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+
+I'll tighten the final gate so it also checks the "no packages in shell" rule and CSS `url()`/`@import`.
+
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && git status --short && grep -c "^- \[ \]" .kiro/specs/shell-and-cli/tasks.md && grep -c "Verify:" .kiro/specs/shell-and-cli/tasks.md && grep -n "^Property" .kiro/specs/shell-and-cli/design.md | cut -c1-60
+    ?? .kiro/
+    ?? docs/kiro-evidence/01-steering.txt
+    ?? docs/kiro-evidence/02-spec-engine.txt
+    ?? docs/kiro-evidence/03-spec-shell-and-cli.txt
+    ?? docs/kiro-evidence/credits.log
+    ?? docs/kiro-evidence/prompts/02-spec-engine.md
+    ?? docs/kiro-evidence/prompts/03-spec-shell-and-cli.md
+    8
+    9
+    388:Property 11: for all tables from `arbTable` and all step
+    390:Property 12: for all tables from `arbHostileTable` and c
+    392:Property 12 is a statement about the HTML text. It does
+    exit 0
+
+I wrote the `shell-and-cli` spec in `.kiro/specs/shell-and-cli/` (`requirements.md`, `design.md`, `tasks.md`). Nothing else was touched and nothing has been run. The last `tasks.md` edit was not read back, and I did not run the task 1 and task 8 Verify commands, so they may have quoting problems.
+
+**Criteria:** 16 requirements covering your 9 scope items, plus the cost of `decide`, the repo tooling and the import-direction rule.
+- `@types/node` is pinned to 22.20.5. `npm view @types/node@22 version` listed it last.
+- The design has a Departures section with the items for you, including adding the `@types/node` row and the `mcp` script to `tech.md`.
+
+**Properties:** two, numbered 11 and 12.
+- **Property 11:** for all tables and ordered answer lists, `readHash(writeHash(steps))` returns the same steps with nothing ignored. It has no `copy` input, because the hash does not depend on copy.
+- **Property 12:** for all hostile table and copy text, the built page holds that text only inside JSON blocks that contain none of `< > & U+2028 U+2029`. Those blocks parse back to the input, and the HTML around them does not depend on the input.
+
+**Tasks:** 8, each with one Verify command.
+1. Tooling.
+2. Template, examples and CLI.
+3. Page renderer and Property 12.
+4. Shell, landing page and Property 11.
+5. Build.
+6. MCP server.
+7. Timing `decide` on a 100,000-combination table, which the engine design handed to this spec. It stops at over 1,000 ms and reports, with no cache.
+8. Final gate: typecheck, all tests, and greps for import direction, no `innerHTML` or network calls, and `zod` used only in the MCP server.
+
+The `new`-then-build test sits in task 5, because it needs the build.
+
+**Open questions:**
+1. **Import rule.** The build and the shell may not import each other, but they need shared pieces.
+   - The build runs `bones check` as a child process and prints its output, so there is one message format.
+   - The `Copy` type is written twice, and a type-level assertion in `test/build.test.ts` keeps the two equal.
+   - Should I allow `import type` from shell into build instead?
+2. **Extra labels.** I added `published`, `outcome` and `yourAnswers` to your label list. Without them a visible word would be hard-coded. I read "read on" as the label for the source's read date.
+3. **Dark theme.** `theme.css` must define the dark colours, since the brief says colours for light and dark. Say if a light-only theme should be allowed.
+4. **Additions you didn't ask for.**
+   - A Content-Security-Policy meta tag.
+   - Only `http(s)` URLs become links, because the engine accepts any string for `source.url`.
+   - Unknown keys in `copy.json` are errors.
+   - `bones new` also sets the table `title`.
+5. **No DOM tests here.** The browser code is checked by typecheck, the bundle build and greps. Its behaviour is checked in the `apps` spec's Playwright tests. A DOM library such as jsdom would let vitest test it earlier, but that needs your say-so.
+6. **Behaviours to confirm.**
+   - Invalid JSON exits 1, and 2 is kept for usage errors.
+   - Pages are blank without JavaScript, because all words must come from copy or table.
+   - The whole-table view scrolls inside its own region at 360 px, not the page.
+   - Tile buttons show hints as well as list items.
+   - Build does not check colour contrast. Axe covers it in the `apps` spec.
+
+--- run success (end_turn); credits reported by this session: 13.60 ---
+--- exit 0; account credit meter before 3341.20, after 3354.76 (shared account) ---

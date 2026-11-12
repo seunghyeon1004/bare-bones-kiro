@@ -1,0 +1,77 @@
+# Kiro CLI 3.2.1, 2026-11-12T04:09:04Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --mode spec --trust-all-tools --trust-workspace --model claude-sonnet-5.5 "$(cat docs/kiro-evidence/prompts/02-spec-engine.md)"
+
+--- prompt ---
+Write the spec `engine` in .kiro/specs/engine/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md and all steering first. Write nothing outside .kiro/specs/engine/.
+
+Owner answers to the points you raised in the steering session:
+- TypeScript is pinned to 6.0.3 (tech.md was corrected by hand).
+- Next question: among the relevant questions, for each one take the worst of its values, measured as the number of distinct outcomes among the consistent combinations once that value is added; pick the question with the smallest worst case; ties go to the earlier condition in the table. Put this in a criterion.
+- Conflicts: report every conflicting pair of rules once, ordered by rule position, each with one example combination. Gaps: the total count plus up to 20 examples in enumeration order (first condition varies slowest).
+- Filtering of bad answers from a shared link lives in the shell, not the engine. The engine rejects them.
+- The landing page belongs to skeleton/shell (shell-and-cli spec).
+- `source.at` is free text; the table-format rule about Refs stands. The engine only checks that `source.ref` names a source in the table.
+- Property files: keep `test/props/*.props.test.ts`.
+- I9 as you wrote it.
+
+Scope of this spec: the types, `validate`, `check`, `decide` (and `evaluate` for a complete combination, as a thin wrapper over decide) in skeleton/engine/, with an index.ts exporting them, plus package.json, tsconfig.json and vitest config for the whole repo, with the pinned versions from tech.md (install only what this spec needs: typescript, tsx, vitest, fast-check). Return values are plain data (no classes), so the CLI, MCP server and browser can print them as JSON. Decide's result carries everything the page needs for "why": outcome, firing rule ids, what mattered, notes, sources, skipped questions; or the next question and the list of relevant ones.
+
+Design for the 100,000 combination limit with plain enumeration; say what the worst-case cost of decide is per call and whether that is fine for a page.
+
+Correctness properties: exactly I1 to I10. Add example tests only for: each structural error kind (one each), the 100,000 limit, a table with one condition, overlapping rules that agree (not a conflict), and an unknown answer being rejected. Generators for random small tables go in one shared file under test/props/.
+
+Tasks: at most 8, each with one Verify command. End with a summary: number of criteria, properties and tasks, and anything you are unsure of.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the brief and the steering files.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/product-brief.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro/steering
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro/agents
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/sources/README.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.gitignore
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/requirements.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine && echo "criteria: $(grep -cE '^[0-9]+\.[0-9]+ ' requirements.md)"; echo "properties: $(grep -cE '^Property [0-9]+:' design.md)"; echo "tasks: $(grep -cE '^- \[ \] [0-9]+\.' tasks.md)"; echo "verify lines: $(grep -c 'Verify:' tasks.md)"; cd ../../.. && node --input-type=module -e "import { readFileSync as r } from 'node:fs'; r('package.json','utf8');" 2>&1 | grep -m1 -E "ENOENT|SyntaxError"; ls
+    criteria: 49
+    properties: 10
+    tasks: 8
+    verify lines: 9
+    Error: ENOENT: no such file or directory, open 'package.json'
+    docs
+    LICENSE
+    scripts
+    exit 0
+
+The `engine` spec is written in `.kiro/specs/engine/` (`requirements.md`, `design.md`, `tasks.md`), and I wrote nothing outside that folder. I counted 49 criteria in 9 requirements, 10 properties (Property 1 to 10 for I1 to I10, one test each) and 8 tasks, each with one `Verify:` line. I ran nothing from the spec itself: there is no code yet, so no `Verify:` command has been run, and I only checked that the task 1 command parses.
+
+The shape you asked for:
+- **API:** `validate(input)`, `check(table)`, `decide(table, answers)` and `evaluate(table, combination)`, all returning plain data.
+- **Next question:** your worst-case-then-earlier-condition rule is criteria 6.2 and 6.3.
+- **Cost:** `decide` costs at most `M · R · T` per call, where `M` is the consistent combinations, `R` the rules and `T` the conditions a rule names. A full walk costs at most about twice the first call. At 100,000 combinations with 200 rules I estimate 0.3 to 1 s on a laptop and a few seconds on a slow phone. For the two apps it should be a few milliseconds. These are estimates, not measurements.
+- **Conflicts:** `check` finds them by pairwise rule overlap, with no enumeration. Only gaps are enumerated.
+
+What I am unsure of, or decided without you:
+1. **Untested branch.** `decide` throws if it meets a combination with no rule or with rules that disagree, so a table that failed `check` can't return a made-up outcome. Criterion 8.2 covers this, but your example-test list has no test for it. I recommend adding one test or dropping the criterion.
+2. **Checks added inside property bodies.** To cover criteria that had no test, I put them inside Properties 4, 6 and 7. Property 4 checks the unused-outcome warning, `passed` and `counts`. Property 6 checks the "smallest worst case, earliest on ties" pick. Property 7 checks the decided result's rules, "what mattered" and sources. They check more than the one-line text of I4, I6 and I7.
+3. **Two calls to pass a table.** A table passes when `validate` is ok and `check(...).passed` is true, which is two calls and not one. You didn't specify this.
+4. **`evaluate` on an incomplete combination.** It returns whatever `decide` gives, possibly open, and doesn't fail.
+5. **Id format.** I chose `^[a-z0-9]+(-[a-z0-9]+)*$`, so ids may start with a digit and can't contain a dot. Dates are only checked to be strings, and extra keys in the JSON are ignored.
+6. **No `@types/node` in `tech.md`.** `tsc --noEmit` will fail on `node:fs` in the CLI, build and MCP code. This needs your answer before `shell-and-cli`.
+7. **tsconfig and package.json are untested.** I could not test the tsconfig options against TypeScript 6.0.3, so task 1 runs `tsc` and stops if it rejects an option; it will not drop a strict flag. `package.json` gets only the `typecheck`, `test` and `test:props` scripts, and the other `tech.md` scripts wait for the specs that create their targets.
+8. **Extra test files.** I added `test/tables.ts` (small tables for the example tests) and `test/props/oracle.ts` (brute-force reference code), besides the one shared generators file you asked for.
+
+--- run success (end_turn); credits reported by this session: 12.68 ---
+--- exit 0; account credit meter before 3328.95, after 3341.20 (shared account) ---

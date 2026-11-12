@@ -1,0 +1,598 @@
+# Kiro CLI 3.2.1, 2026-11-12T04:30:43Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --mode spec --trust-all-tools --trust-workspace --model claude-sonnet-5.5 "$(cat docs/kiro-evidence/prompts/04-spec-apps.md)"
+
+--- prompt ---
+Write the spec `apps` in .kiro/specs/apps/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, docs/sources/README.md, docs/sources/choosealicense/*.yml, all steering, and the engine and shell-and-cli specs first. Write nothing outside .kiro/specs/apps/.
+
+Owner answers to the shell-and-cli spec session (they will be recorded in that spec before it is implemented): the check report formatter moves to skeleton/engine/format.ts (pure) so the CLI and build share it; build may `import type` from the shell; dark colours are required in every theme.css; no jsdom; the build writes the title, intro and a `labels.noscript` sentence into the HTML so the page is not blank without JavaScript.
+
+Scope:
+1. **apps/which-bin/** table.json, copy.json, theme.css. Conditions, in this order: `kind` (what the item is: paper or cardboard box, newspaper/books/flyers, paper cup, drink carton, receipt, glass, can, aluminium foil, plastic bottle, other plastic container or tray, plastic film or bag, styrofoam, battery, fluorescent lamp), `soiled` (food or grease on it that rinsing will not remove: yes/no), `broken` (yes/no), `glass-type` (bottle, jar or ordinary drinking glass / heat-resistant, crystal, ceramic or window glass), `coated` (paper cup coated on both sides: yes/no), `clear-drink` (colourless see-through water or drink bottle: yes/no). Outcomes: paper, cartons, glass bottles, cans, clear PET bottles, plastics, plastic film, styrofoam, battery box, lamp box, general waste bag (종량제봉투, explain it in English), special sack for non-combustibles (특수규격마대), ask your district office. Write every rule from the quote table in docs/sources/README.md, with `source.at` set to that row's Ref and the instruction (rinse, peel the label, wrap broken glass in newspaper...) in `note`. Use "any" (leave the condition out of `when`) wherever a condition does not matter for that item, so the app asks as little as possible. The case the sources are silent on (a plastic container with food it will not lose by rinsing) goes to "ask your district office", citing the README note. If a combination is not covered by any quoted row, do not invent a rule: list it in the design as an open question and route it to "ask your district office" only if I agree; for now, design it that way and flag each such combination. Copy: friendly, plain English, tiles, says "South Korea, as published by Seoul in 2025", names both sources with dates and links, and says the rules vary by district.
+2. **apps/which-licence/** from choosealicense data only: conditions `copyleft` (none / changed files only / the library only / the whole program), `network` (should running it as a network service count as distributing: yes/no), `patent` (do you want an explicit patent grant from contributors: yes/no), `credit` (must copies keep your copyright notice: yes/no). Outcomes: MIT, Apache-2.0, Unlicense, MPL-2.0, LGPL-3.0, GPL-3.0, AGPL-3.0, each with its choosealicense description. Rules cite the .yml file and the permission or condition key that decides it (for example `mit.yml: no patent-use`). Where no licence of the seven fits an answer set (for example no copyleft, patent grant wanted, no notice required), the rule says which nearest licence is offered and why in `note`, citing the yml facts. Copy: precise, list style, a short "not legal advice" line, attribution "Licence data from choosealicense.com, CC BY 3.0" with links.
+3. The two theme.css files must look clearly different (which-bin: warm, rounded, large type; which-licence: ink on paper, square, a serif heading font from the system stack) and both pass WCAG AA in light and dark. No web fonts.
+4. **skeleton/examples/which-bin-broken.table.json**: the which-bin table with exactly one rule removed (creating one gap) and one rule added that contradicts another (one conflict), for the demo. Its file says which.
+5. **e2e/** (Playwright + @axe-core/playwright, Chromium only, against `dist/` served by a tiny static server in scripts/serve.mjs started by Playwright's webServer): per app one walk to a result by keyboard only, checking the number of questions asked; one shared-link test (open with a hash, the result is shown; an invalid answer in the hash shows the notice); the whole-table view; axe with no violations on the question and result screens in light and dark; no horizontal scroll at 360 px. One test for the landing page. Keep it to about 12 tests.
+6. **Golden examples**: test/apps.test.ts with 8 items per app evaluated through the engine (for example a greasy pizza box, a clean paper cup, a broken drinking glass, a clear water bottle; GPL-3.0 for whole program without network, AGPL-3.0 with network), each expected outcome traceable to a source row.
+7. **.github/workflows/pages.yml**: on push to main: npm ci, typecheck, test, build, Playwright e2e (install chromium), upload dist and deploy to GitHub Pages with the official actions.
+
+Properties: none new unless a real universal claim appears (the engine's I1-I10 already cover the tables). Tasks: at most 7, each with one Verify command. End with a summary: criteria, tasks, every combination you flagged as not covered by a source, and open questions.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the brief, sources, steering and existing specs.
+
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/product-brief.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/sources/README.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && find .kiro scripts -type f | head -50; echo; for f in docs/sources/choosealicense/*.yml; do echo "=== $f"; cat $f | head -60; done
+    … (224 earlier lines not shown)
+    
+    ---
+    === docs/sources/choosealicense/unlicense.yml
+    ---
+    title: The Unlicense
+    spdx-id: Unlicense
+    hidden: false
+    
+    description: A license with no conditions whatsoever which dedicates works to the public domain. Unlicensed works, modifications, and larger works may be distributed under different terms and without source code.
+    
+    how: Create a text file (typically named UNLICENSE or UNLICENSE.txt) in the root of your source code and copy the text of the license disclaimer into the file.
+    
+    using:
+      kakoune: https://github.com/mawww/kakoune/blob/master/UNLICENSE
+      RDF.rb: https://github.com/ruby-rdf/rdf/blob/master/UNLICENSE
+      react-use: https://github.com/streamich/react-use/blob/master/LICENSE
+    
+    permissions:
+      - private-use
+      - commercial-use
+      - modifications
+      - distribution
+    
+    conditions: []
+    
+    limitations:
+      - liability
+      - warranty
+    
+    ---
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && for f in .kiro/steering/table-format.md .kiro/steering/kiro-workflow.md; do echo "=== $f"; cat $f; done; ls .kiro/agents; ls -la; ls skeleton test e2e apps 2>&1 | head
+    … (50 earlier lines not shown)
+    ## tasks.md
+    
+    Checkbox tasks. Each names the requirements it covers (`Requirements: 1.1, 2.3`) and has exactly one line `Verify: <command>`. Tick a task only after its Verify command ran in the same session and passed (see tech.md rule 5).
+    
+    ## Order of specs
+    
+    1. `engine`: validate, check, decide, with properties I1 to I10.
+    2. `shell-and-cli`: page shell, build, `bones check`, `bones new`, MCP server, template, examples.
+    3. `apps`: `which-bin` and `which-licence` (table.json, copy.json, theme.css), e2e with axe, GitHub Pages workflow.
+    
+    Do not start a spec before the previous one is fully ticked.
+    
+    ## Keep tests proportionate
+    
+    - One property per invariant.
+    - A few examples per edge case (2 to 4), not a matrix.
+    - No test that restates another test.
+    total 16
+    drwxr-xr-x   8 user  staff   256 11월 12 13:07 .
+    drwxr-xr-x@  8 user  staff   256 11월 12 13:05 ..
+    drwxr-xr-x  12 user  staff   384 11월 12 13:27 .git
+    -rw-r--r--   1 user  staff   105 11월 12 13:07 .gitignore
+    drwxr-xr-x   5 user  staff   160 11월 12 13:15 .kiro
+    drwxr-xr-x   5 user  staff   160 11월 12 13:06 docs
+    -rw-r--r--   1 user  staff  1072 11월 12 13:07 LICENSE
+    drwxr-xr-x   5 user  staff   160 11월 12 13:07 scripts
+    ls: apps: No such file or directory
+    ls: e2e: No such file or directory
+    ls: skeleton: No such file or directory
+    ls: test: No such file or directory
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat .gitignore; ls .kiro/agents; cat docs/kiro-evidence/prompts/04-spec-apps.md | head -80
+    node_modules/
+    dist/
+    test-results/
+    playwright-report/
+    coverage/
+    .DS_Store
+    *.log
+    !docs/kiro-evidence/*.log
+    Write the spec `apps` in .kiro/specs/apps/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, docs/sources/README.md, docs/sources/choosealicense/*.yml, all steering, and the engine and shell-and-cli specs first. Write nothing outside .kiro/specs/apps/.
+    
+    Owner answers to the shell-and-cli spec session (they will be recorded in that spec before it is implemented): the check report formatter moves to skeleton/engine/format.ts (pure) so the CLI and build share it; build may `import type` from the shell; dark colours are required in every theme.css; no jsdom; the build writes the title, intro and a `labels.noscript` sentence into the HTML so the page is not blank without JavaScript.
+    
+    Scope:
+    1. **apps/which-bin/** table.json, copy.json, theme.css. Conditions, in this order: `kind` (what the item is: paper or cardboard box, newspaper/books/flyers, paper cup, drink carton, receipt, glass, can, aluminium foil, plastic bottle, other plastic container or tray, plastic film or bag, styrofoam, battery, fluorescent lamp), `soiled` (food or grease on it that rinsing will not remove: yes/no), `broken` (yes/no), `glass-type` (bottle, jar or ordinary drinking glass / heat-resistant, crystal, ceramic or window glass), `coated` (paper cup coated on both sides: yes/no), `clear-drink` (colourless see-through water or drink bottle: yes/no). Outcomes: paper, cartons, glass bottles, cans, clear PET bottles, plastics, plastic film, styrofoam, battery box, lamp box, general waste bag (종량제봉투, explain it in English), special sack for non-combustibles (특수규격마대), ask your district office. Write every rule from the quote table in docs/sources/README.md, with `source.at` set to that row's Ref and the instruction (rinse, peel the label, wrap broken glass in newspaper...) in `note`. Use "any" (leave the condition out of `when`) wherever a condition does not matter for that item, so the app asks as little as possible. The case the sources are silent on (a plastic container with food it will not lose by rinsing) goes to "ask your district office", citing the README note. If a combination is not covered by any quoted row, do not invent a rule: list it in the design as an open question and route it to "ask your district office" only if I agree; for now, design it that way and flag each such combination. Copy: friendly, plain English, tiles, says "South Korea, as published by Seoul in 2025", names both sources with dates and links, and says the rules vary by district.
+    2. **apps/which-licence/** from choosealicense data only: conditions `copyleft` (none / changed files only / the library only / the whole program), `network` (should running it as a network service count as distributing: yes/no), `patent` (do you want an explicit patent grant from contributors: yes/no), `credit` (must copies keep your copyright notice: yes/no). Outcomes: MIT, Apache-2.0, Unlicense, MPL-2.0, LGPL-3.0, GPL-3.0, AGPL-3.0, each with its choosealicense description. Rules cite the .yml file and the permission or condition key that decides it (for example `mit.yml: no patent-use`). Where no licence of the seven fits an answer set (for example no copyleft, patent grant wanted, no notice required), the rule says which nearest licence is offered and why in `note`, citing the yml facts. Copy: precise, list style, a short "not legal advice" line, attribution "Licence data from choosealicense.com, CC BY 3.0" with links.
+    3. The two theme.css files must look clearly different (which-bin: warm, rounded, large type; which-licence: ink on paper, square, a serif heading font from the system stack) and both pass WCAG AA in light and dark. No web fonts.
+    4. **skeleton/examples/which-bin-broken.table.json**: the which-bin table with exactly one rule removed (creating one gap) and one rule added that contradicts another (one conflict), for the demo. Its file says which.
+    5. **e2e/** (Playwright + @axe-core/playwright, Chromium only, against `dist/` served by a tiny static server in scripts/serve.mjs started by Playwright's webServer): per app one walk to a result by keyboard only, checking the number of questions asked; one shared-link test (open with a hash, the result is shown; an invalid answer in the hash shows the notice); the whole-table view; axe with no violations on the question and result screens in light and dark; no horizontal scroll at 360 px. One test for the landing page. Keep it to about 12 tests.
+    6. **Golden examples**: test/apps.test.ts with 8 items per app evaluated through the engine (for example a greasy pizza box, a clean paper cup, a broken drinking glass, a clear water bottle; GPL-3.0 for whole program without network, AGPL-3.0 with network), each expected outcome traceable to a source row.
+    7. **.github/workflows/pages.yml**: on push to main: npm ci, typecheck, test, build, Playwright e2e (install chromium), upload dist and deploy to GitHub Pages with the official actions.
+    
+    Properties: none new unless a real universal claim appears (the engine's I1-I10 already cover the tables). Tasks: at most 7, each with one Verify command. End with a summary: criteria, tasks, every combination you flagged as not covered by a source, and open questions.
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat .kiro/steering/product.md | head -5; ls .kiro/agents; git status --short | head
+    ---
+    inclusion: always
+    ---
+    
+    # Product: Bare Bones
+    ?? .kiro/
+    ?? docs/kiro-evidence/01-steering.txt
+    ?? docs/kiro-evidence/02-spec-engine.txt
+    ?? docs/kiro-evidence/03-spec-shell-and-cli.txt
+    ?? docs/kiro-evidence/04-spec-apps.txt
+    ?? docs/kiro-evidence/04a-spec-apps-failed.txt
+    ?? docs/kiro-evidence/credits.log
+    ?? docs/kiro-evidence/prompts/02-spec-engine.md
+    ?? docs/kiro-evidence/prompts/03-spec-shell-and-cli.md
+    ?? docs/kiro-evidence/prompts/04-spec-apps.md
+    exit 0
+[tool:execute] $ cd /tmp && node --input-type=module - <<'EOF'
+// ---------- model of the engine (brute force, from the engine spec definitions) ----------
+function mk(conds, rules){ return {conds, rules}; }
+function* enumerate(conds){ const n=conds.length; const d=Array(n).fill(0); const tot=conds.reduce((a,c)=>a*c.values.length,1);
+  for(let i=0;i<tot;i++){ yield conds.map((c,k)=>c.values[d[k]]); let k=n-1; while(k>=0){ d[k]++; if(d[k]<conds[k].values.length)break; d[k]=0;k--; } } }
+function matches(conds,r,combo){ for(const [cid,v] of Object.entries(r.when)){ const k=conds.findIndex(c=>c.id===cid); const a=Array.isArray(v)?v:[v]; if(!a.includes(combo[k]))return false;} return true;}
+function check(t){ let gaps=[]; const conf=new Map(); let total=0; for(const combo of enumerate(t.conds)){ total++; const m=t.rules.filter(r=>matches(t.conds,r,combo)); if(m.length===0)gaps.push(combo.join(',')); const outs=new Set(m.map(r=>r.then)); if(outs.size>1){ for(let i=0;i<m.length;i++)for(let j=i+1;j<m.length;j++) if(m[i].then!==m[j].then) conf.set(m[i].id+'|'+m[j].id,(conf.get(m[i].id+'|'+m[j].id)??combo.join(','))); } }
+  const used=new Set(t.rules.map(r=>r.then)); return {total,gaps,conf:[...conf.entries()],used}; }
+function consistent(t,ans){ const out=[]; for(const combo of enumerate(t.conds)){ if(t.conds.every((c,k)=>ans[c.id]===undefined||ans[c.id]===combo[k])) out.push(combo);} return out; }
+function outcome(t,combo){ const m=t.rules.filter(r=>matches(t.conds,r,combo)); return m[0].then; }
+function decide(t,ans){ const cs=consistent(t,ans); const outs=new Set(cs.map(c=>outcome(t,c))); if(outs.size===1){ const rules=t.rules.filter(r=>cs.some(c=>matches(t.conds,r,c))); return {status:'decided',outcome:[...outs][0],rules,skipped:t.conds.filter(c=>ans[c.id]===undefined).map(c=>c.id)}; }
+  const rel=[]; t.conds.forEach((c,k)=>{ if(ans[c.id]!==undefined)return; let relevant=false; let worst=0;
+    for(const v of c.values){ const o=new Set(cs.filter(x=>x[k]===v).map(x=>outcome(t,x))); worst=Math.max(worst,o.size);} 
+    for(const x of cs){ if(x[k]!==c.values[0]) continue; for(const v of c.values.slice(1)){ const y=[...x]; y[k]=v; if(outcome(t,x)!==outcome(t,y)) relevant=true; } }
+    if(relevant) rel.push({id:c.id,worst}); });
+  rel.sort((a,b)=>a.worst-b.worst); // stable: table order on ties
+  return {status:'open',next:rel[0].id,rel}; }
+function walk(t,combo){ const ans={}; const asked=[]; for(;;){ const r=decide(t,ans); if(r.status==='decided')return {asked,r}; const k=t.conds.findIndex(c=>c.id===r.next); ans[r.next]=combo[k]; asked.push(r.next+'='+combo[k]); } }
+globalThis.T={mk,enumerate,check,decide,walk,consistent,outcome,matches};
+
+// ---------- which-bin ----------
+const kinds=['paper-box','paper-books','paper-cup','carton','receipt','glass','can','foil','plastic-bottle','plastic-container','plastic-film','styrofoam','battery','lamp'];
+const yn=['yes','no'];
+const conds=[{id:'kind',values:kinds},{id:'soiled',values:yn},{id:'broken',values:yn},{id:'glass-type',values:['ordinary','special']},{id:'coated',values:yn},{id:'clear-drink',values:yn}];
+const R=(id,when,then)=>({id,when,then});
+const rules=[
+R('paper-box-clean',{kind:'paper-box',soiled:'no'},'paper'),
+R('paper-box-greasy',{kind:'paper-box',soiled:'yes'},'general-waste'),
+R('paper-books-clean',{kind:'paper-books',soiled:'no'},'paper'),
+R('paper-books-dirty',{kind:'paper-books',soiled:'yes'},'general-waste'),
+R('paper-cup-coated',{kind:'paper-cup',coated:'yes'},'general-waste'),
+R('paper-cup-clean',{kind:'paper-cup',coated:'no',soiled:'no'},'paper'),
+R('paper-cup-soiled',{kind:'paper-cup',coated:'no',soiled:'yes'},'general-waste'),
+R('carton-clean',{kind:'carton',soiled:'no'},'cartons'),
+R('carton-soiled',{kind:'carton',soiled:'yes'},'general-waste'),
+R('receipt',{kind:'receipt'},'general-waste'),
+R('glass-whole',{kind:'glass','glass-type':'ordinary',broken:'no',soiled:'no'},'glass-bottles'),
+R('glass-broken',{kind:'glass','glass-type':'ordinary',broken:'yes'},'general-waste'),
+R('glass-soiled',{kind:'glass','glass-type':'ordinary',broken:'no',soiled:'yes'},'ask-district'),
+R('glass-special',{kind:'glass','glass-type':'special'},'special-sack'),
+R('can-clean',{kind:'can',soiled:'no'},'cans'),
+R('can-soiled',{kind:'can',soiled:'yes'},'ask-district'),
+R('foil',{kind:'foil'},'general-waste'),
+R('pet-clear',{kind:'plastic-bottle','clear-drink':'yes',soiled:'no'},'clear-pet'),
+R('plastic-bottle-other',{kind:'plastic-bottle','clear-drink':'no',soiled:'no'},'plastics'),
+R('plastic-bottle-soiled',{kind:'plastic-bottle',soiled:'yes'},'ask-district'),
+R('plastic-container-clean',{kind:'plastic-container',soiled:'no'},'plastics'),
+R('plastic-container-soiled',{kind:'plastic-container',soiled:'yes'},'ask-district'),
+R('film-clean',{kind:'plastic-film',soiled:'no'},'plastic-film'),
+R('film-soiled',{kind:'plastic-film',soiled:'yes'},'general-waste'),
+R('styrofoam-clean',{kind:'styrofoam',soiled:'no'},'styrofoam'),
+R('styrofoam-soiled',{kind:'styrofoam',soiled:'yes'},'general-waste'),
+R('battery',{kind:'battery'},'battery-box'),
+R('lamp-whole',{kind:'lamp',broken:'no'},'lamp-box'),
+R('lamp-broken',{kind:'lamp',broken:'yes'},'general-waste'),
+];
+const bin=mk(conds,rules);
+const c=check(bin);
+console.log('WHICH-BIN rules',rules.length,'combos',c.total,'gaps',c.gaps.length,'conflicts',c.conf.length,'outcomes used',[...c.used].length,[...c.used].join(' '));
+// combos per rule
+for(const r of rules){ let n=0; for(const combo of enumerate(conds)) if(matches(conds,r,combo))n++; r.n=n; }
+console.log(rules.map(r=>r.id+':'+r.n).join(' '));
+// combos routed to ask
+let askc=0; for(const combo of enumerate(conds)) if(outcome(bin,combo)==='ask-district')askc++;
+console.log('combos -> ask-district:',askc);
+const G=(a)=>{const r=decide(bin,a);return r.status==='decided'?r.outcome+' via '+r.rules.map(x=>x.id).join('+')+' skipped='+r.skipped.join(','):'OPEN next='+r.next};
+const items={pizza:{kind:'paper-box',soiled:'yes'},box:{kind:'paper-box',soiled:'no'},cup:{kind:'paper-cup',coated:'no',soiled:'no'},coatedcup:{kind:'paper-cup',coated:'yes'},brokenglass:{kind:'glass','glass-type':'ordinary',broken:'yes'},heat:{kind:'glass','glass-type':'special'},pet:{kind:'plastic-bottle','clear-drink':'yes',soiled:'no'},tub:{kind:'plastic-container',soiled:'yes'},foil:{kind:'foil'}};
+for(const [k,a] of Object.entries(items)) console.log(k.padEnd(12),G(a));
+// walks: question counts
+const W=(combo)=>{const o={};conds.forEach((cc,i)=>o[cc.id]=combo[i]);const w=walk(bin,conds.map(cc=>combo[cc.id]));return w.asked.length+' : '+w.asked.join(' > ')+' => '+w.r.outcome};
+const full=(p)=>({kind:'x',soiled:'no',broken:'no','glass-type':'ordinary',coated:'no','clear-drink':'no',...p});
+for(const p of [{kind:'paper-box',soiled:'yes'},{kind:'glass'},{kind:'glass',broken:'yes'},{kind:'plastic-bottle','clear-drink':'yes'},{kind:'battery'},{kind:'can'},{kind:'paper-cup'}]) console.log(JSON.stringify(p),W(full(p)));
+// first question
+console.log('first Q:',JSON.stringify(decide(bin,{}).rel));
+// worst-case max walk
+let maxq=0,maxc=null; for(const combo of enumerate(conds)){const w=walk(bin,combo);if(w.asked.length>maxq){maxq=w.asked.length;maxc=combo.join(',')}} console.log('max questions',maxq,maxc);
+// broken example
+const removed=rules.filter(r=>r.id!=='glass-soiled'); const added=[...removed,R('receipt-to-paper',{kind:'receipt'},'paper')];
+const bc=check(mk(conds,added)); console.log('BROKEN gaps',bc.gaps.length,bc.gaps.join(' | '),'conflicts',JSON.stringify(bc.conf));
+
+// ---------- which-licence ----------
+const lc=[{id:'copyleft',values:['none','file','library','whole']},{id:'network',values:yn},{id:'patent',values:yn},{id:'credit',values:yn}];
+const lr=[
+R('permissive-patent',{copyleft:'none',patent:'yes'},'apache'),
+R('permissive-notice',{copyleft:'none',patent:'no',credit:'yes'},'mit'),
+R('permissive-nothing',{copyleft:'none',patent:'no',credit:'no'},'unlicense'),
+R('copyleft-file',{copyleft:'file'},'mpl'),
+R('copyleft-library',{copyleft:'library'},'lgpl'),
+R('copyleft-whole',{copyleft:'whole',network:'no'},'gpl'),
+R('copyleft-network',{copyleft:'whole',network:'yes'},'agpl')];
+const lic=mk(lc,lr); const lcc=check(lic);
+console.log('LICENCE rules',lr.length,'combos',lcc.total,'gaps',lcc.gaps.length,'conflicts',lcc.conf.length,'used',[...lcc.used].length);
+console.log('first Q:',JSON.stringify(decide(lic,{}).rel));
+const LG=(a)=>{const r=decide(lic,a);return r.status==='decided'?r.outcome+' via '+r.rules.map(x=>x.id).join('+')+' skipped='+r.skipped.join(','):'OPEN next='+r.next+' '+JSON.stringify(r.rel)};
+for(const a of [{copyleft:'whole',network:'no'},{copyleft:'whole',network:'yes'},{copyleft:'file'},{copyleft:'library'},{copyleft:'none',patent:'no',credit:'yes'},{copyleft:'none',patent:'yes'},{copyleft:'none',patent:'no',credit:'no'},{copyleft:'none'}]) console.log(JSON.stringify(a).padEnd(60),LG(a));
+const lw=(p)=>{const w=walk(lic,lc.map(cc=>p[cc.id]));return w.asked.length+' : '+w.asked.join(' > ')+' => '+w.r.outcome};
+console.log(lw({copyleft:'whole',network:'yes',patent:'no',credit:'no'}), '|', lw({copyleft:'none',network:'no',patent:'no',credit:'yes'}), '|', lw({copyleft:'file',network:'no',patent:'no',credit:'no'}));
+EOF
+    … (3 earlier lines not shown)
+    pizza        general-waste via paper-box-greasy skipped=broken,glass-type,coated,clear-drink
+    box          paper via paper-box-clean skipped=broken,glass-type,coated,clear-drink
+    cup          paper via paper-cup-clean skipped=broken,glass-type,clear-drink
+    coatedcup    general-waste via paper-cup-coated skipped=soiled,broken,glass-type,clear-drink
+    brokenglass  general-waste via glass-broken skipped=soiled,coated,clear-drink
+    heat         special-sack via glass-special skipped=soiled,broken,coated,clear-drink
+    pet          clear-pet via pet-clear skipped=broken,glass-type,coated
+    tub          ask-district via plastic-container-soiled skipped=broken,glass-type,coated,clear-drink
+    foil         general-waste via foil skipped=soiled,broken,glass-type,coated,clear-drink
+    {"kind":"paper-box","soiled":"yes"} 2 : kind=paper-box > soiled=yes => general-waste
+    {"kind":"glass"} 4 : kind=glass > soiled=no > broken=no > glass-type=ordinary => glass-bottles
+    {"kind":"glass","broken":"yes"} 4 : kind=glass > soiled=no > broken=yes > glass-type=ordinary => general-waste
+    {"kind":"plastic-bottle","clear-drink":"yes"} 3 : kind=plastic-bottle > soiled=no > clear-drink=yes => clear-pet
+    {"kind":"battery"} 1 : kind=battery => battery-box
+    {"kind":"can"} 2 : kind=can > soiled=no => cans
+    {"kind":"paper-cup"} 3 : kind=paper-cup > soiled=no > coated=no => paper
+    first Q: [{"id":"kind","worst":4},{"id":"soiled","worst":12},{"id":"glass-type","worst":12},{"id":"broken","worst":13},{"id":"coated","worst":13},{"id":"clear-drink","worst":13}]
+    max questions 4 glass,yes,yes,ordinary,yes,yes
+    BROKEN gaps 4 glass,yes,no,ordinary,yes,yes | glass,yes,no,ordinary,yes,no | glass,yes,no,ordinary,no,yes | glass,yes,no,ordinary,no,no conflicts [["receipt|receipt-to-paper","receipt,yes,yes,ordinary,yes,yes"]]
+    LICENCE rules 7 combos 32 gaps 0 conflicts 0 used 7
+    first Q: [{"id":"copyleft","worst":3},{"id":"network","worst":6},{"id":"patent","worst":6},{"id":"credit","worst":6}]
+    {"copyleft":"whole","network":"no"}                          gpl via copyleft-whole skipped=patent,credit
+    {"copyleft":"whole","network":"yes"}                         agpl via copyleft-network skipped=patent,credit
+    {"copyleft":"file"}                                          mpl via copyleft-file skipped=network,patent,credit
+    {"copyleft":"library"}                                       lgpl via copyleft-library skipped=network,patent,credit
+    {"copyleft":"none","patent":"no","credit":"yes"}             mit via permissive-notice skipped=network
+    {"copyleft":"none","patent":"yes"}                           apache via permissive-patent skipped=network,credit
+    {"copyleft":"none","patent":"no","credit":"no"}              unlicense via permissive-nothing skipped=network
+    {"copyleft":"none"}                                          OPEN next=patent [{"id":"patent","worst":2},{"id":"credit","worst":2}]
+    2 : copyleft=whole > network=yes => agpl | 3 : copyleft=none > patent=no > credit=yes => mit | 1 : copyleft=file => mpl
+    exit 0
+[tool:execute] $ cd /tmp && node --input-type=module - <<'EOF'
+const lin=c=>{c/=255;return c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4};
+const L=h=>{const n=parseInt(h.slice(1),16);return 0.2126*lin(n>>16&255)+0.7152*lin(n>>8&255)+0.0722*lin(n&255)};
+const cr=(a,b)=>{const x=L(a),y=L(b);return ((Math.max(x,y)+0.05)/(Math.min(x,y)+0.05))};
+const pairs=[['text','bg',4.5],['text','surface',4.5],['muted','bg',4.5],['muted','surface',4.5],['accent','bg',4.5],['accent','surface',4.5],['accent-text','accent',4.5],['border','bg',3],['border','surface',3],['focus','bg',3],['focus','surface',3]];
+const themes={
+ 'bin-light':{bg:'#fff4e0',surface:'#fffbf2',text:'#2b1a0e',muted:'#6b4a2f',accent:'#a63d00',accentText:'#ffffff',border:'#8a5a2b',focus:'#0b57d0'},
+ 'bin-dark': {bg:'#2a1a10',surface:'#3a2616',text:'#fdeedb',muted:'#e0c3a2',accent:'#ffb36b',accentText:'#2a1204',border:'#b58a5f',focus:'#8ab4f8'},
+ 'lic-light':{bg:'#f6f1e4',surface:'#fffdf7',text:'#1b1b1b',muted:'#4f4a3f',accent:'#1c3d6e',accentText:'#ffffff',border:'#6e675a',focus:'#9a3412'},
+ 'lic-dark': {bg:'#17181b',surface:'#202226',text:'#ebe6d9',muted:'#b9b3a5',accent:'#8fb4ea',accentText:'#101820',border:'#8a8f99',focus:'#f0b36a'},
+};
+for(const [n,t] of Object.entries(themes)){ console.log('==',n); for(const [a,b,min] of pairs){const A=a==='accent-text'?t.accentText:t[a.replace(/-./g,m=>m[1].toUpperCase())];const B=t[b];const r=cr(A,B);console.log(a.padEnd(12),'on',b.padEnd(8),r.toFixed(2),r>=min?'ok':'FAIL(min '+min+')');} }
+EOF
+cd ~/hackathons-2026/kiroween/barebones && git remote -v; git branch --show-current
+    … (19 earlier lines not shown)
+    accent-text  on accent   10.04 ok
+    border       on bg       5.40 ok
+    border       on surface  4.61 ok
+    focus        on bg       7.95 ok
+    focus        on surface  6.78 ok
+    == lic-light
+    text         on bg       15.27 ok
+    text         on surface  16.93 ok
+    muted        on bg       7.81 ok
+    muted        on surface  8.66 ok
+    accent       on bg       9.59 ok
+    accent       on surface  10.63 ok
+    accent-text  on accent   10.81 ok
+    border       on bg       4.96 ok
+    border       on surface  5.50 ok
+    focus        on bg       6.48 ok
+    focus        on surface  7.18 ok
+    == lic-dark
+    text         on bg       14.25 ok
+    text         on surface  12.78 ok
+    muted        on bg       8.50 ok
+    muted        on surface  7.63 ok
+    accent       on bg       8.36 ok
+    accent       on surface  7.50 ok
+    accent-text  on accent   8.42 ok
+    border       on bg       5.47 ok
+    border       on surface  4.91 ok
+    focus        on bg       9.60 ok
+    focus        on surface  8.62 ok
+    main
+    exit 0
+[tool:fetch] Fetch URL
+[tool:fetch] Fetch URL
+[tool:fetch] Fetch URL
+[tool:fetch] Fetch URL
+[tool:fetch] Fetch URL
+
+Next I'll re-run the model with the final rule set. The clear-PET soiled case is split out so its citation is accurate. I'll also check the source URLs and compute question counts.
+
+[tool:execute] $ cd /tmp && cat > model.mjs <<'EOF'
+export function* enumerate(conds){ const n=conds.length; const d=Array(n).fill(0); const tot=conds.reduce((a,c)=>a*c.values.length,1);
+  for(let i=0;i<tot;i++){ yield conds.map((c,k)=>c.values[d[k]]); let k=n-1; while(k>=0){ d[k]++; if(d[k]<conds[k].values.length)break; d[k]=0;k--; } } }
+export function matches(conds,r,combo){ for(const [cid,v] of Object.entries(r.when)){ const k=conds.findIndex(c=>c.id===cid); const a=Array.isArray(v)?v:[v]; if(!a.includes(combo[k]))return false;} return true;}
+export function check(t){ const gaps=[]; const conf=new Map(); let total=0; for(const combo of enumerate(t.conds)){ total++; const m=t.rules.filter(r=>matches(t.conds,r,combo)); if(m.length===0)gaps.push(combo.join(',')); for(let i=0;i<m.length;i++)for(let j=i+1;j<m.length;j++) if(m[i].then!==m[j].then){const k=m[i].id+' | '+m[j].id; if(!conf.has(k))conf.set(k,combo.join(','));} }
+  return {total,gaps,conf:[...conf.entries()],used:new Set(t.rules.map(r=>r.then))}; }
+export function outcome(t,combo){ return t.rules.find(r=>matches(t.conds,r,combo)).then; }
+export function consistent(t,ans){ return [...enumerate(t.conds)].filter(combo=>t.conds.every((c,k)=>ans[c.id]===undefined||ans[c.id]===combo[k])); }
+export function decide(t,ans){ const cs=consistent(t,ans); const outs=new Set(cs.map(c=>outcome(t,c))); if(outs.size===1){ const rules=t.rules.filter(r=>cs.some(c=>matches(t.conds,r,c))); return {status:'decided',outcome:[...outs][0],rules:rules.map(r=>r.id),skipped:t.conds.filter(c=>ans[c.id]===undefined).map(c=>c.id)}; }
+  const rel=[]; t.conds.forEach((c,k)=>{ if(ans[c.id]!==undefined)return; let relevant=false,worst=0;
+    for(const v of c.values){ const o=new Set(cs.filter(x=>x[k]===v).map(x=>outcome(t,x))); worst=Math.max(worst,o.size);} 
+    for(const x of cs){ if(x[k]!==c.values[0]) continue; for(const v of c.values.slice(1)){ const y=[...x]; y[k]=v; if(outcome(t,x)!==outcome(t,y)) relevant=true; } }
+    if(relevant) rel.push({id:c.id,worst}); });
+  const best=rel.reduce((a,b)=>b.worst<a.worst?b:a); return {status:'open',next:best.id,rel}; }
+export function walk(t,combo){ const ans={}; const asked=[]; for(;;){ const r=decide(t,ans); if(r.status==='decided')return {asked,r}; const k=t.conds.findIndex(c=>c.id===r.next); ans[r.next]=combo[k]; asked.push(r.next); } }
+EOF
+cat > bin.mjs <<'EOF'
+import {enumerate,check,decide,walk,outcome,matches} from './model.mjs';
+const kinds=['paper-box','paper-books','paper-cup','carton','receipt','glass','can','foil','plastic-bottle','plastic-container','plastic-film','styrofoam','battery','lamp'];
+const yn=['no','yes'];
+export const conds=[{id:'kind',values:kinds},{id:'soiled',values:yn},{id:'broken',values:yn},{id:'glass-type',values:['ordinary','special']},{id:'coated',values:yn},{id:'clear-drink',values:yn}];
+const R=(id,when,then)=>({id,when,then});
+export const rules=[
+R('paper-box-clean',{kind:'paper-box',soiled:'no'},'paper'),
+R('paper-box-soiled',{kind:'paper-box',soiled:'yes'},'general-waste'),
+R('paper-books-clean',{kind:'paper-books',soiled:'no'},'paper'),
+R('paper-books-soiled',{kind:'paper-books',soiled:'yes'},'general-waste'),
+R('paper-cup-coated',{kind:'paper-cup',coated:'yes'},'general-waste'),
+R('paper-cup-clean',{kind:'paper-cup',coated:'no',soiled:'no'},'paper'),
+R('paper-cup-soiled',{kind:'paper-cup',coated:'no',soiled:'yes'},'general-waste'),
+R('carton-clean',{kind:'carton',soiled:'no'},'cartons'),
+R('carton-soiled',{kind:'carton',soiled:'yes'},'general-waste'),
+R('receipt',{kind:'receipt'},'general-waste'),
+R('glass-clean',{kind:'glass','glass-type':'ordinary',broken:'no',soiled:'no'},'glass-bottles'),
+R('glass-broken',{kind:'glass','glass-type':'ordinary',broken:'yes'},'general-waste'),
+R('glass-soiled',{kind:'glass','glass-type':'ordinary',broken:'no',soiled:'yes'},'ask-district'),
+R('glass-special',{kind:'glass','glass-type':'special'},'special-sack'),
+R('can-clean',{kind:'can',soiled:'no'},'cans'),
+R('can-soiled',{kind:'can',soiled:'yes'},'ask-district'),
+R('foil',{kind:'foil'},'general-waste'),
+R('pet-clear',{kind:'plastic-bottle','clear-drink':'yes',soiled:'no'},'clear-pet'),
+R('pet-clear-soiled',{kind:'plastic-bottle','clear-drink':'yes',soiled:'yes'},'ask-district'),
+R('plastic-bottle-clean',{kind:'plastic-bottle','clear-drink':'no',soiled:'no'},'plastics'),
+R('plastic-bottle-soiled',{kind:'plastic-bottle','clear-drink':'no',soiled:'yes'},'ask-district'),
+R('plastic-container-clean',{kind:'plastic-container',soiled:'no'},'plastics'),
+R('plastic-container-soiled',{kind:'plastic-container',soiled:'yes'},'ask-district'),
+R('film-clean',{kind:'plastic-film',soiled:'no'},'plastic-film'),
+R('film-soiled',{kind:'plastic-film',soiled:'yes'},'general-waste'),
+R('styrofoam-clean',{kind:'styrofoam',soiled:'no'},'styrofoam'),
+R('styrofoam-soiled',{kind:'styrofoam',soiled:'yes'},'general-waste'),
+R('battery',{kind:'battery'},'battery-box'),
+R('lamp-whole',{kind:'lamp',broken:'no'},'lamp-box'),
+R('lamp-broken',{kind:'lamp',broken:'yes'},'general-waste'),
+];
+export const bin={conds,rules};
+EOF
+cat > run.mjs <<'EOF'
+import {enumerate,check,decide,walk,outcome,matches} from './model.mjs';
+import {conds,rules,bin} from './bin.mjs';
+const c=check(bin);
+console.log('rules',rules.length,'combos',c.total,'gaps',c.gaps.length,'conflicts',c.conf.length,'used',c.used.size);
+for(const r of rules){ r.n=0; for(const combo of enumerate(conds)) if(matches(conds,r,combo))r.n++; }
+console.log(rules.filter(r=>r.then==='ask-district').map(r=>r.id+':'+r.n).join(' '), 'total ask combos', rules.filter(r=>r.then==='ask-district').reduce((a,r)=>a+r.n,0));
+console.log('first Q', JSON.stringify(decide(bin,{}).rel));
+// min/max questions per kind over all full combos
+const per={};
+for(const combo of enumerate(conds)){ const w=walk(bin,combo); const k=combo[0]; (per[k]??=new Set()).add(w.asked.length); }
+for(const [k,s] of Object.entries(per)) console.log(k.padEnd(18),[...s].sort().join('/'));
+const full=(p)=>conds.map(cc=>p[cc.id]??cc.values[0]);
+const show=(name,p)=>{const w=walk(bin,full(p));console.log(name.padEnd(14),w.asked.length,w.asked.join(' > '),'=>',w.r.outcome,'via',w.r.rules.join('+'),'| skipped',w.r.skipped.join(','));};
+show('pizza',{kind:'paper-box',soiled:'yes'});
+show('cup',{kind:'paper-cup',soiled:'no',coated:'no'});
+show('coated cup',{kind:'paper-cup',coated:'yes'});
+show('broken glass',{kind:'glass',broken:'yes','glass-type':'ordinary'});
+show('heat glass',{kind:'glass','glass-type':'special'});
+show('clear bottle',{kind:'plastic-bottle','clear-drink':'yes',soiled:'no'});
+show('tub',{kind:'plastic-container',soiled:'yes'});
+show('battery',{kind:'battery'});
+// partial answers used in the golden table
+const D=(a)=>{const r=decide(bin,a);console.log(JSON.stringify(a),'->',r.status,r.outcome??r.next,r.rules?.join('+'))};
+D({kind:'paper-box',soiled:'yes'});D({kind:'paper-cup',soiled:'no',coated:'no'});D({kind:'paper-cup',coated:'yes'});D({kind:'glass',broken:'yes','glass-type':'ordinary'});D({kind:'glass','glass-type':'special'});D({kind:'plastic-bottle','clear-drink':'yes',soiled:'no'});D({kind:'plastic-container',soiled:'yes'});D({kind:'battery'});
+// pizza walk fine detail: glass broken walk with partial answers asked order
+// broken example
+const removed=rules.filter(r=>r.id!=='glass-soiled'); const added=[...removed,{id:'receipt-as-paper',when:{kind:'receipt'},then:'paper'}];
+const b=check({conds,rules:added}); console.log('BROKEN gaps',b.gaps.length,'| first',b.gaps[0],'| conflicts',JSON.stringify(b.conf),'| unused',[...new Set(rules.map(r=>r.then))].filter(o=>!b.used.has(o)));
+EOF
+node run.mjs
+echo ---URLS
+for u in "https://news.seoul.go.kr/env/archives/564022" "https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recycling%20items%20(Ministry%20of%20Environment).pdf" "https://choosealicense.com/" "https://github.com/github/choosealicense.com/tree/687dabb300c3d58891285d9567cc6f73a495470c/_licenses" "https://creativecommons.org/licenses/by/3.0/"; do printf '%s ' "$(curl -s -o /dev/null -L -m 15 -w '%{http_code}' "$u")"; echo "$u" | cut -c1-90; done
+    … (10 earlier lines not shown)
+    foil               1
+    plastic-bottle     2/3
+    plastic-container  2
+    plastic-film       2
+    styrofoam          2
+    battery            1
+    lamp               2
+    pizza          2 kind > soiled => general-waste via paper-box-soiled | skipped broken,glass-type,coated,clear-drink
+    cup            3 kind > soiled > coated => paper via paper-cup-clean | skipped broken,glass-type,clear-drink
+    coated cup     3 kind > soiled > coated => general-waste via paper-cup-coated | skipped broken,glass-type,clear-drink
+    broken glass   4 kind > soiled > broken > glass-type => general-waste via glass-broken | skipped coated,clear-drink
+    heat glass     4 kind > soiled > broken > glass-type => special-sack via glass-special | skipped coated,clear-drink
+    clear bottle   3 kind > soiled > clear-drink => clear-pet via pet-clear | skipped broken,glass-type,coated
+    tub            2 kind > soiled => ask-district via plastic-container-soiled | skipped broken,glass-type,coated,clear-drink
+    battery        1 kind => battery-box via battery | skipped soiled,broken,glass-type,coated,clear-drink
+    {"kind":"paper-box","soiled":"yes"} -> decided general-waste paper-box-soiled
+    {"kind":"paper-cup","soiled":"no","coated":"no"} -> decided paper paper-cup-clean
+    {"kind":"paper-cup","coated":"yes"} -> decided general-waste paper-cup-coated
+    {"kind":"glass","broken":"yes","glass-type":"ordinary"} -> decided general-waste glass-broken
+    {"kind":"glass","glass-type":"special"} -> decided special-sack glass-special
+    {"kind":"plastic-bottle","clear-drink":"yes","soiled":"no"} -> decided clear-pet pet-clear
+    {"kind":"plastic-container","soiled":"yes"} -> decided ask-district plastic-container-soiled
+    {"kind":"battery"} -> decided battery-box battery
+    BROKEN gaps 4 | first glass,yes,no,ordinary,no,no | conflicts [["receipt | receipt-as-paper","receipt,no,no,ordinary,no,no"]] | unused []
+    ---URLS
+    200 https://news.seoul.go.kr/env/archives/564022
+    200 https://sustainability.korea.ac.kr/files/Separation%20and%20discharge%20guide%20for%20recy
+    200 https://choosealicense.com/
+    200 https://github.com/github/choosealicense.com/tree/687dabb300c3d58891285d9567cc6f73a495470c
+    200 https://creativecommons.org/licenses/by/3.0/
+    exit 0
+[tool:execute] $ cd /tmp && cat > order.mjs <<'EOF'
+import {enumerate,check,decide,walk} from './model.mjs';
+import {conds,rules} from './bin.mjs';
+const orders={
+ owner:['kind','soiled','broken','glass-type','coated','clear-drink'],
+ glassTypeSecond:['kind','glass-type','soiled','broken','coated','clear-drink'],
+ brokenSecond:['kind','broken','soiled','glass-type','coated','clear-drink'],
+};
+for(const [name,ord] of Object.entries(orders)){
+  const cs=ord.map(id=>conds.find(c=>c.id===id)); const t={conds:cs,rules};
+  const c=check(t); const per={}; let total=0,n=0;
+  for(const combo of enumerate(cs)){ const w=walk(t,combo); const k=combo[0]; (per[k]??=new Set()).add(w.asked.length); total+=w.asked.length;n++; }
+  console.log(name,'gaps',c.gaps.length,'conf',c.conf.length,'| glass',[...per.glass].join('/'),'cup',[...per['paper-cup']].join('/'),'bottle',[...per['plastic-bottle']].join('/'),'| mean over all combos',(total/n).toFixed(2));
+}
+// glass paths under the owner order, by glass sub-case
+const t={conds,rules};
+for(const p of [{kind:'glass','glass-type':'special'},{kind:'glass',broken:'yes','glass-type':'ordinary'},{kind:'glass',broken:'no','glass-type':'ordinary',soiled:'no'}]){
+  const combo=conds.map(c=>p[c.id]??c.values[0]); const w=walk(t,combo); console.log(JSON.stringify(p),w.asked.join('>'));
+}
+EOF
+node order.mjs
+    owner gaps 0 conf 0 | glass 4 cup 3/2 bottle 3/2 | mean over all combos 2.00
+    glassTypeSecond gaps 0 conf 0 | glass 4/2 cup 3/2 bottle 3/2 | mean over all combos 1.93
+    brokenSecond gaps 0 conf 0 | glass 4/3 cup 3/2 bottle 3/2 | mean over all combos 1.96
+    {"kind":"glass","glass-type":"special"} kind>soiled>broken>glass-type
+    {"kind":"glass","broken":"yes","glass-type":"ordinary"} kind>soiled>broken>glass-type
+    {"kind":"glass","broken":"no","glass-type":"ordinary","soiled":"no"} kind>soiled>broken>glass-type
+    exit 0
+
+I have what I need. The prototype confirms the numbers, the theme colours pass AA, and all five URLs return 200. I'll write the three files now, starting with requirements.
+
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/requirements.md
+
+Now the design, which holds the full table content, copy, themes, tests and the workflow.
+
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+
+Three small fixes in the design: the contrast summary overstated one claim, one e2e row had a literal that should come from the JSON, and the traceability row for 1.1 and 1.2 was muddled.
+
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+
+Now the tasks file. I'm also fixing the 1.4/1.5 traceability row, which implied an automated check that can't exist without git.
+
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/tasks.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && ls -la .kiro/specs/apps && grep -c "^  - Verify:" .kiro/specs/apps/tasks.md && grep -c "^- \[ \]" .kiro/specs/apps/tasks.md && grep -n "^## \|^Property" .kiro/specs/apps/design.md | head -40 && grep -c "^[0-9]*\.[0-9]* " .kiro/specs/apps/requirements.md && git status --short | grep -v "^?? \(.kiro/\|docs/kiro-evidence\)" ; echo "README rows:"; grep -cE '^\| (seoul-2025|moe-2018) ' docs/sources/README.md; grep -E '^\| (seoul-2025|moe-2018) ' docs/sources/README.md | cut -d'|' -f2 | sed 's/^ *//;s/ *$//' | sort -u | wc -l
+    … (3 earlier lines not shown)
+    -rw-r--r--  1 user  staff  46977 11월 12 14:00 design.md
+    -rw-r--r--  1 user  staff  17253 11월 12 13:57 requirements.md
+    -rw-r--r--  1 user  staff   7052 11월 12 14:00 tasks.md
+    7
+    7
+    3:## Overview
+    7:## Assumptions and departures
+    19:## Files
+    34:## which-bin: conditions
+    68:## which-bin: outcomes
+    86:## which-bin: rules
+    149:## which-bin: combinations the sources do not cover
+    173:## which-licence: conditions
+    182:## which-licence: outcomes
+    196:## which-licence: rules
+    216:## Copy
+    279:## Themes
+    310:## Broken demo table
+    320:## Golden items
+    352:## Tests: `test/apps.test.ts`
+    369:## End-to-end
+    426:## Workflow: `.github/workflows/pages.yml`
+    475:## Correctness properties
+    479:## Traceability of criteria
+    503:## Open questions for the owner
+    62
+    ?? scripts/hooks/
+    README rows:
+    22
+          20
+    exit 0
+
+I wrote the `apps` spec in `.kiro/specs/apps/` (`requirements.md`, `design.md`, `tasks.md`) and nothing outside that folder. I checked the table contents with a throwaway brute-force model of the engine and did not run the real engine. The tasks must reproduce those counts and stop if one differs.
+
+## Criteria
+There are 11 requirements with 62 EARS criteria:
+- Tooling and boundaries
+- which-bin table
+- which-bin traceability
+- which-bin copy
+- which-licence table
+- which-licence copy
+- Themes
+- Broken demo table
+- Golden items
+- e2e
+- Pages workflow
+
+The model gave these results:
+- **which-bin:** 6 conditions, 448 combinations, 30 rules, 0 gaps, 0 conflicts. Items take 1 to 4 questions.
+- **which-licence:** 4 conditions, 32 combinations, 7 rules, 0 gaps, 0 conflicts.
+
+## Tasks (7)
+1. which-bin table and the broken demo.
+2. which-licence table.
+3. Copy and themes for both apps.
+4. Playwright setup and the 7 functional e2e tests.
+5. The 4 axe tests and the 360 px test, plus a screenshot check.
+6. The Pages workflow.
+7. Final gate.
+
+Each task writes its tests first and has one `Verify:` line. There are 12 e2e tests in total.
+
+## Combinations the sources do not cover
+Per your instruction, the first three are routed to "ask your district office" for now. Each rule's `source.at` starts with `none:`.
+
+| # | Case | Combinations |
+| --- | --- | --- |
+| U1 | Glass bottle or glass, unbroken, still dirty after rinsing | 4 |
+| U2 | Can still dirty after rinsing | 16 |
+| U3 | Clear PET bottle still dirty after rinsing | 8 |
+
+Two more cases go to the same outcome, but the README note already says the sources are silent on them. That is a coloured plastic bottle that is still dirty (8 combinations) and a plastic container that is still dirty (16).
+
+Five quoted rows depend on a fact your six conditions do not ask, so I added no rule or condition for them. Each is carried in a note or hint instead:
+- **Broken glass (`A1 3`):** the row splits on small versus large amounts.
+- **Broken lamp (`A1 9`):** the row also splits on small versus large amounts.
+- **Insulated boxes (`A1 1`):** no condition or kind covers the lining. This is the only README row with no rule.
+- **Plastic-coated flyers (`A1 2`):** `coated` is defined for paper cups only.
+- **Pizza box:** the Ministry lists the box as paper and only the greasy inner paper as general waste.
+
+## Open questions
+Each is also written out in `design.md`, and the tasks implement the stated default.
+1. May U1 to U3 go to "ask your district office"? The README note should then be widened to name them.
+2. Add a large-amount condition for broken glass and lamps, or keep the note?
+3. Add an "insulated delivery box" kind?
+4. Widen `coated` to cover plastic-coated flyers?
+5. Add an outcome for the pizza box split?
+6. **Large type:** the shell contract has no font-size property, so a theme cannot make type larger. Add `--font-size` to shell-and-cli, or "large type" is not delivered.
+7. Move `glass-type` before `soiled`? Heat-resistant glass would take 2 questions instead of 4. I kept your order.
+8. The "wrap in newspaper" wording is in the README gloss and your brief, but not in the quoted Korean. Keep it?
+9. When copyleft is file or library and network use is wanted, I offer MPL-2.0 or LGPL-3.0 (the copyleft scope wins). Prefer AGPL-3.0 there?
+10. Two README Refs are shared by two rows each (`moe-2018 FAQ p.21` and `FAQ p.22`), and some rows are applied beyond their literal subject. A rule's note says which row it uses.
+11. The demo table shows `gaps: 4`, not 1, because the smallest rule covers 4 combinations. It also has two defects in one file, against `table-format.md` rule 7. The title says which rule was removed and which was added.
+12. e2e serves `dist/` under `/bare-bones-kiro/` to mimic Pages.
+13. **Pages (your steps):** commit `package-lock.json`, set the Pages source to "GitHub Actions", then push. The workflow cannot be run locally, and pull requests get no CI. Actions use major tags, not commit SHAs.
+
+The spec also assumes your shell-and-cli answers are recorded first: 19 labels including `noscript`, and dark colours required.
+
+--- run success (end_turn); credits reported by this session: 44.02 ---
+--- exit 0; account credit meter before 3356.73, after 3400.00 (shared account) ---
