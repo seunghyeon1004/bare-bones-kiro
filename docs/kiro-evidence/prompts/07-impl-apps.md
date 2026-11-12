@@ -5,7 +5,7 @@ Owner answers to your spec session. Record them first in a short "Owner answers"
 2. Refs in the README were made unique: `moe-2018 FAQ p.21 (핸드타월)`, `moe-2018 FAQ p.21 (종이컵)`, `moe-2018 FAQ p.22 (종이팩)`, `moe-2018 FAQ p.22 (유리잔)`, `moe-2018 FAQ p.25 (비닐류)`, `moe-2018 dictionary p.33, 피자박스`, and a new row `seoul-2025 A2 다 (비해당)` that quotes the "wrap in newspaper" wording for broken glass. Use these exact Refs; the test that checks every `at` against the README stays.
 3. Add a kind `insulated-box` (a delivery box lined with foil or plastic that will not come off) going to general waste, citing `seoul-2025 A1 1`.
 4. Keep `coated` for paper cups only; keep the amount cases (broken glass, broken lamp) and the pizza-box split in notes.
-5. The shell now has `--font-size` and `--heading-font` in the theme contract: use them (which-bin larger type).
+5. The shell now has `--font-size` in the theme contract (headings already use `--font-heading`): use them (which-bin larger type).
 6. Keep the condition order you designed; open question 9 (copyleft scope wins) accepted; the demo table may carry two defects, its title says which; serving dist under /bare-bones-kiro/ in e2e accepted; the owner will commit the lock file and enable Pages.
 
 npm install and `npx playwright install chromium` are allowed (network for npm and the browser download only). Playwright runs headless Chromium only. Work one task at a time; after each, run its Verify command and only then tick it, quoting the result line. Never weaken a check or an axe rule. Do not stage, commit or push.

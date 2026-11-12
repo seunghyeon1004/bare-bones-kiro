@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bones": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "skeleton/mcp/server.ts"
+      ],
+      "env": {}
+    }
+  }
+}
