@@ -149,3 +149,13 @@ Out of scope: the page shell, the landing page, filtering bad answers from a sha
 9.1 WHEN `validate`, `check`, `decide` or `evaluate` is called twice with equal arguments THE SYSTEM SHALL return equal results, and SHALL NOT modify its arguments.
 
 9.2 THE SYSTEM SHALL read nothing except its arguments: no `Date`, `Math.random`, `console`, `process`, `fetch`, file or network access, and no state kept between calls.
+
+## Owner answers
+
+1. Criterion 8.2 stays and gets one example test in `test/decide.test.ts`: a table with a gap, where `decide` on answers that reach the gap throws; the same for a conflict.
+2. The extra checks inside Properties 4, 6 and 7 are accepted.
+3. "Passing" means `validate` ok and `check` passed, two calls: accepted.
+4. `evaluate` on an incomplete combination returning open: accepted.
+5. Id pattern `^[a-z0-9]+(-[a-z0-9]+)*$`, dates as strings, extra keys ignored: accepted.
+6. `@types/node` arrives with the shell-and-cli spec; the engine must not need it.
+7. If TypeScript 6.0.3 rejects a tsconfig option, report it; never drop a strict flag.

@@ -1,0 +1,13 @@
+Implement the spec in .kiro/specs/apps/: tasks 1 to 7, in order. Read requirements.md, design.md and tasks.md fully first, the steering, docs/sources/README.md (it changed since your spec session, see below), and the skeleton code (engine, shell, build, cli: done and tested; do not change their behaviour).
+
+Owner answers to your spec session. Record them first in a short "Owner answers" section at the end of requirements.md and update design.md (rules table, counts, golden items) where they change something:
+1. U1 to U3 are no longer uncovered. The owner added three rows to docs/sources/README.md from the Ministry FAQ (PDF page 23): a dirty glass bottle, a dirty can and a dirty plastic bottle are washed as clean as possible and put out with glass, cans and PET. So `soiled` does not matter for unbroken ordinary glass, cans and plastic bottles (clear or not): drop the `*-soiled` rules for them, widen the clean rules to any `soiled`, cite the new rows in the note ("wash it as clean as you can"). Only `plastic-container` with `soiled=yes` stays on `ask-district`, citing the README note.
+2. Refs in the README were made unique: `moe-2018 FAQ p.21 (핸드타월)`, `moe-2018 FAQ p.21 (종이컵)`, `moe-2018 FAQ p.22 (종이팩)`, `moe-2018 FAQ p.22 (유리잔)`, `moe-2018 FAQ p.25 (비닐류)`, `moe-2018 dictionary p.33, 피자박스`, and a new row `seoul-2025 A2 다 (비해당)` that quotes the "wrap in newspaper" wording for broken glass. Use these exact Refs; the test that checks every `at` against the README stays.
+3. Add a kind `insulated-box` (a delivery box lined with foil or plastic that will not come off) going to general waste, citing `seoul-2025 A1 1`.
+4. Keep `coated` for paper cups only; keep the amount cases (broken glass, broken lamp) and the pizza-box split in notes.
+5. The shell now has `--font-size` and `--heading-font` in the theme contract: use them (which-bin larger type).
+6. Keep the condition order you designed; open question 9 (copyleft scope wins) accepted; the demo table may carry two defects, its title says which; serving dist under /bare-bones-kiro/ in e2e accepted; the owner will commit the lock file and enable Pages.
+
+npm install and `npx playwright install chromium` are allowed (network for npm and the browser download only). Playwright runs headless Chromium only. Work one task at a time; after each, run its Verify command and only then tick it, quoting the result line. Never weaken a check or an axe rule. Do not stage, commit or push.
+
+End with the real output of `npm run typecheck && npm test && npm run test:e2e` (last 20 lines), `npm run bones -- check apps/which-bin/table.json` and `npm run bones -- check skeleton/examples/which-bin-broken.table.json` (full output), the files you created, and anything left open.

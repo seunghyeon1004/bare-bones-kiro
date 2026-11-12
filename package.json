@@ -1,0 +1,16 @@
+{
+  "name": "barebones",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run",
+    "test:props": "vitest --run test/props"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0"
+  }
+}
