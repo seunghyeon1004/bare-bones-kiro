@@ -4,15 +4,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { check, formatInvalidJson, formatProblems, formatReport, validate } from '../engine/index.ts';
 import type { Table } from '../engine/index.ts';
+import type { PlaygroundCopy, PlaygroundData, PlaygroundExample } from '../playground/types.ts';
 import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
-import { validateCopy, validateLanding } from './copy-check.ts';
-import { bootApp, bootLanding, renderPage } from './page.ts';
-import { validateTheme } from './theme-check.ts';
+import { validateCopy, validateLanding, validatePlayground } from './copy-check.ts';
+import { bootApp, bootLanding, bootPlayground, renderPage } from './page.ts';
+import { parseTheme, validateTheme } from './theme-check.ts';
 
 export interface BuildOptions { appsDir: string; outDir: string; repoRoot: string }
 export type BuildResult = { ok: true; apps: string[] } | { ok: false; errors: string[] };
 
 const SHELL_DIR = fileURLToPath(new URL('../shell/', import.meta.url));
+const PLAYGROUND_DIR = fileURLToPath(new URL('../playground/', import.meta.url));
+const BROKEN_TABLE = fileURLToPath(new URL('../examples/which-bin-broken.table.json', import.meta.url));
+// The playground opens on DEFAULT_APP and carries the broken demo table dressed as DEMO_APP.
+// If an app of that name is absent, the first app in folder-name order stands in.
+const DEFAULT_APP = 'which-licence';
+const DEMO_APP = 'which-bin';
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const APP_FILES = ['copy.json', 'table.json', 'theme.css'];
 
@@ -118,12 +125,25 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   const neutralTheme = readFileSync(path.join(SHELL_DIR, 'neutral-theme.css'), 'utf8');
   for (const problem of validateTheme(neutralTheme)) errors.push(`skeleton/shell/neutral-theme.css: ${problem}`);
 
+  // 4b. The playground's own files and the broken demo table.
+  const playgroundJson = parseJson(path.join(PLAYGROUND_DIR, 'playground.json'), 'skeleton/playground/playground.json', errors);
+  if (playgroundJson !== undefined) {
+    for (const problem of validatePlayground(playgroundJson)) errors.push(`skeleton/playground/playground.json: ${problem}`);
+  }
+  const playgroundCss = readFileSync(path.join(PLAYGROUND_DIR, 'playground.css'), 'utf8');
+  let brokenTable: unknown;
+  if (!existsSync(BROKEN_TABLE)) {
+    errors.push('skeleton/examples/which-bin-broken.table.json: file is missing');
+  } else {
+    brokenTable = parseJson(BROKEN_TABLE, 'skeleton/examples/which-bin-broken.table.json', errors);
+  }
+
   if (errors.length > 0) return { ok: false, errors };
 
   // 5. Everything is valid. Bundle first, so a bundling failure leaves the output untouched.
   const bundleEntry = async (entry: string): Promise<string> => {
     const result = await bundle({
-      entryPoints: [path.join(SHELL_DIR, entry)],
+      entryPoints: [entry],
       bundle: true,
       format: 'iife',
       platform: 'browser',
@@ -140,9 +160,11 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   };
   let shellJs: string;
   let landingJs: string;
+  let playgroundJs: string;
   try {
-    shellJs = await bundleEntry('shell.ts');
-    landingJs = await bundleEntry('landing.ts');
+    shellJs = await bundleEntry(path.join(SHELL_DIR, 'shell.ts'));
+    landingJs = await bundleEntry(path.join(SHELL_DIR, 'landing.ts'));
+    playgroundJs = await bundleEntry(path.join(PLAYGROUND_DIR, 'playground.ts'));
   } catch (error) {
     return { ok: false, errors: [`esbuild: ${error instanceof Error ? error.message : String(error)}`] };
   }
@@ -151,6 +173,25 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   const shellCss = readFileSync(path.join(SHELL_DIR, 'shell.css'), 'utf8');
   const landing = landingJson as Landing;
   const summaries: AppSummary[] = apps.map((a) => ({ id: a.name, title: a.copy.title, tagline: a.copy.tagline, answerStyle: a.copy.answerStyle }));
+
+  const playgroundCopy = playgroundJson as PlaygroundCopy;
+  const playgroundTemplate = template.replace('<link rel="stylesheet" href="shell.css">', (link) => `${link}\n<link rel="stylesheet" href="playground.css">`);
+  if (playgroundTemplate === template) throw new Error('skeleton/shell/page.html: no shell.css link to put playground.css after');
+  const appExample = (app: ParsedApp): PlaygroundExample => ({
+    id: app.name,
+    label: app.copy.title,
+    table: app.table,
+    copy: app.copy,
+    theme: parseTheme(app.themeCss),
+  });
+  const firstApp = apps[0];
+  const demoApp = apps.find((a) => a.name === DEMO_APP) ?? firstApp;
+  if (firstApp === undefined || demoApp === undefined) throw new Error('no apps to build the playground from');
+  const examples: PlaygroundExample[] = [
+    ...apps.map(appExample),
+    { id: 'broken', label: playgroundCopy.editor.brokenExample, table: brokenTable, copy: demoApp.copy, theme: parseTheme(demoApp.themeCss) },
+  ];
+  const playgroundData: PlaygroundData = { defaultExample: (apps.find((a) => a.name === DEFAULT_APP) ?? firstApp).name, examples };
 
   rmSync(opts.outDir, { recursive: true, force: true });
   mkdirSync(opts.outDir, { recursive: true });
@@ -164,6 +205,14 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   put('app.js', landingJs);
   put('shell.css', shellCss);
   put('theme.css', neutralTheme);
+  put(
+    'playground/index.html',
+    renderPage(playgroundTemplate, { playground: playgroundCopy, examples: playgroundData }, bootPlayground(playgroundCopy), playgroundCopy.title),
+  );
+  put('playground/app.js', playgroundJs);
+  put('playground/shell.css', shellCss);
+  put('playground/theme.css', neutralTheme);
+  put('playground/playground.css', playgroundCss);
   for (const app of apps) {
     put(`${app.name}/index.html`, renderPage(template, { table: app.table, copy: app.copy }, bootApp(app.copy), app.copy.title));
     put(`${app.name}/app.js`, shellJs);

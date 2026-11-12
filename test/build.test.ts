@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build } from '../skeleton/build/build.ts';
-import { validateLanding } from '../skeleton/build/copy-check.ts';
-import { THEME_PROPS, validateTheme } from '../skeleton/build/theme-check.ts';
+import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';
+import { THEME_PROPS, parseTheme, validateTheme } from '../skeleton/build/theme-check.ts';
 import { run } from '../skeleton/cli/bones.ts';
 
 const repo = path.resolve(import.meta.dirname, '..');
@@ -46,7 +46,7 @@ afterEach(() => {
 });
 
 describe('build', () => {
-  it('builds an app made by `bones new` into exactly the eight files', { timeout: 30000 }, async () => {
+  it('builds an app made by `bones new` into exactly the thirteen files', { timeout: 30000 }, async () => {
     const w = workspace();
     const result = await runBuild(w);
     expect(result).toEqual({ ok: true, apps: ['demo'] });
@@ -58,11 +58,16 @@ describe('build', () => {
       'demo/shell.css',
       'demo/theme.css',
       'index.html',
+      'playground/app.js',
+      'playground/index.html',
+      'playground/playground.css',
+      'playground/shell.css',
+      'playground/theme.css',
       'shell.css',
       'theme.css',
     ]);
 
-    for (const page of ['index.html', 'demo/index.html']) {
+    for (const page of ['index.html', 'demo/index.html', 'playground/index.html']) {
       const html = readFileSync(path.join(w.dist, page), 'utf8');
       const links = [...html.matchAll(/\b(?:href|src)="([^"]*)"/g)].map((m) => m[1] ?? '');
       expect(links.length).toBeGreaterThan(0);
@@ -76,6 +81,47 @@ describe('build', () => {
 
     expect(readdirSync(w.dist)).not.toContain('template');
     expect(readdirSync(w.dist)).not.toContain('examples');
+  });
+
+  it('writes the playground page with its two data blocks', { timeout: 30000 }, async () => {
+    const w = workspace();
+    expect(await runBuild(w)).toEqual({ ok: true, apps: ['demo'] });
+    const copy = JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8')) as {
+      title: string;
+      intro: string;
+      noscript: string;
+      editor: { brokenExample: string };
+    };
+    const html = readFileSync(path.join(w.dist, 'playground/index.html'), 'utf8');
+    const block = (id: string): unknown => JSON.parse(html.match(new RegExp(`<script type="application/json" id="${id}">([^]*?)</script>`))?.[1] ?? 'null');
+
+    expect(html).toContain('http-equiv="Content-Security-Policy"');
+    expect(html).toContain('<link rel="stylesheet" href="playground.css">');
+    expect(html.indexOf('href="shell.css"')).toBeLessThan(html.indexOf('href="playground.css"'));
+    expect(html).toContain(`<title>${copy.title}</title>`);
+    const boot = html.match(/<div id="boot"[^]*?<\/div>/)?.[0] ?? '';
+    expect(boot.match(/<h1>/g)).toHaveLength(1);
+    expect(boot).toContain(copy.title);
+    expect(boot).toContain(copy.intro);
+    expect(boot).toContain(copy.noscript);
+
+    expect(block('data-playground')).toEqual(copy);
+    const demoTable: unknown = JSON.parse(readFileSync(path.join(w.app, 'table.json'), 'utf8'));
+    const demoCopy: unknown = JSON.parse(readFileSync(path.join(w.app, 'copy.json'), 'utf8'));
+    const examples = block('data-examples') as {
+      defaultExample: string;
+      examples: { id: string; label: string; table: unknown; copy: unknown; theme: { light: object; dark: object } }[];
+    };
+    // No which-licence or which-bin here: the first app stands in for both.
+    expect(examples.defaultExample).toBe('demo');
+    expect(examples.examples.map((e) => e.id)).toEqual(['demo', 'broken']);
+    const [demo, broken] = examples.examples;
+    expect(demo?.table).toEqual(demoTable);
+    expect(broken?.label).toBe(copy.editor.brokenExample);
+    expect(broken?.table).toEqual(JSON.parse(readFileSync(path.join(repo, 'skeleton/examples/which-bin-broken.table.json'), 'utf8')));
+    expect(broken?.copy).toEqual(demoCopy);
+    expect(Object.keys(demo?.theme.light ?? {})).toHaveLength(13);
+    expect(Object.keys(demo?.theme.dark ?? {})).toHaveLength(8);
   });
 
   it('rejects a table with a gap and leaves the output directory alone', { timeout: 30000 }, async () => {
@@ -162,5 +208,51 @@ describe('build', () => {
 
     expect(validateTheme(readFileSync(path.join(repo, 'skeleton/shell/neutral-theme.css'), 'utf8'))).toEqual([]);
     expect(validateLanding(JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')))).toEqual([]);
+  });
+
+  it('keeps playground.css within the contract', () => {
+    const css = readFileSync(path.join(repo, 'skeleton/playground/playground.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const used = [...css.matchAll(/var\(\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
+    expect(used.length).toBeGreaterThan(0);
+    for (const name of used) expect(THEME_PROPS as readonly string[]).toContain(name);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@import/);
+  });
+
+  it('reads the light and dark values of a theme', () => {
+    const theme = parseTheme(readFileSync(path.join(repo, 'apps/which-bin/theme.css'), 'utf8'));
+    expect(theme.light['--radius']).toBe('1.25rem');
+    expect(Object.keys(theme.light)).toHaveLength(13);
+    expect(Object.keys(theme.dark)).toHaveLength(8);
+    expect(theme.dark['--bg']).toBe('#2a1a10');
+  });
+});
+
+interface PlaygroundDoc { [key: string]: unknown; title: string; editor: Record<string, string>; results: Record<string, string> }
+
+describe('playground copy', () => {
+  const real = (): PlaygroundDoc => JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8')) as PlaygroundDoc;
+
+  it('accepts the real file', () => {
+    expect(validatePlayground(real())).toEqual([]);
+  });
+
+  it.each([
+    { name: 'a missing label', edit: (c: PlaygroundDoc) => delete c.editor['reset'], expected: 'editor.reset: missing' },
+    { name: 'a missing placeholder', edit: (c: PlaygroundDoc) => (c.results['passes'] = 'Passes: {combinations}'), expected: 'results.passes: must contain {rules}' },
+    { name: 'an unknown key', edit: (c: PlaygroundDoc) => (c['extra'] = 'x'), expected: 'extra: unknown key' },
+    { name: 'an empty string', edit: (c: PlaygroundDoc) => (c.title = '  '), expected: 'title: must not be empty' },
+  ])('rejects $name', ({ edit, expected }) => {
+    const copy = real();
+    edit(copy);
+    expect(validatePlayground(copy)).toContain(expected);
+  });
+});
+
+describe('landing copy', () => {
+  it('rejects a landing.json without the playground link', () => {
+    const landing: Record<string, unknown> = JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8'));
+    expect(landing['playground']).toBeDefined();
+    delete landing['playground'];
+    expect(validateLanding(landing)).toContain('playground: missing');
   });
 });

@@ -42,6 +42,7 @@ Rules for every task:
   - With a throwaway script outside the repo's tracked files, take a screenshot of each app in light and dark at 360 px and at desktop width, look at them, and write one sentence per app in the report on whether the two look clearly different (open question: this is the only visual check).
   - Requirements: 7.2, 10.7, 10.8, 10.10, 10.11
   - Verify: `npm run test:e2e && npx playwright test --list | grep -q "Total: 12 tests"`
+  - Amendment (playground spec, owner answers): from the playground spec on, the count in this command is `Total: 16 tests` (12 + 4 in `e2e/playground.spec.ts`).
 
 - [x] 6. Pages workflow (Verify passed: `Tests  2 passed | 29 skipped (31)`.)
   - In `test/apps.test.ts` write the describe `pages workflow` (text checks of design.md), see it fail, then create `.github/workflows/pages.yml` as in design.md. In the report, remind the owner of the three steps only they can do: commit `package-lock.json`, set Pages source to "GitHub Actions", push.

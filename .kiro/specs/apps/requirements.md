@@ -207,3 +207,7 @@ Given after `apps/which-bin/table.json` was audited against `docs/sources/README
 5. `copy.json`: tagline, intro and last footer line say "Seoul's rules (2025) and the Ministry of Environment's guide (2018)"; the intro says rules vary by district; the Ministry footer label says it is a copy hosted by Korea University.
 6. The STRETCHED verdicts on `paper-box-clean`, `paper-box-soiled`, `paper-books-soiled`, `paper-cup-soiled` and `carton-soiled` stay; each note says which source line it extends and how.
 7. Consequences: the broken demo table has 16 gaps (the removed rule's hole is now free in `amount` too), still one hole and one conflict; golden items grow to 9 (small and large broken glass; `pet-clear-dirty` replaces `pet-clear` in the dirty-bottle item); the e2e walks changed: pizza box skips 5 questions, the shared link carries `amount=small` and shows 4 steps, the whole table has 33 rows.
+
+### Amendment from the playground spec (owner answers, 2026-11)
+
+- 10.10 (amended): the `e2e/` suite holds 16 tests (12 + 4 in `e2e/playground.spec.ts`). The Verify of task 5 counts `Total: 16 tests`.

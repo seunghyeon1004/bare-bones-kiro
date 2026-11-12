@@ -8,3 +8,10 @@ The owner's review: it reads like a README. It needs one clear picture of the id
 5. Keep it fast and plain: no stock imagery, no web fonts, no animation beyond a reduced-motion-safe hover. One h1, links are links, axe clean in light and dark, no horizontal scroll at 360 px. Update the landing e2e test for the new structure (it must still find both app links and the playground link) and add axe on the landing page in dark if not already covered.
 
 Verify: `npm run typecheck && npm test && npm run test:e2e`. Do not stage, commit or push. End with the files changed and the real result lines.
+
+Also polish the playground page (skeleton/playground/, its CSS and copy file; record it in the playground spec's Owner answers). The owner looked at it at 1280 px after removing a rule:
+6. Layout: at wide widths the left column holds the editor and the rule list; the right column holds the checker result and, directly under it, the app preview, so breaking a rule and seeing both the gap and the app's reaction needs no scrolling. At 390 px it stacks: status, editor, rules, results, app.
+7. Status: make pass and fail unmistakable without relying on colour alone: a small inline SVG mark (check or cross, aria-hidden) plus the word, a green-family border and tint for pass and a red-family one for fail, both AA in light and dark, defined as tokens in the playground's CSS.
+8. Rule list: each row shows the rule id, a short "when -> outcome" summary (text nodes only), and Remove. After a removal, show "Removed rule-id" with an Undo button that puts that rule back where it was (Reset stays).
+9. In the preview, hide the shell's "Copy link" button (a mount option), because the link would point at the playground, not the preview.
+Add one e2e assertion for Undo (remove, Undo, "Passes" again). Keep axe clean at 1280 and 390, light and dark.

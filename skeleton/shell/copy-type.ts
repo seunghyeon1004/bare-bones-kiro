@@ -42,6 +42,7 @@ export interface Landing {
   styles: { tiles: string; list: string };
   noteTitle: string;
   note: string;
+  playground: { title: string; text: string };
   footer: FooterEntry[];
 }
 

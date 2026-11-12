@@ -15,14 +15,23 @@ body {
 h1,
 h2,
 h3,
-h4 {
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   line-height: 1.25;
 }
 
-h1 {
+h1,
+.app-title {
   margin: 0 0 calc(var(--space) / 2);
   font-size: 2rem;
+}
+
+/* The question heading looks like the browser's default h2 at any level. */
+.question-title {
+  margin: 0.83em 0;
+  font-size: 1.5em;
 }
 
 .page {
@@ -216,7 +225,7 @@ input {
 }
 
 /* Your answers: one row per step. */
-.steps h2 {
+.steps .plain {
   margin-bottom: calc(var(--space) / 2);
 }
 
@@ -301,8 +310,8 @@ input {
 }
 
 /* Why: a quiet two-column definition list. */
-.why h3,
-.skipped h3 {
+.why .section-title,
+.skipped .section-title {
   margin: 0 0 var(--space);
   font-size: 1rem;
 }
@@ -461,6 +470,19 @@ td {
 }
 
 .apps p {
+  margin: calc(var(--space) / 2) 0 0;
+}
+
+.playground-card {
+  margin-top: calc(var(--space) * 2);
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.playground-card p {
   margin: calc(var(--space) / 2) 0 0;
 }
 

@@ -276,3 +276,9 @@ Given after the spec session; they override anything above that they contradict,
     h. Every app page starts with a link to `../` labelled by the new label `labels.allApps` (20 labels; `allApps` is added to the `Labels` type, `validateCopy`, both app `copy.json` files and the template).
     i. The landing page shows the title, the tagline, an explanatory paragraph, one card per app (title as link, tagline, answer style), and a note naming `table.json`, `copy.json` and `theme.css`. `landing.json` gains `intro`, `styles` (`tiles`, `list`), `noteTitle` and `note`; `validateLanding` checks them; `AppSummary` gains `answerStyle`.
     The engine, the tables and the theme contract are unchanged.
+
+### Amendments from the playground spec (owner answers, 2026-11)
+
+- 11.1 (amended): the build also reads `skeleton/examples/which-bin-broken.table.json`, `skeleton/playground/playground.json` and `playground.css`.
+- 11.7 (amended): the eight files for one app plus the five files of `dist/playground/` (thirteen).
+- 10.1 to 10.4 (amended): `landing.json` and the `Landing` type gain `playground: { title, text }` (non-empty strings), rendered as a link after the app cards.

@@ -5,5 +5,9 @@
   "styles": { "tiles": "Answers as tiles", "list": "Answers as a list" },
   "noteTitle": "Same skeleton, three files each",
   "note": "Every app here is made of table.json (the decision), copy.json (the words) and theme.css (the colours and fonts). Nothing else.",
+  "playground": {
+    "title": "Break a table and watch the checker catch it",
+    "text": "Delete a rule from a table and watch the checker find the gap and the app refuse to build. Then press Reset."
+  },
   "footer": [{ "text": "Every answer comes from a checked decision table." }]
 }

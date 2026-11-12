@@ -1,0 +1,2302 @@
+# Kiro CLI 3.2.1, 2026-11-12T06:08:49Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --agent bonesetter --trust-all-tools --trust-workspace --model auto "$(cat docs/kiro-evidence/prompts/13-impl-playground.md)"
+
+--- prompt ---
+Implement the spec in .kiro/specs/playground/: tasks 1 to 6, in order. Read requirements.md, design.md and tasks.md fully first, the steering (the owner has updated product.md and structure.md with your Departures 1 and 2), and the shell and build code.
+
+Owner answers, record them first in an "Owner answers" section at the end of requirements.md, and amend the older specs' numbers where your Departure 3 says (shell-and-cli 11.1/11.7, apps 10.10 and its task 5 Verify, the Landing type), as amendments, not rewrites:
+1. Keep `headingOffset`; class selectors for headings in shell.css are accepted (Departure 5).
+2. Preview theme via `style.setProperty` is accepted (Departure 4). The larger `--font-size` of which-bin need not show in the preview.
+3. Re-serialising the JSON with two-space indentation on rule removal is fine.
+4. "Would not build" covering structure, gaps and conflicts is enough; say "the table fails the check" rather than claiming to run the whole build.
+5. Display caps (5 gaps, 5 conflicts, 10 errors) accepted. Answers reset on a table change: accepted.
+6. Measure `check` on the which-bin table in the browser once (console timing in the e2e test is enough) and report the number.
+
+npm install is allowed (npm only). One task at a time; after each, run its Verify command, then tick it with the quoted result line. Never weaken a check or an existing test: every existing e2e test must stay green unchanged except for counts the amendments name. Do not stage, commit or push.
+
+End with the real output of `npm run typecheck && npm test && npm run test:e2e` (last 20 lines), the files you created or changed, and anything left open.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+Let me start by reading the spec files.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:execute] $ find .kiro/specs .kiro/steering skeleton test e2e -type f | grep -v node_modules | head -100; wc -l .kiro/specs/playground/*
+    … (43 earlier lines not shown)
+    skeleton/engine/format.ts
+    skeleton/engine/index.ts
+    skeleton/engine/check.ts
+    test/check.test.ts
+    test/mcp.test.ts
+    test/decide.test.ts
+    test/tables.ts
+    test/props/oracle.ts
+    test/props/decide.props.test.ts
+    test/props/shell.props.test.ts
+    test/props/purity.props.test.ts
+    test/props/generators.ts
+    test/props/shell-generators.ts
+    test/props/check.props.test.ts
+    test/validate.test.ts
+    test/build.test.ts
+    test/apps.test.ts
+    test/cli.test.ts
+    e2e/table.spec.ts
+    e2e/helpers.ts
+    e2e/a11y.spec.ts
+    e2e/link.spec.ts
+    e2e/landing.spec.ts
+    e2e/nojs.spec.ts
+    e2e/walk.spec.ts
+    e2e/layout.spec.ts
+         506 .kiro/specs/playground/design.md
+         192 .kiro/specs/playground/requirements.md
+          56 .kiro/specs/playground/tasks.md
+         754 total
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && git status --short | head -20; cat package.json; wc -l skeleton/shell/* skeleton/build/* e2e/* test/*.ts test/props/*; ls node_modules | head -3; ls dist 2>/dev/null; cat skeleton/shell/shell.ts skeleton/shell/dom.ts skeleton/shell/copy-type.ts
+    … (481 earlier lines not shown)
+      yourAnswers: string;
+      noscript: string;
+      questionOf: string; // must contain {n} and {max}
+      badLink: string; // must contain {count}
+      allApps: string; // link back to the landing page
+    }
+    
+    export interface FooterEntry { text: string; href?: string }
+    
+    export interface Copy {
+      title: string;
+      tagline: string;
+      intro: string;
+      answerStyle: 'tiles' | 'list';
+      labels: Labels;
+      resultLead: string;
+      footer: FooterEntry[];
+    }
+    
+    export interface Landing {
+      title: string;
+      tagline: string;
+      intro: string;
+      styles: { tiles: string; list: string };
+      noteTitle: string;
+      note: string;
+      footer: FooterEntry[];
+    }
+    
+    export interface AppSummary { id: string; title: string; tagline: string; answerStyle: 'tiles' | 'list' }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat skeleton/build/build.ts skeleton/build/page.ts skeleton/build/theme-check.ts skeleton/shell/landing.ts skeleton/shell/landing.json skeleton/shell/page.html; sed -n 1,137p skeleton/build/copy-check.ts
+    … (522 earlier lines not shown)
+        } else {
+          nonEmptyString(value, key, problems);
+        }
+      }
+      unknownKeys(input, COPY_KEYS, '', problems);
+      return problems;
+    }
+    
+    /** Problems with landing.json: `title`, `tagline`, `intro`, `styles`, `noteTitle`, `note` and `footer`. */
+    export function validateLanding(input: unknown): string[] {
+      const problems: string[] = [];
+      if (!isObj(input)) return ['$: must be an object'];
+      for (const key of LANDING_KEYS) {
+        if (!Object.hasOwn(input, key)) problems.push(`${key}: missing`);
+        else if (key === 'footer') checkFooter(input[key], problems);
+        else if (key === 'styles') {
+          const styles = input[key];
+          if (!isObj(styles)) problems.push('styles: must be an object');
+          else {
+            for (const name of ['tiles', 'list']) {
+              if (!Object.hasOwn(styles, name)) problems.push(`styles.${name}: missing`);
+              else nonEmptyString(styles[name], `styles.${name}`, problems);
+            }
+            unknownKeys(styles, ['tiles', 'list'], 'styles.', problems);
+          }
+        } else nonEmptyString(input[key], key, problems);
+      }
+      unknownKeys(input, LANDING_KEYS, '', problems);
+      return problems;
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat skeleton/shell/shell.css; cat e2e/helpers.ts e2e/landing.spec.ts playwright.config.ts tsconfig.json; cat test/build.test.ts
+    … (818 earlier lines not shown)
+        },
+        {
+          name: 'an output directory equal to the repo root',
+          setup: (w) => writeFileSync(path.join(w.root, 'keep.txt'), 'keep'),
+          expected: 'refusing to use',
+          outDir: (w) => w.root,
+        },
+      ];
+    
+      it.each(rows)('rejects $name', { timeout: 30000 }, async (row) => {
+        const w = workspace();
+        row.setup(w);
+        const result = await runBuild(w, row.outDir?.(w));
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.errors.join('\n')).toContain(row.expected);
+        expect(existsSync(path.join(w.root, 'apps'))).toBe(true);
+        expect(existsSync(w.dist)).toBe(false);
+      });
+    
+      it('keeps the shell files within the contract', () => {
+        const css = readFileSync(path.join(repo, 'skeleton/shell/shell.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+        const used = [...css.matchAll(/var\(\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
+        expect(used.length).toBeGreaterThan(0);
+        for (const name of used) expect(THEME_PROPS as readonly string[]).toContain(name);
+        expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@import/);
+    
+        expect(validateTheme(readFileSync(path.join(repo, 'skeleton/shell/neutral-theme.css'), 'utf8'))).toEqual([]);
+        expect(validateLanding(JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')))).toEqual([]);
+      });
+    });
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "^11\.1\|^11\.7\|^10\.[1-4] " .kiro/specs/shell-and-cli/requirements.md; grep -n "10\.10\|^1\.6" .kiro/specs/apps/requirements.md; grep -n "12 tests\|Total: 12" .kiro/specs/apps/*.md; grep -n "Landing" .kiro/specs/*/design.md | head; tail -15 .kiro/specs/apps/requirements.md | cut -c1-200; ls scripts; cat e2e/a11y.spec.ts
+    … (44 earlier lines not shown)
+    import { expect, test } from '@playwright/test';
+    import { loadApp, openTable, scanAxe } from './helpers.ts';
+    import type { AppName } from './helpers.ts';
+    
+    const RESULT_HASH: Record<AppName, string> = { 'which-bin': '#kind=battery', 'which-licence': '#copyleft=file' };
+    
+    for (const [name, scheme] of [
+      ['which-bin', 'light'],
+      ['which-bin', 'dark'],
+      ['which-licence', 'light'],
+      ['which-licence', 'dark'],
+    ] as const) {
+      test(`axe, ${name}, ${scheme}`, async ({ page }) => {
+        const { table, copy } = loadApp(name);
+        // Reduced motion: the colour transitions of shell.css must not make axe read a colour mid-transition.
+        await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
+    
+        await page.goto(`${name}/`);
+        await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+        expect(await scanAxe(page), 'question screen').toEqual([]);
+    
+        await page.goto('about:blank');
+        await page.goto(`${name}/${RESULT_HASH[name]}`);
+        await expect(page.getByRole('heading', { name: new RegExp(`^${copy.resultLead}`) })).toBeFocused();
+        expect(await scanAxe(page), 'result screen').toEqual([]);
+    
+        await openTable(page, copy, table);
+        expect(await scanAxe(page), 'result screen with the whole table').toEqual([]);
+      });
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat >> .kiro/specs/playground/requirements.md <<'EOF'
+
+## Owner answers
+
+Given after the first design pass. They settle the open questions of `design.md`.
+
+1. Keep `headingOffset`. Class selectors for headings in `shell.css` are accepted (Departure 5 / open question 3).
+2. Applying the preview theme with `style.setProperty` is accepted (Departure 4). The larger `--font-size` of which-bin need not show in the preview (open question 4).
+3. Re-serialising the JSON with two-space indentation on rule removal is fine (open question 5).
+4. "Would not build" covering structure, gaps and conflicts is enough. The page says "the table fails the check" and does not claim to run the whole build (open question 7).
+5. The display caps (5 gaps, 5 conflicts, 10 errors) are accepted. Answers in the preview reset on a table change (open questions 6 and 8).
+6. `check` is measured once on the which-bin table in the browser (console timing in the e2e test is enough) and the number is reported (open question 10).
+
+### Amendments to older specs (Departure 3)
+
+Recorded as amendments; the original wording stays.
+
+- shell-and-cli 11.1: amended, the build also reads `skeleton/examples/which-bin-broken.table.json` for the playground page (and `skeleton/playground/playground.json`, `playground.css`).
+- shell-and-cli 11.7: amended, a build writes the eight files for one app plus the five files of `dist/playground/` (thirteen).
+- shell-and-cli 10.1 to 10.4 and the `Landing` type: amended, `landing.json` and `Landing` gain `playground: { title, text }`, validated as non-empty strings.
+- apps 10.10 and the Verify of apps task 5: amended, the end-to-end suite holds 16 tests (12 + 4 from `e2e/playground.spec.ts`), so the count check reads `Total: 16 tests`.
+EOF
+python3 - <<'EOF'
+import re
+p='.kiro/specs/shell-and-cli/requirements.md'
+s=open(p).read()
+s=s.rstrip('\n')+"\n\n### Amendments from the playground spec (owner answers, 2026-11)\n\n- 11.1 (amended): the build also reads `skeleton/examples/which-bin-broken.table.json`, `skeleton/playground/playground.json` and `playground.css`.\n- 11.7 (amended): the eight files for one app plus the five files of `dist/playground/` (thirteen).\n- 10.1 to 10.4 (amended): `landing.json` and the `Landing` type gain `playground: { title, text }` (non-empty strings), rendered as a link after the app cards.\n"
+open(p,'w').write(s)
+p='.kiro/specs/apps/requirements.md'
+s=open(p).read()
+s=s.rstrip('\n')+"\n\n### Amendment from the playground spec (owner answers, 2026-11)\n\n- 10.10 (amended): the `e2e/` suite holds 16 tests (12 + 4 in `e2e/playground.spec.ts`). The Verify of task 5 counts `Total: 16 tests`.\n"
+open(p,'w').write(s)
+EOF
+sed -n 38,46p .kiro/specs/apps/tasks.md | cut -c1-250
+      - Verify: `node --input-type=module -e "import { readFileSync as r } from 'node:fs'; const p = JSON.parse(r('package.json','utf8')); const want = {typescript:'6.0.3',tsx:'4.23.15',vitest:'5.1.0','fast-check':'4.10.2',esbuild:'0.28.2','@modelcontext
+    
+    - [x] 5. Accessibility and layout end-to-end tests (5 of 12) (Verify passed: `12 passed (5.1s)` and `Total: 12 tests in 7 files`.)
+      - Create `e2e/a11y.spec.ts` (4 tests: each app, light and dark; question screen, result screen, result screen with the whole table open; `reducedMotion: 'reduce'`) and `e2e/layout.spec.ts` (1 test: 360 px, both apps, three screens each).
+      - With a throwaway script outside the repo's tracked files, take a screenshot of each app in light and dark at 360 px and at desktop width, look at them, and write one sentence per app in the report on whether the two look clearly different (open q
+      - Requirements: 7.2, 10.7, 10.8, 10.10, 10.11
+      - Verify: `npm run test:e2e && npx playwright test --list | grep -q "Total: 12 tests"`
+    
+    - [x] 6. Pages workflow (Verify passed: `Tests  2 passed | 29 skipped (31)`.)
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "^- \[ \]" .kiro/specs/{engine,shell-and-cli,apps}/tasks.md; npm run typecheck 2>&1 | tail -3; npm test 2>&1 | tail -6; npm run test:e2e 2>&1 | tail -20
+    > typecheck
+    > tsc --noEmit
+    
+    
+     Test Files  11 passed (11)
+          Tests  93 passed (93)
+       Start at  15:09:40
+       Duration  626ms (tests 56%, import 33%, transform 10%, worker 2%)
+    
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 12 tests using 6 workers
+    
+      ✓   5 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (505ms)
+      ✓   2 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (647ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (164ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (203ms)
+      ✓   9 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (249ms)
+      ✓  10 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (186ms)
+      ✓  11 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (234ms)
+      ✓  12 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (232ms)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.3s)
+      ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.4s)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.5s)
+      ✓   3 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.5s)
+    
+      12 passed (2.3s)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && cp shell.ts mount.ts && python3 - <<'EOF'
+p='mount.ts'
+s=open(p).read()
+def rep(a,b,count=1):
+    global s
+    assert s.count(a)>=1,(a)
+    if count==1: assert s.count(a)==1,(a,s.count(a))
+    s=s.replace(a,b)
+
+rep("""import { decide } from '../engine/index.ts';
+import type { DecidedResult, OpenResult, Table } from '../engine/index.ts';
+import type { Copy } from './copy-type.ts';
+import { el, fill, linkOrText, readJson, renderFooter, text } from './dom.ts';""","""import { decide } from '../engine/index.ts';
+import type { DecidedResult, OpenResult, Table } from '../engine/index.ts';
+import type { Copy } from './copy-type.ts';
+import { el, fill, linkOrText, renderFooter, text } from './dom.ts';""")
+rep("""interface Stage { node: HTMLElement; heading: HTMLElement; announce: string }
+
+function start(): void {
+  const table = readJson<Table>('data-table');
+  const copy = readJson<Copy>('data-copy');
+  const labels = copy.labels;
+
+  document.getElementById('boot')?.remove();
+  document.title = copy.title;
+""","""interface Stage { node: HTMLElement; heading: HTMLElement; announce: string }
+
+export interface MountOptions {
+  /** Default true. False: the URL hash is neither read nor written, and the app starts with no steps. */
+  hash?: boolean;
+  /** Default false. True: the app is a guest in another page (no title change, no boot removal, no back link, no `main`, silent first render). */
+  embedded?: boolean;
+  /** Default 0. Integer 0 to 4: a heading of level L is rendered at level min(6, L + offset). */
+  headingOffset?: number;
+}
+
+export interface Mounted { unmount(): void }
+
+const HEADINGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const;
+
+/** Renders the app page for `table` and `copy` as the first child of `root`. */
+export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: MountOptions = {}): Mounted {
+  const useHash = options.hash !== false;
+  const embedded = options.embedded === true;
+  const offset = Number.isInteger(options.headingOffset) ? Math.min(4, Math.max(0, options.headingOffset ?? 0)) : 0;
+  const labels = copy.labels;
+
+  if (!embedded) {
+    document.getElementById('boot')?.remove();
+    document.title = copy.title;
+  }
+
+  const heading = (level: number, attrs: Record<string, string>, ...children: Child[]): HTMLHeadingElement =>
+    el(HEADINGS[Math.min(6, level + offset) - 1] ?? 'h6', attrs, ...children);
+""")
+rep("""  const main = el('main', { class: 'main' });""","""  const main = el(embedded ? 'div' : 'main', { class: 'main' });""")
+rep("""      el('p', { class: 'back' }, el('a', { href: '../' }, labels.allApps)),
+      el('h1', {}, copy.title),""","""      ...(embedded ? [] : [el('p', { class: 'back' }, el('a', { href: '../' }, labels.allApps))]),
+      heading(1, { class: 'app-title' }, copy.title),""")
+rep("""  document.body.insertBefore(page, document.body.firstChild);
+
+  function button""","""  root.insertBefore(page, root.firstChild);
+
+  function button""")
+rep("""    history.replaceState(null, '', location.pathname + location.search + writeHash(steps));""","""    if (useHash) history.replaceState(null, '', location.pathname + location.search + writeHash(steps));""")
+rep("""      el('h2', { id: 'steps-heading', class: 'plain' }, labels.yourAnswers),""","""      heading(2, { id: 'steps-heading', class: 'plain' }, labels.yourAnswers),""")
+rep("""    const heading = el('h2', { tabindex: '-1' }, next.question);""","""    const questionHeading = heading(2, { tabindex: '-1', class: 'question-title' }, next.question);""")
+rep("""      heading,
+      ...(next.help""","""      questionHeading,
+      ...(next.help""")
+rep("""    return { node, heading, announce: `${progress} ${next.question}` };""","""    return { node, heading: questionHeading, announce: `${progress} ${next.question}` };""")
+rep("""    const heading = el(
+      'h2',
+      { tabindex: '-1', class: 'result-heading' },""","""    const resultHeading = heading(
+      2,
+      { tabindex: '-1', class: 'result-heading' },""")
+rep("""      { class: 'card' },
+      heading,""","""      { class: 'card' },
+      resultHeading,""")
+rep("""el('section', { class: 'why' }, el('h3', {}, labels.why)""","""el('section', { class: 'why' }, heading(3, { class: 'section-title' }, labels.why)""")
+rep("""          el('h3', {}, labels.notAsked),""","""          heading(3, { class: 'section-title' }, labels.notAsked),""")
+rep("""return { node: el('section', { class: 'stage' }, ...children), heading, announce: headingText };""","""return { node: el('section', { class: 'stage' }, ...children), heading: resultHeading, announce: headingText };""")
+rep("""    let heading: HTMLElement | undefined;
+    if (result.status === 'open') {
+      const stage = questionStage(result);
+      children.push(stage.node);
+      heading = stage.heading;""","""    let focusTarget: HTMLElement | undefined;
+    if (result.status === 'open') {
+      const stage = questionStage(result);
+      children.push(stage.node);
+      focusTarget = stage.heading;""")
+rep("""      children.push(stage.node);
+      heading = stage.heading;
+      announce.push(stage.announce);
+    }
+    if (steps.length > 0) children.push(actions());""","""      children.push(stage.node);
+      focusTarget = stage.heading;
+      announce.push(stage.announce);
+    }
+    if (steps.length > 0) children.push(actions());""")
+rep("""    live.textContent = announce.join(' ');
+    if (moveFocus) heading?.focus();""","""    if (!(embedded && firstRender)) live.textContent = announce.join(' ');
+    firstRender = false;
+    if (moveFocus) focusTarget?.focus();""")
+rep("""  let steps: Step[] = [];
+  let ignored = 0;
+""","""  let steps: Step[] = [];
+  let ignored = 0;
+  let firstRender = true;
+  let mounted = true;
+""")
+rep("""  function readAddress(): void {
+    const read = readHash(table, location.hash);
+    steps = read.steps;
+    ignored = read.ignored;
+  }
+
+  window.addEventListener('hashchange', () => {
+    readAddress();
+    update(true);
+  });
+
+  readAddress();
+  update(steps.length > 0);
+}
+
+start();
+""","""  function readAddress(): void {
+    const read = readHash(table, location.hash);
+    steps = read.steps;
+    ignored = read.ignored;
+  }
+
+  const onHashChange = (): void => {
+    readAddress();
+    update(true);
+  };
+
+  if (useHash) {
+    window.addEventListener('hashchange', onHashChange);
+    readAddress();
+  }
+  update(steps.length > 0);
+
+  return {
+    unmount(): void {
+      if (!mounted) return;
+      mounted = false;
+      if (useHash) window.removeEventListener('hashchange', onHashChange);
+      page.remove();
+    },
+  };
+}
+""")
+rep("import { el, fill, linkOrText, renderFooter, text } from './dom.ts';\nimport type { Child }","import { el, fill, linkOrText, renderFooter, text } from './dom.ts';\nimport type { Child }")
+open(p,'w').write(s)
+EOF
+cat > shell.ts <<'EOF'
+import type { Table } from '../engine/index.ts';
+import type { Copy } from './copy-type.ts';
+import { readJson } from './dom.ts';
+import { mountApp } from './mount.ts';
+
+const table = readJson<Table>('data-table');
+const copy = readJson<Copy>('data-copy');
+mountApp(document.body, table, copy, {});
+EOF
+grep -n "writeAddress\|update(" mount.ts | head -20
+    78:  function writeAddress(): void {
+    100:            update(true);
+    129:            update(true);
+    254:        update(true);
+    293:  function update(moveFocus: boolean): void {
+    295:    writeAddress();
+    352:    update(true);
+    359:  update(steps.length > 0);
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && python3 - <<'EOF'
+p='shell.css'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,a
+    s=s.replace(a,b)
+rep("""h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+}
+
+h1 {
+  margin: 0 0 calc(var(--space) / 2);
+  font-size: 2rem;
+}
+""","""h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+}
+
+h1,
+.app-title {
+  margin: 0 0 calc(var(--space) / 2);
+  font-size: 2rem;
+}
+
+/* The question heading looks like the browser's default h2 at any level. */
+.question-title {
+  margin: 0.83em 0;
+  font-size: 1.5em;
+}
+""")
+rep(""".steps h2 {
+  margin-bottom""",""".steps .plain {
+  margin-bottom""")
+rep(""".why h3,
+.skipped h3 {""",""".why .section-title,
+.skipped .section-title {""")
+open(p,'w').write(s)
+EOF
+cd ../.. && npm run typecheck 2>&1 | tail -5
+    
+    > typecheck
+    > tsc --noEmit
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run typecheck >/dev/null && npm test 2>&1 | grep -E "Tests|Test Files" ; npm run test:e2e 2>&1 | tail -4; git diff --quiet -- e2e && echo e2e-unchanged; ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(|style=" skeleton/shell/mount.ts skeleton/shell/shell.ts && echo greps-clean
+     Test Files  11 passed (11)
+          Tests  93 passed (93)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.7s)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.7s)
+    
+      12 passed (2.6s)
+    e2e-unchanged
+    greps-clean
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run typecheck && npm test && npm run test:e2e && git diff --quiet -- e2e && ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(|style=" skeleton/shell/mount.ts skeleton/shell/shell.ts; echo EXIT=$?
+    … (15 earlier lines not shown)
+       Start at  15:10:30
+       Duration  621ms (tests 56%, import 33%, transform 10%, worker 1%)
+    
+    
+    > test:e2e
+    > npm run build && playwright test
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 12 tests using 6 workers
+    
+      ✓   5 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (462ms)
+      ✓   3 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (588ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (185ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (145ms)
+      ✓   9 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (196ms)
+      ✓  10 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (189ms)
+      ✓  11 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (280ms)
+      ✓  12 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (298ms)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.3s)
+      ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.3s)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.6s)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.5s)
+    
+      12 passed (2.3s)
+    EXIT=0
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/props/oracle.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "export" test/props/generators.ts skeleton/engine/index.ts skeleton/engine/types.ts; sed -n 1,40p test/props/check.props.test.ts; cat skeleton/examples/gap.table.json | head -30; ls vitest.config.ts && cat vitest.config.ts
+    … (85 earlier lines not shown)
+              "id": "small",
+              "label": "Small"
+            },
+            {
+              "id": "large",
+              "label": "Large",
+              "hint": "Bigger than a shoebox"
+            }
+          ]
+        },
+        {
+          "id": "wet",
+          "question": "Is it wet?",
+          "values": [
+            {
+              "id": "no",
+              "label": "No"
+            },
+            {
+              "id": "yes",
+              "label": "Yes"
+    vitest.config.ts
+    import { defineConfig } from 'vitest/config';
+    
+    export default defineConfig({
+      test: {
+        include: ['test/**/*.test.ts'],
+        environment: 'node',
+      },
+    });
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && sed -n 20,60p skeleton/engine/types.ts; sed -n 70,126p test/props/generators.ts; cat skeleton/engine/format.ts | head -40; ls skeleton/examples; node -e "const t=require('./skeleton/examples/conflict.table.json');console.log(t.rules.length)"
+    … (109 earlier lines not shown)
+    }
+    
+    /** The text for input that is not JSON at all. */
+    export function formatInvalidJson(message: string): string {
+      return `$: invalid JSON: ${message}\nfailed\n`;
+    }
+    
+    /** The text `bones check` prints for a structurally valid table. */
+    export function formatReport(report: CheckReport): string {
+      const lines: string[] = [`gaps: ${report.gaps.count}`];
+      for (const example of report.gaps.examples) lines.push(`  ${pairs(example)}`);
+      if (report.gaps.count > report.gaps.examples.length) {
+        lines.push(`  (first ${report.gaps.examples.length} shown)`);
+      }
+      for (const c of report.conflicts) {
+        lines.push(`conflict: ${c.rules[0]} -> ${c.outcomes[0]} vs ${c.rules[1]} -> ${c.outcomes[1]}, e.g. ${pairs(c.example)}`);
+      }
+      for (const w of report.warnings) lines.push(`warning: ${w.path}: ${w.message}`);
+      if (report.passed) {
+        const { conditions, combinations, rules } = report.counts;
+        lines.push(`ok: ${conditions} conditions, ${combinations} combinations, ${rules} rules`);
+      } else {
+        lines.push('failed');
+      }
+      return lines.join('\n') + '\n';
+    }
+    conflict.table.json
+    gap.table.json
+    which-bin-broken.table.json
+    3
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "rules" skeleton/engine/validate.ts | head -20; sed -n 1,50p test/props/generators.ts
+    … (24 earlier lines not shown)
+          const when: Record<string, string | string[]> = {};
+          rule.when.forEach((list, k) => {
+            if (list === null) return;
+            const ids = list.map((v) => `c${k}-v${v}`);
+            when[`c${k}`] = ids.length === 1 && ids[0] !== undefined && i % 2 === 0 ? ids[0] : ids;
+          });
+          return { id: `r${i}`, when, then: `o${rule.then}`, source: { ref: 's0', at: `row ${i}` } };
+        }),
+        sources: [{ id: 's0', title: 'Generated source', url: 'https://example.com', published: 'unknown', read: '2026-01-01' }],
+      };
+      const result = validate(table);
+      if (!result.ok) throw new Error(`generator bug: ${JSON.stringify(result.problems)}`);
+      return result.table;
+    }
+    
+    const arbSizes = fc.array(fc.integer({ min: 2, max: 4 }), { minLength: 1, maxLength: 4 });
+    
+    function range(n: number): number[] {
+      return Array.from({ length: n }, (_, i) => i);
+    }
+    
+    function arbEntry(n: number): fc.Arbitrary<number[] | null> {
+      return fc.oneof(
+        { weight: 3, arbitrary: fc.constant<number[] | null>(null) },
+        { weight: 2, arbitrary: fc.integer({ min: 0, max: n - 1 }).map((v): number[] | null => [v]) },
+        { weight: 2, arbitrary: fc.subarray(range(n), { minLength: 1 }) as fc.Arbitrary<number[] | null> },
+      );
+    }
+    
+    /** A structurally valid small table with random rules; it may have gaps and conflicts. */
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && for f in apps/which-licence/table.json apps/which-bin/table.json skeleton/examples/gap.table.json skeleton/examples/conflict.table.json skeleton/examples/which-bin-broken.table.json; do echo $f; npm run -s bones -- check $f | tail -4; done; node -e "
+const t=require('./apps/which-licence/table.json');console.log(t.rules.map(r=>r.id).join(','), t.conditions.length)"
+    apps/which-licence/table.json
+    gaps: 0
+    ok: 4 conditions, 32 combinations, 7 rules
+    apps/which-bin/table.json
+    gaps: 0
+    ok: 7 conditions, 960 combinations, 33 rules
+    skeleton/examples/gap.table.json
+    gaps: 1
+      size=large, wet=yes
+    failed
+    skeleton/examples/conflict.table.json
+    gaps: 0
+    conflict: small -> tray-a vs wet -> tray-b, e.g. size=small, wet=yes
+    failed
+    skeleton/examples/which-bin-broken.table.json
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=special, coated=no, clear-drink=no
+      kind=paper-cup, soiled=yes, broken=yes, amount=large, glass-type=special, coated=no, clear-drink=yes
+    conflict: receipt -> general-waste vs receipt-as-paper -> paper, e.g. kind=receipt, soiled=no, broken=no, amount=small, glass-type=ordinary, coated=no, clear-drink=no
+    failed
+    permissive-patent,permissive-notice,permissive-nothing,copyleft-file,copyleft-library,copyleft-whole,copyleft-network 4
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/test/props/playground.props.test.ts
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/test/playground.test.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/playground.test.ts'
+s=open(p).read()
+s=s.replace("import playgroundJson from '../skeleton/playground/playground.json' with { type: 'json' };\n","")
+s=s.replace("const copy = playgroundJson as unknown as PlaygroundCopy;\nconst read = (file: string): string => readFileSync(path.join(repo, file), 'utf8');\n","const read = (file: string): string => readFileSync(path.join(repo, file), 'utf8');\nconst copy = JSON.parse(read('skeleton/playground/playground.json')) as PlaygroundCopy;\n")
+open(p,'w').write(s)
+EOF
+npx vitest --run test/playground.test.ts test/props/playground.props.test.ts 2>&1 | grep -E "Error|FAIL|Cannot" | head
+     FAIL  test/playground.test.ts [ test/playground.test.ts ]
+    Error: Cannot find module '../skeleton/playground/analyse.ts' imported from ~/hackathons-2026/kiroween/barebones/test/playground.test.ts
+          5| import { locateJsonError } from '../skeleton/playground/json-error.ts';
+     FAIL  test/props/playground.props.test.ts [ test/props/playground.props.test.ts ]
+    Error: Cannot find module '../../skeleton/playground/analyse.ts' imported from ~/hackathons-2026/kiroween/barebones/test/props/playground.props.test.ts
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/playground/playground.json
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='skeleton/playground/playground.json'
+s=open(p).read()
+s=s.replace('"noBuildHeading": "This table would not build"','"noBuildHeading": "This table fails the check"')
+s=s.replace('"noBuildText": "npm run build checks every table and stops when one has structural errors, gaps or conflicts. No app would be written from it."','"noBuildText": "npm run build stops on a table with structural errors, gaps or conflicts, so no app would be written from it. This page checks the table only, not the rest of the build."')
+s=s.replace("If not, the build would stop.","If not, the table fails the check and the build would stop on it.")
+open(p,'w').write(s)
+p='.kiro/specs/playground/requirements.md'
+s=open(p).read()
+s=s.replace("(open question 7).\n5.","(open question 7). Applied in `playground.json`: `app.noBuildHeading` is \"This table fails the check\" and `app.noBuildText` and `intro` say so.\n5.",1)
+open(p,'w').write(s)
+EOF
+grep -n "Applied in" .kiro/specs/playground/requirements.md | cut -c1-80
+    201:4. "Would not build" covering structure, gaps and conflicts is enough. The p
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && cat > types.ts <<'EOF'
+/** Types shared by the playground page and, as `import type` only, by the build. No values live here. */
+import type { Copy, FooterEntry } from '../shell/copy-type.ts';
+
+export interface Plural { one: string; other: string } // both contain {n}
+
+export interface ThemeVars { light: Record<string, string>; dark: Record<string, string> }
+
+export interface PlaygroundExample {
+  id: string;
+  label: string;
+  table: unknown;
+  copy: Copy;
+  theme: ThemeVars;
+}
+
+export interface PlaygroundData { defaultExample: string; examples: PlaygroundExample[] }
+
+export interface PlaygroundCopy {
+  title: string;
+  tagline: string;
+  intro: string;
+  noscript: string;
+  allApps: string;
+  editor: {
+    heading: string;
+    startFrom: string;
+    brokenExample: string;
+    loaded: string; // {name}
+    textareaLabel: string;
+    textareaHint: string;
+    reset: string;
+  };
+  rules: {
+    heading: string;
+    intro: string;
+    remove: string;
+    removeNamed: string; // {id}
+    unnamed: string; // {n}
+    unavailable: string;
+    empty: string;
+  };
+  results: {
+    heading: string;
+    passes: string; // {rules} {combinations}
+    fails: string; // {reason}
+    reasonCheck: string; // {gaps} {conflicts}
+    reasonStructure: string; // {problems}
+    reasonSyntax: string; // {line} {column}
+    coverage: string; // {covered} {total}
+    syntaxHeading: string;
+    syntaxDetail: string; // {line} {column} {reason}
+    jsonReasons: { end: string; character: string; string: string; trailing: string }; // character: {character}
+    structureHeading: string;
+    gapsHeading: string;
+    gapsNone: string;
+    conflictsHeading: string;
+    conflictsNone: string;
+    conflictLine: string; // {a} {b} {outcomeA} {outcomeB} {example}
+    more: string; // {count}
+    warningsHeading: string;
+  };
+  plural: { rule: Plural; combination: Plural; gap: Plural; conflict: Plural; problem: Plural };
+  app: {
+    heading: string;
+    noBuildHeading: string;
+    noBuildText: string;
+    noBuildReason: string; // {reason}
+  };
+  footer: FooterEntry[];
+}
+EOF
+cat > json-error.ts <<'EOF'
+export interface JsonError {
+  reason: 'end' | 'character' | 'string' | 'trailing';
+  offset: number; // 0-based UTF-16 index of the first bad position
+  line: number; // 1-based; a line break is "\n"
+  column: number; // 1-based, in UTF-16 code units from the start of the line
+  character?: string; // the offending character, for 'character'
+}
+
+const WHITESPACE = new Set([' ', '\t', '\n', '\r']);
+const ESCAPES = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't']);
+const DIGIT = /[0-9]/;
+const HEX = /[0-9a-fA-F]/;
+
+type Frame = 'array' | 'object';
+/** What the scanner expects next. */
+type Expect = 'value' | 'value-or-close' | 'key' | 'key-or-close' | 'colon' | 'comma-or-close';
+
+function position(text: string, offset: number): { line: number; column: number } {
+  let line = 1;
+  let lineStart = 0;
+  for (let i = 0; i < offset && i < text.length; i++) {
+    if (text[i] === '\n') {
+      line++;
+      lineStart = i + 1;
+    }
+  }
+  return { line, column: offset - lineStart + 1 };
+}
+
+/**
+ * The first syntax error of `text` under the JSON grammar of RFC 8259, or undefined when the text is valid.
+ * Iterative (an explicit stack), so deeply nested input cannot overflow the call stack.
+ */
+export function locateJsonError(text: string): JsonError | undefined {
+  const n = text.length;
+  let i = 0;
+  const fail = (reason: JsonError['reason'], offset: number): JsonError => {
+    const at = Math.min(offset, n);
+    const error: JsonError = { reason, offset: at, ...position(text, at) };
+    if (reason === 'character' && at < n) error.character = text.charAt(at);
+    return error;
+  };
+  const skipSpace = (): void => {
+    while (i < n && WHITESPACE.has(text.charAt(i))) i++;
+  };
+
+  /** Reads a string starting at the opening quote; returns an error or undefined. */
+  const readString = (): JsonError | undefined => {
+    i++;
+    for (;;) {
+      if (i >= n) return fail('end', n);
+      const c = text.charAt(i);
+      if (c === '"') {
+        i++;
+        return undefined;
+      }
+      if (c.charCodeAt(0) < 0x20) return fail('string', i);
+      if (c === '\\') {
+        const e = text.charAt(i + 1);
+        if (i + 1 >= n) return fail('end', n);
+        if (ESCAPES.has(e)) {
+          i += 2;
+        } else if (e === 'u') {
+          for (let k = 2; k <= 5; k++) {
+            if (i + k >= n) return fail('end', n);
+            if (!HEX.test(text.charAt(i + k))) return fail('string', i + k);
+          }
+          i += 6;
+        } else {
+          return fail('string', i + 1);
+        }
+      } else {
+        i++;
+      }
+    }
+  };
+
+  const readLiteral = (word: string): JsonError | undefined => {
+    for (let k = 0; k < word.length; k++) {
+      if (i + k >= n) return fail('end', n);
+      if (text.charAt(i + k) !== word.charAt(k)) return fail('character', i + k);
+    }
+    i += word.length;
+    return undefined;
+  };
+
+  const readNumber = (): JsonError | undefined => {
+    const digits = (): JsonError | undefined => {
+      if (i >= n) return fail('end', n);
+      if (!DIGIT.test(text.charAt(i))) return fail('character', i);
+      while (i < n && DIGIT.test(text.charAt(i))) i++;
+      return undefined;
+    };
+    if (text.charAt(i) === '-') i++;
+    if (i >= n) return fail('end', n);
+    if (text.charAt(i) === '0') {
+      i++;
+    } else {
+      const error = digits();
+      if (error !== undefined) return error;
+    }
+    if (text.charAt(i) === '.') {
+      i++;
+      const error = digits();
+      if (error !== undefined) return error;
+    }
+    if (text.charAt(i) === 'e' || text.charAt(i) === 'E') {
+      i++;
+      if (text.charAt(i) === '+' || text.charAt(i) === '-') i++;
+      const error = digits();
+      if (error !== undefined) return error;
+    }
+    return undefined;
+  };
+
+  const stack: Frame[] = [];
+  let expect: Expect = 'value';
+  let done = false;
+
+  while (!done) {
+    skipSpace();
+    if (i >= n) return fail('end', n);
+    const c = text.charAt(i);
+
+    if (expect === 'key' || expect === 'key-or-close') {
+      if (c === '}' && expect === 'key-or-close') {
+        i++;
+        stack.pop();
+        expect = 'comma-or-close';
+      } else if (c === '"') {
+        const error = readString();
+        if (error !== undefined) return error;
+        expect = 'colon';
+      } else {
+        return fail('character', i);
+      }
+    } else if (expect === 'colon') {
+      if (c !== ':') return fail('character', i);
+      i++;
+      expect = 'value';
+    } else if (expect === 'comma-or-close') {
+      const top = stack[stack.length - 1];
+      if (top === undefined) {
+        done = true;
+      } else if (c === ',') {
+        i++;
+        expect = top === 'array' ? 'value' : 'key';
+      } else if ((c === ']' && top === 'array') || (c === '}' && top === 'object')) {
+        i++;
+        stack.pop();
+      } else {
+        return fail('character', i);
+      }
+    } else {
+      // 'value' or 'value-or-close'
+      if (c === ']' && expect === 'value-or-close') {
+        i++;
+        stack.pop();
+        expect = 'comma-or-close';
+      } else if (c === '{') {
+        i++;
+        stack.push('object');
+        expect = 'key-or-close';
+      } else if (c === '[') {
+        i++;
+        stack.push('array');
+        expect = 'value-or-close';
+      } else {
+        let error: JsonError | undefined;
+        if (c === '"') error = readString();
+        else if (c === 't') error = readLiteral('true');
+        else if (c === 'f') error = readLiteral('false');
+        else if (c === 'n') error = readLiteral('null');
+        else if (c === '-' || DIGIT.test(c)) error = readNumber();
+        else return fail('character', i);
+        if (error !== undefined) return error;
+        expect = 'comma-or-close';
+      }
+    }
+    if (expect === 'comma-or-close' && stack.length === 0) done = true;
+  }
+
+  skipSpace();
+  return i < n ? fail('trailing', i) : undefined;
+}
+EOF
+
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && cat > analyse.ts <<'EOF'
+import { check, validate } from '../engine/index.ts';
+import type { CheckReport, Problem, Table } from '../engine/index.ts';
+import { locateJsonError } from './json-error.ts';
+import type { JsonError } from './json-error.ts';
+
+export type Analysis =
+  | { kind: 'syntax'; error: JsonError }
+  | { kind: 'structure'; problems: Problem[] }
+  | { kind: 'checked'; table: Table; report: CheckReport };
+
+/** Reads table text: not JSON, JSON with structural problems, or checked. The order `npm run build` uses for a table. */
+export function analyse(text: string): Analysis {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    // JSON.parse decides that the text is invalid; the scanner only places the error.
+    // If the two ever disagree, still report an error rather than none.
+    return { kind: 'syntax', error: locateJsonError(text) ?? { reason: 'character', offset: 0, line: 1, column: 1 } };
+  }
+  const result = validate(parsed);
+  if (!result.ok) return { kind: 'structure', problems: result.problems };
+  return { kind: 'checked', table: result.table, report: check(result.table) };
+}
+
+export function passes(analysis: Analysis): boolean {
+  return analysis.kind === 'checked' && analysis.report.passed;
+}
+EOF
+cat > summary.ts <<'EOF'
+import { fill } from '../shell/dom.ts';
+import type { Analysis } from './analyse.ts';
+import type { Plural, PlaygroundCopy } from './types.ts';
+
+export interface Summary {
+  passes: boolean;
+  line: string;
+  reason: string | undefined; // what follows "Fails: "; undefined when the table passes
+  coverage: string | undefined; // only for a checked table
+}
+
+export function plural(forms: Plural, n: number): string {
+  return fill(n === 1 ? forms.one : forms.other, { n });
+}
+
+/** A printable character as itself; a control or white-space character as U+XXXX. */
+export function describeChar(c: string): string {
+  const code = c.codePointAt(0) ?? 0;
+  if (/[\p{Cc}\p{Cf}\p{Z}]/u.test(c) || code === 0xfeff) return `U+${code.toString(16).toUpperCase().padStart(4, '0')}`;
+  return c;
+}
+
+export function summarise(analysis: Analysis, copy: PlaygroundCopy): Summary {
+  const r = copy.results;
+  const p = copy.plural;
+  const fails = (reason: string): Pick<Summary, 'passes' | 'line' | 'reason'> => ({
+    passes: false,
+    line: fill(r.fails, { reason }),
+    reason,
+  });
+
+  if (analysis.kind === 'syntax') {
+    return {
+      ...fails(fill(r.reasonSyntax, { line: analysis.error.line, column: analysis.error.column })),
+      coverage: undefined,
+    };
+  }
+  if (analysis.kind === 'structure') {
+    return { ...fails(fill(r.reasonStructure, { problems: plural(p.problem, analysis.problems.length) })), coverage: undefined };
+  }
+  const { report } = analysis;
+  const coverage = fill(r.coverage, {
+    covered: report.counts.combinations - report.gaps.count,
+    total: report.counts.combinations,
+  });
+  if (report.passed) {
+    return {
+      passes: true,
+      line: fill(r.passes, {
+        rules: plural(p.rule, report.counts.rules),
+        combinations: plural(p.combination, report.counts.combinations),
+      }),
+      reason: undefined,
+      coverage,
+    };
+  }
+  return {
+    ...fails(
+      fill(r.reasonCheck, {
+        gaps: plural(p.gap, report.gaps.count),
+        conflicts: plural(p.conflict, report.conflicts.length),
+      }),
+    ),
+    coverage,
+  };
+}
+EOF
+cat > rules.ts <<'EOF'
+export interface RuleRow { index: number; id: string | undefined }
+
+export function formatTable(table: unknown): string {
+  return JSON.stringify(table, null, 2);
+}
+
+function parseRules(text: string): { parsed: Record<string, unknown>; rules: unknown[] } | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined;
+  const object = parsed as Record<string, unknown>;
+  const rules = object['rules'];
+  return Array.isArray(rules) ? { parsed: object, rules } : undefined;
+}
+
+/** One row per element of `rules`; undefined unless the text is a JSON object with a `rules` array. */
+export function listRules(text: string): RuleRow[] | undefined {
+  const found = parseRules(text);
+  if (found === undefined) return undefined;
+  return found.rules.map((rule, index) => {
+    const id = typeof rule === 'object' && rule !== null && !Array.isArray(rule) ? (rule as Record<string, unknown>)['id'] : undefined;
+    return { index, id: typeof id === 'string' ? id : undefined };
+  });
+}
+
+/** The text without the rule at `index` (by position), re-serialised with two-space indentation. */
+export function removeRule(text: string, index: number): string {
+  const found = parseRules(text);
+  if (found === undefined || !Number.isInteger(index) || index < 0 || index >= found.rules.length) return text;
+  found.rules.splice(index, 1);
+  return formatTable(found.parsed);
+}
+EOF
+cat > theme.ts <<'EOF'
+import type { ThemeVars } from './types.ts';
+
+/** Sets the theme's custom properties on `element` through the CSS object model: light first, then dark over it. */
+export function applyTheme(element: HTMLElement, theme: ThemeVars, dark: boolean): void {
+  for (const [name, value] of Object.entries(theme.light)) element.style.setProperty(name, value);
+  if (dark) for (const [name, value] of Object.entries(theme.dark)) element.style.setProperty(name, value);
+}
+EOF
+cd ../.. && npx vitest --run test/playground.test.ts test/props/playground.props.test.ts 2>&1 | tail -40; npm run typecheck 2>&1 | tail
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  2 passed (2)
+          Tests  20 passed (20)
+       Start at  15:12:19
+       Duration  152ms (transform 46%, tests 29%, import 22%, worker 3%)
+    
+    
+    > typecheck
+    > tsc --noEmit
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npx vitest --run test/playground.test.ts test/props/playground.props.test.ts && npm run typecheck; echo EXIT=$?
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  2 passed (2)
+          Tests  20 passed (20)
+       Start at  15:12:26
+       Duration  207ms (tests 39%, import 29%, transform 28%, worker 4%)
+    
+    
+    > typecheck
+    > tsc --noEmit
+    
+    EXIT=0
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/playground/playground.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && python3 - <<'EOF'
+p='playground.ts'
+s=open(p).read()
+s=s.replace("  page.appendChild(text(''));\n","")
+s=s.replace("import { el, fill, readJson, renderFooter, text } from","import { el, fill, readJson, renderFooter } from")
+s=s.replace("import type { Table } from '../engine/index.ts';\n","")
+s=s.replace("analysis.table as Table","analysis.table")
+open(p,'w').write(s)
+EOF
+cat > playground.css <<'EOF'
+/* Written against the theme contract only: every var(--…) names a contract property. */
+
+.pg-page {
+  box-sizing: border-box;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: calc(var(--space) * 2);
+  overflow-wrap: anywhere;
+}
+
+.pg-intro {
+  max-width: 48rem;
+  margin: var(--space) 0 calc(var(--space) * 2);
+}
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--space) * 2);
+}
+
+.pg-editor,
+.pg-results,
+.pg-app {
+  min-width: 0;
+}
+
+@media (min-width: 60rem) {
+  .pg-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.pg-example-buttons,
+.pg-reset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+}
+
+.pg-start,
+.pg-hint {
+  margin: 0 0 calc(var(--space) / 2);
+}
+
+.pg-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.pg-loaded {
+  margin: var(--space) 0;
+  font-weight: bold;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+.pg-text {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 16rem;
+  margin-bottom: var(--space);
+  padding: var(--space);
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.pg-text[aria-invalid='true'] {
+  border-width: 3px;
+}
+
+.pg-rules {
+  margin-top: calc(var(--space) * 2);
+}
+
+.pg-rule-list,
+.pg-details {
+  max-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-rule-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  border-top: 1px solid var(--border);
+}
+
+.pg-rule:first-child {
+  border-top: 0;
+}
+
+.pg-rule-id {
+  min-width: 0;
+}
+
+.pg-rule > button {
+  flex-shrink: 0;
+}
+
+.pg-rules-note {
+  margin: 0;
+  padding: var(--space);
+}
+
+/* State is told in words (Passes / Fails), the bar is only decoration. */
+.pg-status {
+  margin: 0 0 calc(var(--space) / 2);
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+  font-weight: bold;
+}
+
+.pg-coverage {
+  margin: 0 0 var(--space);
+  color: var(--muted);
+}
+
+.pg-details {
+  max-height: 24rem;
+  padding: 0 var(--space) var(--space);
+}
+
+.pg-details h3 {
+  margin: var(--space) 0 calc(var(--space) / 2);
+  font-size: 1rem;
+}
+
+.pg-details p,
+.pg-lines {
+  margin: 0 0 calc(var(--space) / 2);
+}
+
+.pg-lines {
+  padding-left: calc(var(--space) * 1.5);
+}
+
+.pg-more {
+  color: var(--muted);
+}
+
+.pg-frame {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-preview {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.pg-notice {
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border-left: 0.5rem solid var(--accent);
+}
+
+.pg-notice h3 {
+  margin: 0 0 var(--space);
+}
+
+.pg-notice p {
+  margin: 0 0 calc(var(--space) / 2);
+}
+EOF
+cd ../.. && npm run typecheck 2>&1 | tail -5; npm run typecheck >/dev/null && ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(|localStorage|sessionStorage|indexedDB|document\.cookie|pushState|replaceState|location *=|setAttribute\('style'|cssText|style=" skeleton/playground && ! grep -rhE "from ['\"]" skeleton/playground | grep -vE "from '(\./[a-z-]+\.ts|\.\./engine/index\.ts|\.\./shell/(dom|mount|copy-type)\.ts)'" && ! grep -rnE "from '[^']*playground" skeleton/shell; echo EXIT=$?
+    
+    > typecheck
+    > tsc --noEmit
+    
+    EXIT=0
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat apps/which-bin/theme.css | head -30; cat skeleton/template/theme.css | head -5
+    … (3 earlier lines not shown)
+      --text: #2b1a0e;
+      --muted: #6b4a2f;
+      --accent: #a63d00;
+      --accent-text: #ffffff;
+      --border: #8a5a2b;
+      --focus: #0b57d0;
+      --font-body: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      --font-heading: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      --font-size: 1.25rem;
+      --radius: 1.25rem;
+      --space: 1rem;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #2a1a10;
+        --surface: #3a2616;
+        --text: #fdeedb;
+        --muted: #e0c3a2;
+        --accent: #ffb36b;
+        --accent-text: #2a1204;
+        --border: #b58a5f;
+        --focus: #8ab4f8;
+      }
+    }
+    :root {
+      --bg: #fafaf7;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #4a4a4a;
+    exit 0
+
+Now the build tests.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/build.test.ts'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,a
+    s=s.replace(a,b)
+rep("""import { validateLanding } from '../skeleton/build/copy-check.ts';
+import { THEME_PROPS, validateTheme } from '../skeleton/build/theme-check.ts';
+""","""import { validateLanding } from '../skeleton/build/copy-check.ts';
+import { validatePlayground } from '../skeleton/build/playground-check.ts';
+import { THEME_PROPS, parseTheme, validateTheme } from '../skeleton/build/theme-check.ts';
+""")
+rep("""  it('builds an app made by `bones new` into exactly the eight files', { timeout: 30000 }, async () => {""","""  it('builds an app made by `bones new` into exactly the thirteen files', { timeout: 30000 }, async () => {""")
+rep("""      'index.html',
+      'shell.css',
+      'theme.css',
+    ]);
+""","""      'index.html',
+      'playground/app.js',
+      'playground/index.html',
+      'playground/playground.css',
+      'playground/shell.css',
+      'playground/theme.css',
+      'shell.css',
+      'theme.css',
+    ]);
+""")
+rep("""    for (const page of ['index.html', 'demo/index.html']) {""","""    for (const page of ['index.html', 'demo/index.html', 'playground/index.html']) {""")
+rep("""  it('rejects a table with a gap and leaves""","""  it('writes the playground page with its two data blocks', { timeout: 30000 }, async () => {
+    const w = workspace();
+    expect(await runBuild(w)).toEqual({ ok: true, apps: ['demo'] });
+    const copy = JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8')) as {
+      title: string;
+      intro: string;
+      noscript: string;
+      editor: { brokenExample: string };
+    };
+    const html = readFileSync(path.join(w.dist, 'playground/index.html'), 'utf8');
+    const block = (id: string): unknown => JSON.parse(html.match(new RegExp(`<script type="application/json" id="${id}">([^]*?)</script>`))?.[1] ?? 'null');
+
+    expect(html).toContain('http-equiv="Content-Security-Policy"');
+    expect(html).toContain('<link rel="stylesheet" href="playground.css">');
+    expect(html.indexOf('href="shell.css"')).toBeLessThan(html.indexOf('href="playground.css"'));
+    expect(html).toContain(`<title>${copy.title}</title>`);
+    const boot = html.match(/<div id="boot"[^]*?<\\/div>/)?.[0] ?? '';
+    expect(boot.match(/<h1>/g)).toHaveLength(1);
+    expect(boot).toContain(copy.title);
+    expect(boot).toContain(copy.intro);
+    expect(boot).toContain(copy.noscript);
+
+    expect(block('data-playground')).toEqual(copy);
+    const demoTable: unknown = JSON.parse(readFileSync(path.join(w.app, 'table.json'), 'utf8'));
+    const demoCopy: unknown = JSON.parse(readFileSync(path.join(w.app, 'copy.json'), 'utf8'));
+    const examples = block('data-examples') as {
+      defaultExample: string;
+      examples: { id: string; label: string; table: unknown; copy: unknown; theme: { light: object; dark: object } }[];
+    };
+    // No which-licence or which-bin here: the first app stands in for both.
+    expect(examples.defaultExample).toBe('demo');
+    expect(examples.examples.map((e) => e.id)).toEqual(['demo', 'broken']);
+    const [demo, broken] = examples.examples;
+    expect(demo?.table).toEqual(demoTable);
+    expect(broken?.label).toBe(copy.editor.brokenExample);
+    expect(broken?.table).toEqual(JSON.parse(readFileSync(path.join(repo, 'skeleton/examples/which-bin-broken.table.json'), 'utf8')));
+    expect(broken?.copy).toEqual(demoCopy);
+    expect(Object.keys(demo?.theme.light ?? {})).toHaveLength(13);
+    expect(Object.keys(demo?.theme.dark ?? {})).toHaveLength(8);
+  });
+
+  it('rejects a table with a gap and leaves""")
+rep("""    expect(validateTheme(readFileSync(path.join(repo, 'skeleton/shell/neutral-theme.css'), 'utf8'))).toEqual([]);
+    expect(validateLanding(JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')))).toEqual([]);
+  });
+});
+""","""    expect(validateTheme(readFileSync(path.join(repo, 'skeleton/shell/neutral-theme.css'), 'utf8'))).toEqual([]);
+    expect(validateLanding(JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')))).toEqual([]);
+  });
+
+  it('keeps playground.css within the contract', () => {
+    const css = readFileSync(path.join(repo, 'skeleton/playground/playground.css'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, '');
+    const used = [...css.matchAll(/var\\(\\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
+    expect(used.length).toBeGreaterThan(0);
+    for (const name of used) expect(THEME_PROPS as readonly string[]).toContain(name);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|url\\(|@import/);
+  });
+
+  it('reads the light and dark values of a theme', () => {
+    const theme = parseTheme(readFileSync(path.join(repo, 'apps/which-bin/theme.css'), 'utf8'));
+    expect(theme.light['--radius']).toBe('1.25rem');
+    expect(Object.keys(theme.light)).toHaveLength(13);
+    expect(Object.keys(theme.dark)).toHaveLength(8);
+    expect(theme.dark['--bg']).toBe('#2a1a10');
+  });
+});
+
+describe('playground copy', () => {
+  const real = (): Record<string, any> => JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8'));
+
+  it('accepts the real file', () => {
+    expect(validatePlayground(real())).toEqual([]);
+  });
+
+  it.each([
+    { name: 'a missing label', edit: (c: Record<string, any>) => delete c['editor'].reset, expected: 'editor.reset: missing' },
+    { name: 'a missing placeholder', edit: (c: Record<string, any>) => (c['results'].passes = 'Passes: {combinations}'), expected: 'results.passes: must contain {rules}' },
+    { name: 'an unknown key', edit: (c: Record<string, any>) => (c['extra'] = 'x'), expected: 'extra: unknown key' },
+    { name: 'an empty string', edit: (c: Record<string, any>) => (c['title'] = '  '), expected: 'title: must not be empty' },
+  ])('rejects $name', ({ edit, expected }) => {
+    const copy = real();
+    edit(copy);
+    expect(validatePlayground(copy)).toContain(expected);
+  });
+});
+
+describe('landing copy', () => {
+  it('rejects a landing.json without the playground link', () => {
+    const landing: Record<string, unknown> = JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8'));
+    expect(landing['playground']).toBeDefined();
+    delete landing['playground'];
+    expect(validateLanding(landing)).toContain('playground: missing');
+  });
+});
+""")
+open(p,'w').write(s)
+EOF
+npx vitest --run test/build.test.ts 2>&1 | grep -E "Cannot|FAIL|Error" | head -5
+     FAIL  test/build.test.ts [ test/build.test.ts ]
+    Error: Cannot find module '../skeleton/build/playground-check.ts' imported from ~/hackathons-2026/kiroween/barebones/test/build.test.ts
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/build.test.ts'
+s=open(p).read()
+s=s.replace("Record<string, any>","PlaygroundDoc")
+s=s.replace("describe('playground copy', () => {\n","interface PlaygroundDoc { [key: string]: unknown; title: string; editor: Record<string, string>; results: Record<string, string> }\n\ndescribe('playground copy', () => {\n",1)
+s=s.replace("delete c['editor'].reset","delete c.editor['reset']").replace("c['results'].passes = ","c.results['passes'] = ").replace("(c['title'] = '  ')","(c.title = '  ')")
+s=s.replace("const real = (): PlaygroundDoc => JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8'));","const real = (): PlaygroundDoc => JSON.parse(readFileSync(path.join(repo, 'skeleton/playground/playground.json'), 'utf8')) as PlaygroundDoc;")
+open(p,'w').write(s)
+EOF
+grep -n "any" test/build.test.ts | grep -v "many\|company" | head
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && cat >> theme-check.ts <<'EOF'
+
+export interface ParsedTheme { light: Record<string, string>; dark: Record<string, string> }
+
+/**
+ * The custom properties of a theme.css as `{ light, dark }`: the declarations of the top-level `:root` and of the `:root`
+ * inside the dark `@media` block. Call it on a theme that passed `validateTheme`.
+ */
+export function parseTheme(css: string): ParsedTheme {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const theme: ParsedTheme = { light: {}, dark: {} };
+  const stack: string[] = [];
+  let buffer = '';
+  for (const ch of text) {
+    if (ch === '{') {
+      stack.push(buffer.trim().replace(/\s+/g, ' '));
+      buffer = '';
+    } else if (ch === '}') {
+      const prelude = stack.pop();
+      if (prelude === ':root') {
+        const target = stack.length === 0 ? theme.light : theme.dark;
+        for (const raw of buffer.split(';')) {
+          const colon = raw.indexOf(':');
+          if (colon > 0) target[raw.slice(0, colon).trim()] = raw.slice(colon + 1).trim();
+        }
+      }
+      buffer = '';
+    } else {
+      buffer += ch;
+    }
+  }
+  return theme;
+}
+EOF
+cat > playground-check.ts <<'EOF'
+import type { FooterEntry } from '../shell/copy-type.ts';
+import type { Plural, PlaygroundCopy } from '../playground/types.ts';
+
+type Obj = Record<string, unknown>;
+
+/** The expected shape of playground.json: a string leaf lists its required placeholders. */
+type Shape = string[] | { [key: string]: Shape } | 'footer';
+
+const PLURAL: Shape = { one: ['{n}'], other: ['{n}'] } satisfies Record<keyof Plural, string[]>;
+
+const SHAPE: Shape = {
+  title: [],
+  tagline: [],
+  intro: [],
+  noscript: [],
+  allApps: [],
+  editor: {
+    heading: [],
+    startFrom: [],
+    brokenExample: [],
+    loaded: ['{name}'],
+    textareaLabel: [],
+    textareaHint: [],
+    reset: [],
+  },
+  rules: {
+    heading: [],
+    intro: [],
+    remove: [],
+    removeNamed: ['{id}'],
+    unnamed: ['{n}'],
+    unavailable: [],
+    empty: [],
+  },
+  results: {
+    heading: [],
+    passes: ['{rules}', '{combinations}'],
+    fails: ['{reason}'],
+    reasonCheck: ['{gaps}', '{conflicts}'],
+    reasonStructure: ['{problems}'],
+    reasonSyntax: ['{line}', '{column}'],
+    coverage: ['{covered}', '{total}'],
+    syntaxHeading: [],
+    syntaxDetail: ['{line}', '{column}', '{reason}'],
+    jsonReasons: { end: [], character: ['{character}'], string: [], trailing: [] },
+    structureHeading: [],
+    gapsHeading: [],
+    gapsNone: [],
+    conflictsHeading: [],
+    conflictsNone: [],
+    conflictLine: ['{a}', '{b}', '{outcomeA}', '{outcomeB}', '{example}'],
+    more: ['{count}'],
+    warningsHeading: [],
+  },
+  plural: { rule: PLURAL, combination: PLURAL, gap: PLURAL, conflict: PLURAL, problem: PLURAL },
+  app: { heading: [], noBuildHeading: [], noBuildText: [], noBuildReason: ['{reason}'] },
+  footer: 'footer',
+} satisfies Record<keyof PlaygroundCopy, Shape>;
+
+function isObj(x: unknown): x is Obj {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+function walk(shape: Shape, value: unknown, path: string, problems: string[]): void {
+  if (shape === 'footer') {
+    checkFooter(value, problems);
+  } else if (Array.isArray(shape)) {
+    if (typeof value !== 'string') {
+      problems.push(`${path}: must be a string`);
+    } else if (value.trim() === '') {
+      problems.push(`${path}: must not be empty`);
+    } else {
+      for (const placeholder of shape) if (!value.includes(placeholder)) problems.push(`${path}: must contain ${placeholder}`);
+    }
+  } else if (!isObj(value)) {
+    problems.push(`${path}: must be an object`);
+  } else {
+    for (const [key, child] of Object.entries(shape)) {
+      const childPath = path === '' ? key : `${path}.${key}`;
+      if (!Object.hasOwn(value, key)) problems.push(`${childPath}: missing`);
+      else walk(child, value[key], childPath, problems);
+    }
+    for (const key of Object.keys(value)) {
+      if (!Object.hasOwn(shape, key)) problems.push(`${path === '' ? key : `${path}.${key}`}: unknown key`);
+    }
+  }
+}
+
+function checkFooter(value: unknown, problems: string[]): void {
+  if (!Array.isArray(value)) {
+    problems.push('footer: must be an array');
+    return;
+  }
+  value.forEach((entry: unknown, i) => {
+    const path = `footer[${i}]`;
+    if (!isObj(entry)) {
+      problems.push(`${path}: must be an object`);
+      return;
+    }
+    const text = entry['text'];
+    if (typeof text !== 'string') problems.push(`${path}.text: must be a string`);
+    else if (text.trim() === '') problems.push(`${path}.text: must not be empty`);
+    if (Object.hasOwn(entry, 'href')) {
+      const href = entry['href'];
+      if (typeof href !== 'string') problems.push(`${path}.href: must be a string`);
+      else if (!/^https?:\/\//.test(href)) problems.push(`${path}.href: must start with https:// or http://`);
+    }
+    for (const key of Object.keys(entry)) {
+      if (!(['text', 'href'] satisfies (keyof FooterEntry)[]).includes(key as keyof FooterEntry)) problems.push(`${path}.${key}: unknown key`);
+    }
+  });
+}
+
+/** Problems with a playground.json value as `<path>: <message>`; an empty list means valid. */
+export function validatePlayground(input: unknown): string[] {
+  const problems: string[] = [];
+  walk(SHAPE, input, '', problems);
+  return problems.map((p) => (p.startsWith(': ') ? `$${p}` : p));
+}
+EOF
+
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && python3 - <<'EOF'
+def edit(p, pairs):
+    s=open(p).read()
+    for a,b in pairs:
+        assert s.count(a)==1,(p,a)
+        s=s.replace(a,b)
+    open(p,'w').write(s)
+
+edit('build/page.ts',[
+("import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';","import type { PlaygroundCopy } from '../playground/types.ts';\nimport type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';"),
+("/** The static block for the landing page","""/** The static block for the playground page: the title, the intro and the no-script notice. */
+export function bootPlayground(copy: PlaygroundCopy): string {
+  return (
+    '<div id="boot" class="page">' +
+    `<h1>${escapeHtml(copy.title)}</h1>` +
+    `<p>${escapeHtml(copy.intro)}</p>` +
+    `<noscript><p>${escapeHtml(copy.noscript)}</p></noscript>` +
+    '</div>'
+  );
+}
+
+/** The static block for the landing page"""),
+])
+edit('shell/copy-type.ts',[
+("  noteTitle: string;\n  note: string;\n  footer: FooterEntry[];\n}","  noteTitle: string;\n  note: string;\n  playground: { title: string; text: string };\n  footer: FooterEntry[];\n}"),
+])
+edit('shell/landing.json',[
+('  "footer"','  "playground": {\n    "title": "Break a table and watch the checker catch it",\n    "text": "Delete a rule from a table and watch the checker find the gap and the app refuse to build. Then press Reset."\n  },\n  "footer"'),
+])
+edit('shell/landing.ts',[
+("      el('section', { class: 'note-block' }","""      el(
+        'div',
+        { class: 'playground-card' },
+        el('a', { href: './playground/', class: 'app-link' }, landing.playground.title),
+        el('p', {}, landing.playground.text),
+      ),
+      el('section', { class: 'note-block' }"""),
+])
+edit('shell/shell.css',[
+(".app-link {",""".playground-card {
+  margin-top: calc(var(--space) * 2);
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.playground-card p {
+  margin: calc(var(--space) / 2) 0 0;
+}
+
+.app-link {"""),
+])
+edit('build/copy-check.ts',[
+("const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'footer']","const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'playground', 'footer']"),
+("    else if (key === 'footer') checkFooter(input[key], problems);\n    else if (key === 'styles') {","""    else if (key === 'footer') checkFooter(input[key], problems);
+    else if (key === 'playground') {
+      const playground = input[key];
+      if (!isObj(playground)) problems.push('playground: must be an object');
+      else {
+        for (const name of ['title', 'text']) {
+          if (!Object.hasOwn(playground, name)) problems.push(`playground.${name}: missing`);
+          else nonEmptyString(playground[name], `playground.${name}`, problems);
+        }
+        unknownKeys(playground, ['title', 'text'], 'playground.', problems);
+      }
+    } else if (key === 'styles') {"""),
+("/** Problems with landing.json: `title`, `tagline`, `intro`, `styles`, `noteTitle`, `note` and `footer`. */","/** Problems with landing.json: `title`, `tagline`, `intro`, `styles`, `noteTitle`, `note`, `playground` and `footer`. */"),
+])
+EOF
+grep -n "LANDING_KEYS" build/copy-check.ts | head -3
+    28:const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'playground', 'footer'] as const satisfies readonly (keyof Landing)[];
+    120:  for (const key of LANDING_KEYS) {
+    145:  unknownKeys(input, LANDING_KEYS, '', problems);
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && python3 - <<'EOF'
+p='build.ts'
+s=open(p).read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,a
+    s=s.replace(a,b)
+rep("""import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+import { validateCopy, validateLanding } from './copy-check.ts';
+import { bootApp, bootLanding, renderPage } from './page.ts';
+import { validateTheme } from './theme-check.ts';
+""","""import type { PlaygroundCopy, PlaygroundData, PlaygroundExample } from '../playground/types.ts';
+import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+import { validateCopy, validateLanding } from './copy-check.ts';
+import { bootApp, bootLanding, bootPlayground, renderPage } from './page.ts';
+import { validatePlayground } from './playground-check.ts';
+import { parseTheme, validateTheme } from './theme-check.ts';
+""")
+rep("""const SHELL_DIR = fileURLToPath(new URL('../shell/', import.meta.url));
+""","""const SHELL_DIR = fileURLToPath(new URL('../shell/', import.meta.url));
+const PLAYGROUND_DIR = fileURLToPath(new URL('../playground/', import.meta.url));
+const BROKEN_TABLE = fileURLToPath(new URL('../examples/which-bin-broken.table.json', import.meta.url));
+// The playground opens on DEFAULT_APP and carries the broken demo table dressed as DEMO_APP.
+// If an app of that name is absent, the first app in folder-name order stands in.
+const DEFAULT_APP = 'which-licence';
+const DEMO_APP = 'which-bin';
+""")
+rep("""  if (errors.length > 0) return { ok: false, errors };
+
+  // 5.""","""  // 4b. The playground's own files and the broken demo table.
+  const playgroundJson = parseJson(path.join(PLAYGROUND_DIR, 'playground.json'), 'skeleton/playground/playground.json', errors);
+  if (playgroundJson !== undefined) {
+    for (const problem of validatePlayground(playgroundJson)) errors.push(`skeleton/playground/playground.json: ${problem}`);
+  }
+  const playgroundCss = readFileSync(path.join(PLAYGROUND_DIR, 'playground.css'), 'utf8');
+  let brokenTable: unknown;
+  if (!existsSync(BROKEN_TABLE)) {
+    errors.push('skeleton/examples/which-bin-broken.table.json: file is missing');
+  } else {
+    brokenTable = parseJson(BROKEN_TABLE, 'skeleton/examples/which-bin-broken.table.json', errors);
+  }
+
+  if (errors.length > 0) return { ok: false, errors };
+
+  // 5.""")
+rep("""  const bundleEntry = async (entry: string): Promise<string> => {
+    const result = await bundle({
+      entryPoints: [path.join(SHELL_DIR, entry)],""","""  const bundleEntry = async (entry: string): Promise<string> => {
+    const result = await bundle({
+      entryPoints: [entry],""")
+rep("""    shellJs = await bundleEntry('shell.ts');
+    landingJs = await bundleEntry('landing.ts');""","""    shellJs = await bundleEntry(path.join(SHELL_DIR, 'shell.ts'));
+    landingJs = await bundleEntry(path.join(SHELL_DIR, 'landing.ts'));
+    playgroundJs = await bundleEntry(path.join(PLAYGROUND_DIR, 'playground.ts'));""")
+rep("""  let landingJs: string;
+""","""  let landingJs: string;
+  let playgroundJs: string;
+""")
+rep("""  rmSync(opts.outDir""","""  const playgroundCopy = playgroundJson as PlaygroundCopy;
+  const playgroundTemplate = template.replace('<link rel="stylesheet" href="shell.css">', (link) => `${link}\\n<link rel="stylesheet" href="playground.css">`);
+  if (playgroundTemplate === template) throw new Error('skeleton/shell/page.html: no shell.css link to put playground.css after');
+  const appExample = (app: ParsedApp): PlaygroundExample => ({
+    id: app.name,
+    label: app.copy.title,
+    table: app.table,
+    copy: app.copy,
+    theme: parseTheme(app.themeCss),
+  });
+  const firstApp = apps[0];
+  const demoApp = apps.find((a) => a.name === DEMO_APP) ?? firstApp;
+  if (firstApp === undefined || demoApp === undefined) throw new Error('no apps to build the playground from');
+  const examples: PlaygroundExample[] = [
+    ...apps.map(appExample),
+    { id: 'broken', label: playgroundCopy.editor.brokenExample, table: brokenTable, copy: demoApp.copy, theme: parseTheme(demoApp.themeCss) },
+  ];
+  const playgroundData: PlaygroundData = { defaultExample: (apps.find((a) => a.name === DEFAULT_APP) ?? firstApp).name, examples };
+
+  rmSync(opts.outDir""")
+rep("""  for (const app of apps) {
+    put(`${app.name}/index.html`""","""  put(
+    'playground/index.html',
+    renderPage(playgroundTemplate, { playground: playgroundCopy, examples: playgroundData }, bootPlayground(playgroundCopy), playgroundCopy.title),
+  );
+  put('playground/app.js', playgroundJs);
+  put('playground/shell.css', shellCss);
+  put('playground/theme.css', neutralTheme);
+  put('playground/playground.css', playgroundCss);
+  for (const app of apps) {
+    put(`${app.name}/index.html`""")
+open(p,'w').write(s)
+EOF
+cd ../.. && npm run typecheck 2>&1 | tail -8
+    
+    > typecheck
+    > tsc --noEmit
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npx vitest --run test/build.test.ts && npm run typecheck && npm run build && test -f dist/playground/index.html && ! grep -rnE "from '[^']*playground" skeleton/build | grep -v ":import type "; echo EXIT=$?; ls dist/playground
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  1 passed (1)
+          Tests  21 passed (21)
+       Start at  15:15:04
+       Duration  393ms (tests 53%, transform 36%, import 10%, worker 1%)
+    
+    
+    > typecheck
+    > tsc --noEmit
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    skeleton/build/build.ts:11:import { validatePlayground } from './playground-check.ts';
+    EXIT=1
+    app.js
+    index.html
+    playground.css
+    shell.css
+    theme.css
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && python3 - <<'EOF'
+pc=open('playground-check.ts').read()
+cc=open('copy-check.ts').read()
+# take the body of playground-check after its imports and helper duplicates
+body=pc.split("type Obj = Record<string, unknown>;\n",1)[1]
+# remove isObj and checkFooter duplicates (already in copy-check)
+import re
+start=body.index("function isObj")
+end=body.index("function walk")
+body=body[:start]+body[end:]
+cstart=body.index("function checkFooter")
+cend=body.index("/** Problems with a playground.json")
+body=body[:cstart]+body[cend:]
+cc=cc.replace("import type { Copy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';","import type { Plural, PlaygroundCopy } from '../playground/types.ts';\nimport type { Copy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';")
+cc=cc.rstrip('\n')+"\n\n"+body
+open('copy-check.ts','w').write(cc)
+EOF
+rm playground-check.ts
+sed -i "s#import { validateCopy, validateLanding } from './copy-check.ts';#import { validateCopy, validateLanding, validatePlayground } from './copy-check.ts';#; /playground-check/d" build.ts
+cd ../.. && sed -i "s#import { validateLanding } from '../skeleton/build/copy-check.ts';#import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';#; /playground-check/d" test/build.test.ts
+npm run typecheck 2>&1 | tail; tail -75 skeleton/build/copy-check.ts | head -30
+    … (10 earlier lines not shown)
+      allApps: [],
+      editor: {
+        heading: [],
+        startFrom: [],
+        brokenExample: [],
+        loaded: ['{name}'],
+        textareaLabel: [],
+        textareaHint: [],
+        reset: [],
+      },
+      rules: {
+        heading: [],
+        intro: [],
+        remove: [],
+        removeNamed: ['{id}'],
+        unnamed: ['{n}'],
+        unavailable: [],
+        empty: [],
+      },
+      results: {
+        heading: [],
+        passes: ['{rules}', '{combinations}'],
+        fails: ['{reason}'],
+        reasonCheck: ['{gaps}', '{conflicts}'],
+        reasonStructure: ['{problems}'],
+        reasonSyntax: ['{line}', '{column}'],
+        coverage: ['{covered}', '{total}'],
+        syntaxHeading: [],
+        syntaxDetail: ['{line}', '{column}', '{reason}'],
+        jsonReasons: { end: [], character: ['{character}'], string: [], trailing: [] },
+    exit 0
+
+macOS sed choked; use python for the import edits.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='skeleton/build/build.ts'
+s=open(p).read()
+s=s.replace("import { validateCopy, validateLanding } from './copy-check.ts';","import { validateCopy, validateLanding, validatePlayground } from './copy-check.ts';")
+s=s.replace("import { validatePlayground } from './playground-check.ts';\n","")
+open(p,'w').write(s)
+p='test/build.test.ts'
+s=open(p).read()
+s=s.replace("import { validateLanding } from '../skeleton/build/copy-check.ts';","import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';")
+s=s.replace("import { validatePlayground } from '../skeleton/build/playground-check.ts';\n","")
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -4; npx vitest --run test/build.test.ts 2>&1 | grep -E "Tests|FAIL"; npm run typecheck >/dev/null && npm run build && test -f dist/playground/index.html && ! grep -rnE "from '[^']*playground" skeleton/build | grep -v ":import type "; echo EXIT=$?
+    
+    > typecheck
+    > tsc --noEmit
+    
+          Tests  21 passed (21)
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    EXIT=0
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npx vitest --run test/build.test.ts && npm run typecheck && npm run build && test -f dist/playground/index.html && ! grep -rnE "from '[^']*playground" skeleton/build | grep -v ":import type "; echo EXIT=$?; ls dist/playground
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    
+     Test Files  1 passed (1)
+          Tests  21 passed (21)
+       Start at  15:15:31
+       Duration  129ms (tests 68%, import 19%, transform 11%, worker 2%)
+    
+    
+    > typecheck
+    > tsc --noEmit
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    EXIT=0
+    app.js
+    index.html
+    playground.css
+    shell.css
+    theme.css
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat e2e/walk.spec.ts e2e/link.spec.ts; cat scripts/serve.mjs | head -30
+    … (53 earlier lines not shown)
+    // Test helper: serves dist/ under /bare-bones-kiro/ on 127.0.0.1, the way GitHub Pages serves the site.
+    import { createServer } from 'node:http';
+    import { existsSync, readFileSync, statSync } from 'node:fs';
+    import path from 'node:path';
+    import { fileURLToPath } from 'node:url';
+    
+    const PREFIX = '/bare-bones-kiro/';
+    const dist = fileURLToPath(new URL('../dist', import.meta.url));
+    const TYPES = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+    };
+    
+    if (!existsSync(dist)) {
+      console.error('dist/ not found: run npm run build');
+      process.exit(1);
+    }
+    
+    const server = createServer((request, response) => {
+      const reply = (status, headers = {}, body = '') => {
+        response.writeHead(status, headers);
+        response.end(request.method === 'HEAD' ? undefined : body);
+      };
+      if (request.method !== 'GET' && request.method !== 'HEAD') return reply(405, { Allow: 'GET, HEAD' });
+    
+      const pathname = (request.url ?? '/').split(/[?#]/)[0] ?? '/';
+      if (pathname === PREFIX.slice(0, -1)) return reply(301, { Location: PREFIX });
+      if (!pathname.startsWith(PREFIX)) return reply(404, {}, 'not found');
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "message\|push(" skeleton/engine/validate.ts | head -50
+    19:  const add = (kind: ProblemKind, path: string, message: string): void => {
+    20:    problems.push({ kind, path, message });
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "add(" skeleton/engine/validate.ts | head -40
+    27:    add('bad-shape', path, `${path} must be a string.`);
+    32:      add('bad-shape', path, `${path} must be a string when present.`);
+    38:    add('bad-shape', path, `${path} must be an array.`);
+    44:      add('bad-id', path, `"${id}" is not a lower-case kebab-case id.`);
+    47:      add('duplicate-id', path, `"${id}" is already used in this list.`);
+    49:    seen.add(id);
+    56:      add('bad-shape', key, `${key} must be an array.`);
+    63:        add('bad-shape', path, `${path} must be an object.`);
+    74:    add('bad-shape', '$', 'The table must be an object.');
+    81:    add('bad-id', 'id', `"${tableId}" is not a lower-case kebab-case id.`);
+    97:        add('bad-shape', path, `${path} must be an object.`);
+    107:        if (firstUse) conditionIds.add(id);
+    116:          add('bad-shape', vPath, `${vPath} must be an object.`);
+    130:        add('too-few-values', `${path}.values`, `${path} needs at least two values.`);
+    153:        add('bad-shape', path, `${path} must be an object.`);
+    163:        add('bad-shape', `${path}.source`, `${path}.source must be an object.`);
+    169:        add('unknown-outcome', `${path}.then`, `"${then}" is not an outcome id.`);
+    172:        add('unknown-source', `${path}.source.ref`, `"${ref}" is not a source id.`);
+    177:        add('bad-shape', `${path}.when`, `${path}.when must be an object.`);
+    185:          add('unknown-condition', wPath, `"${key}" is not a condition id.`);
+    191:            add('unknown-value', vPath, `"${value}" is not a value of condition "${key}".`);
+    198:            add('empty-when-list', wPath, `${wPath} must not be an empty list.`);
+    204:              add('bad-shape', `${wPath}[${k}]`, `${wPath}[${k}] must be a string.`);
+    208:          add('bad-shape', wPath, `${wPath} must be a string or a list of strings.`);
+    216:    add('too-many-combinations', 'conditions', `The table has more than ${MAX_COMBINATIONS} combinations.`);
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/e2e/playground.spec.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='e2e/playground.spec.ts'
+s=open(p).read()
+i=s.index("// Keeps `valueLabel` honest")
+s=s[:i].rstrip('\n')+"\n"
+s=s.replace("import { loadApp, loadLanding, scanAxe, valueLabel } from './helpers.ts';","import { loadApp, loadLanding, scanAxe } from './helpers.ts';")
+s=s.replace("const status = (page: Page) => page.getByRole('status').filter({ hasText: /^(Passes|Fails)/ });","const status = (page: Page) => page.locator('#pg-status');")
+s=s.replace("""    (summaryStart) =>
+      new Promise<number>((resolve) => {
+        const node = Array.from(document.querySelectorAll('[role="status"]')).find((n) => n.textContent?.startsWith(summaryStart));
+        if (node === undefined) throw new Error('no summary line');""","""    (title) =>
+      new Promise<number>((resolve) => {
+        const node = document.getElementById('pg-status');
+        if (node === null) throw new Error('no summary line');""")
+s=s.replace("b.textContent === bin.copy.title","b.textContent === title")
+s=s.replace("    'Passes',\n  );","    bin.copy.title,\n  );")
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -5; npm run test:e2e 2>&1 | tail -40
+    … (14 earlier lines not shown)
+        Timeout: 5000ms
+        Error: element(s) not found
+    
+        Call log:
+          - Expect "toBeVisible" getByText('"</textarea><img src=x onerror=window.__pwned=1>" is not a lower-case kebab-case id.', { exact: true }) with timeout 5000ms
+          - waiting for getByText('"</textarea><img src=x onerror=window.__pwned=1>" is not a lower-case kebab-case id.', { exact: true })
+    
+    
+          137 |   await textarea(page).fill(JSON.stringify(doc, null, 2));
+          138 |   await expect(status(page)).toContainText(failsPrefix);
+        > 139 |   await expect(page.getByText(`"${markup}" is not a lower-case kebab-case id.`, { exact: true })).toBeVisible();
+              |                                                                                                   ^
+          140 |   await expect(page.getByRole('region', { name: copy.rules.intro }).getByText(markup, { exact: true })).toBeVisible();
+          141 |   await expect(page.locator('img')).toHaveCount(0);
+          142 |   expect(await page.evaluate(() => Reflect.get(window, '__pwned'))).toBeUndefined();
+            at ~/hackathons-2026/kiroween/barebones/e2e/playground.spec.ts:139:99
+    
+        Error Context: test-results/playground-playground-mark-ae963-nvalid-JSON-gets-a-position-chromium/error-context.md
+    
+        attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+        test-results/playground-playground-mark-ae963-nvalid-JSON-gets-a-position-chromium/trace.zip
+        Usage:
+    
+            npx playwright show-trace test-results/playground-playground-mark-ae963-nvalid-JSON-gets-a-position-chromium/trace.zip
+    
+        ────────────────────────────────────────────────────────────────────────────────────────────────
+    
+      1 failed
+        [chromium] › e2e/playground.spec.ts:128:1 › playground: markup in the table is shown as text; invalid JSON gets a position 
+      15 passed (7.0s)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='e2e/playground.spec.ts'
+s=open(p).read()
+s=s.replace("""page.getByText(`"${markup}" is not a lower-case kebab-case id.`, { exact: true })""","""page.getByRole('listitem').filter({ hasText: `"${markup}" is not a lower-case kebab-case id.` })""")
+open(p,'w').write(s)
+EOF
+npm run typecheck | tail -3; npm run test:e2e 2>&1 | tail -30
+    … (3 earlier lines not shown)
+    > test:e2e
+    > npm run build && playwright test
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 16 tests using 6 workers
+    
+      ✓   1 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (398ms)
+      ✓   3 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (517ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (153ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (123ms)
+    playground: check on which-bin (960 combinations, 33 rules), click to summary line: 3.8 ms
+      ✓   9 [chromium] › e2e/playground.spec.ts:42:1 › playground: from the landing page, remove a rule, see the checker refuse it, reset (353ms)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.1s)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.1s)
+      ✓  13 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (148ms)
+      ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.3s)
+      ✓   5 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.3s)
+      ✓  10 [chromium] › e2e/playground.spec.ts:128:1 › playground: markup in the table is shown as text; invalid JSON gets a position (735ms)
+      ✓  14 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (145ms)
+      ✓  15 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (162ms)
+      ✓  16 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (175ms)
+      ✓  11 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, light (1.2s)
+      ✓  12 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, dark (1.2s)
+    
+      16 passed (2.9s)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run test:e2e 2>&1 | tail -3 && npx playwright test --list | grep -q "Total: 16 tests"; echo EXIT=$?; npx playwright test --list | tail -1
+    … (2 earlier lines not shown)
+      16 passed (2.8s)
+    node:events:485
+          throw er; // Unhandled 'error' event
+          ^
+    
+    Error: write EPIPE
+        at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+        at writeGeneric (node:internal/stream_base_commons:150:3)
+        at Socket._writeGeneric (node:net:966:11)
+        at Socket._write (node:net:978:8)
+        at writeOrBuffer (node:internal/streams/writable:570:12)
+        at _write (node:internal/streams/writable:499:10)
+        at Socket.Writable.write (node:internal/streams/writable:508:10)
+        at ~/hackathons-2026/kiroween/barebones/node_modules/playwright/lib/runner/index.js:7249:49
+        at new Promise (<anonymous>)
+        at Object.runAllTestsWithConfig (~/hackathons-2026/kiroween/barebones/node_modules/playwright/lib/runner/index.js:7249:9)
+        at runTests (~/hackathons-2026/kiroween/barebones/node_modules/playwright/lib/cli/testActions.js:91:18)
+        at _Command.<anonymous> (~/hackathons-2026/kiroween/barebones/node_modules/playwright/lib/program.js:55:7)
+    Emitted 'error' event on Socket instance at:
+        at emitErrorNT (node:internal/streams/destroy:170:8)
+        at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+        at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+      errno: -32,
+      code: 'EPIPE',
+      syscall: 'write'
+    }
+    
+    Node.js v24.5.0
+    EXIT=0
+    Total: 16 tests in 8 files
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && rm -rf dist test-results && npm run typecheck && npm test && npm run test:e2e && git diff --quiet -- skeleton/engine apps skeleton/template skeleton/examples package.json tsconfig.json e2e && ! grep -rnE "innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(" skeleton/shell skeleton/playground && ! grep -rnE "localStorage|sessionStorage|indexedDB|document\.cookie" skeleton/shell skeleton/playground && ! grep -rnE "from '[^']*playground" skeleton/shell skeleton/engine && ! grep -rnE "from '[^']*playground" skeleton/build | grep -v ":import type " && for d in apps/*/; do test "$(ls "$d" | tr '\n' ' ')" = "copy.json table.json theme.css " || exit 1; done; echo EXIT=$?
+    … (20 earlier lines not shown)
+    > npm run build && playwright test
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 16 tests using 6 workers
+    
+      ✓   2 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (380ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (153ms)
+      ✓   5 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (490ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (176ms)
+    playground: check on which-bin (960 combinations, 33 rules), click to summary line: 4.0 ms
+      ✓   9 [chromium] › e2e/playground.spec.ts:42:1 › playground: from the landing page, remove a rule, see the checker refuse it, reset (402ms)
+      ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.1s)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.1s)
+      ✓  12 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (156ms)
+      ✓   3 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.4s)
+      ✓  14 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (134ms)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.4s)
+      ✓  10 [chromium] › e2e/playground.spec.ts:128:1 › playground: markup in the table is shown as text; invalid JSON gets a position (736ms)
+      ✓  15 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (159ms)
+      ✓  16 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (160ms)
+      ✓  11 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, light (1.2s)
+      ✓  13 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, dark (1.2s)
+    
+      16 passed (2.8s)
+    EXIT=0
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && git status --short
+     M .kiro/specs/apps/requirements.md
+     M .kiro/specs/apps/tasks.md
+     M .kiro/specs/playground/requirements.md
+     M .kiro/specs/playground/tasks.md
+     M .kiro/specs/shell-and-cli/requirements.md
+     M docs/kiro-evidence/hook-fires.log
+     M skeleton/build/build.ts
+     M skeleton/build/copy-check.ts
+     M skeleton/build/page.ts
+     M skeleton/build/theme-check.ts
+     M skeleton/shell/copy-type.ts
+     M skeleton/shell/landing.json
+     M skeleton/shell/landing.ts
+     M skeleton/shell/shell.css
+     M skeleton/shell/shell.ts
+     M test/build.test.ts
+    ?? docs/kiro-evidence/13-impl-playground.txt
+    ?? e2e/playground.spec.ts
+    ?? skeleton/playground/
+    ?? skeleton/shell/mount.ts
+    ?? test/playground.test.ts
+    ?? test/props/playground.props.test.ts
+    exit 0
+
+All six tasks are done and ticked, each after its own Verify command passed. The final gate was run from a clean `dist/`, and nothing is staged or committed.
+
+Final output (last 20 lines of `npm run typecheck && npm test && npm run test:e2e`):
+```
+  ✓   2 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (380ms)
+  ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (153ms)
+  ✓   5 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (490ms)
+  ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (176ms)
+playground: check on which-bin (960 combinations, 33 rules), click to summary line: 4.0 ms
+  ✓   9 [chromium] › e2e/playground.spec.ts:42:1 › playground: from the landing page, remove a rule, see the checker refuse it, reset (402ms)
+  ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.1s)
+  ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.1s)
+  ✓  12 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (156ms)
+  ✓   3 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.4s)
+  ✓  14 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (134ms)
+  ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.4s)
+  ✓  10 [chromium] › e2e/playground.spec.ts:128:1 › playground: markup in the table is shown as text; invalid JSON gets a position (736ms)
+  ✓  15 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (159ms)
+  ✓  16 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (160ms)
+  ✓  11 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, light (1.2s)
+  ✓  13 [chromium] › e2e/playground.spec.ts:163:3 › playground: axe and layout, dark (1.2s)
+
+  16 passed (2.8s)
+```
+Vitest: `Test Files 13 passed (13)`, `Tests 122 passed (122)`.
+
+**Results**
+- **Existing e2e tests:** all 12 pass without edits, and `git diff` on `e2e/` is clean. The suite is now 16 tests.
+- **`check` timing (answer 6):** about 4 ms in the browser on the which-bin table (960 combinations, 33 rules). It is measured from the click on the which-bin example to the new summary line, so it is an upper bound.
+- **Summary lines:** Which licence? gives `Passes: 7 rules, 32 combinations, all covered`. `gap.table.json` gives `Fails: 1 gap, 0 conflicts`.
+- **Preview theme:** `style.setProperty` works under the CSP. The preview's computed `--bg` equals the app's `theme.css` value and differs from the page's, so Departure 4 holds.
+- **axe:** no violations in light or dark, at 1280 and 390 px, in the passing and failing states. The page does not scroll sideways at 390 px.
+
+**Owner answers**
+- Recorded in an "Owner answers" section at the end of `requirements.md`.
+- Amended, not rewritten: shell-and-cli 11.1, 11.7 and 10.1 to 10.4 (with the `Landing` type), apps 10.10, and a note under the Verify of apps task 5 (it now counts 16).
+- Answer 4 changed the wording in `playground.json`: the notice heading is "This table fails the check", and its text and the intro no longer claim to run the whole build.
+
+**Files created**
+- `skeleton/shell/mount.ts`
+- `skeleton/playground/`: `types.ts`, `playground.json`, `json-error.ts`, `analyse.ts`, `summary.ts`, `rules.ts`, `theme.ts`, `playground.ts`, `playground.css`
+- `test/playground.test.ts`
+- `test/props/playground.props.test.ts`
+- `e2e/playground.spec.ts`
+
+**Files changed**
+- Shell: `skeleton/shell/shell.ts`, `shell.css`, `copy-type.ts`, `landing.json`, `landing.ts`
+- Build: `skeleton/build/build.ts`, `page.ts`, `theme-check.ts`, `copy-check.ts`
+- Tests: `test/build.test.ts`
+- Specs: `.kiro/specs/playground/requirements.md`, `.kiro/specs/playground/tasks.md`, `.kiro/specs/shell-and-cli/requirements.md`, `.kiro/specs/apps/requirements.md`, `.kiro/specs/apps/tasks.md`
+
+`docs/kiro-evidence/hook-fires.log` also shows as modified, but a hook wrote it, not me.
+
+**Left open**
+1. **Deviation in task 4.** `validatePlayground` is in `skeleton/build/copy-check.ts`, not in a new `playground-check.ts`. The task's last grep, `from '[^']*playground`, would match the import of any file with "playground" in its name, so it would fail on the design's own filename. I kept the check strict. If you prefer the design's filename, the grep needs a narrower pattern such as `from '\.\./playground`.
+2. **"Copy link" in the preview.** It copies `location.href`, which is the playground page address, not a link to the preview state. The spec is silent on this and I left it.
+3. **Open question 9.** The "write only when the summary text changes" rule (4.9) has no browser test, and I did not add one.
+4. **Large tables.** A table near the 100,000-combination cap was not measured.
+5. **Steering.** Departures 1, 2 and 5 still need to be written into steering and the older specs by you. `kiro-workflow.md` still lacks the fourth spec entry, and the `product.md` non-goal sentence is not yet narrowed in `docs/product-brief.md`.
+6. **Not tested.** I did not test screen-reader behaviour of the live region, or the larger which-bin type size in the preview (accepted in answer 2).
+
+--- run success (end_turn); credits reported by this session: 21.43 ---
+--- exit 0; account credit meter before 3494.74, after 3515.98 (shared account) ---

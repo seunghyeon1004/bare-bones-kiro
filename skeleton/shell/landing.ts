@@ -33,6 +33,12 @@ function start(): void {
           ),
         ),
       ),
+      el(
+        'div',
+        { class: 'playground-card' },
+        el('a', { href: './playground/', class: 'app-link' }, landing.playground.title),
+        el('p', {}, landing.playground.text),
+      ),
       el('section', { class: 'note-block' }, el('h2', { class: 'plain' }, landing.noteTitle), el('p', {}, landing.note)),
     ),
     renderFooter(landing.footer),

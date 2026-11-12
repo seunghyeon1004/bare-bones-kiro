@@ -91,3 +91,35 @@ export function validateTheme(css: string): string[] {
   for (const name of COLOUR_PROPS) if (!dark.has(name)) problems.push(`theme.css: dark :root: missing ${name}`);
   return problems;
 }
+
+export interface ParsedTheme { light: Record<string, string>; dark: Record<string, string> }
+
+/**
+ * The custom properties of a theme.css as `{ light, dark }`: the declarations of the top-level `:root` and of the `:root`
+ * inside the dark `@media` block. Call it on a theme that passed `validateTheme`.
+ */
+export function parseTheme(css: string): ParsedTheme {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const theme: ParsedTheme = { light: {}, dark: {} };
+  const stack: string[] = [];
+  let buffer = '';
+  for (const ch of text) {
+    if (ch === '{') {
+      stack.push(buffer.trim().replace(/\s+/g, ' '));
+      buffer = '';
+    } else if (ch === '}') {
+      const prelude = stack.pop();
+      if (prelude === ':root') {
+        const target = stack.length === 0 ? theme.light : theme.dark;
+        for (const raw of buffer.split(';')) {
+          const colon = raw.indexOf(':');
+          if (colon > 0) target[raw.slice(0, colon).trim()] = raw.slice(colon + 1).trim();
+        }
+      }
+      buffer = '';
+    } else {
+      buffer += ch;
+    }
+  }
+  return theme;
+}

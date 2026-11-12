@@ -1,0 +1,66 @@
+{
+  "title": "Break a table and watch the checker catch it",
+  "tagline": "Edit a decision table. The checker that guards the build reads it as you type.",
+  "intro": "A gap is a combination of answers that no rule covers. A conflict is a combination that two rules answer differently. Remove a rule below, or change the JSON, and see what the checker finds. If the table passes, the app runs from it. If not, the table fails the check and the build would stop on it. Nothing you type leaves this page, and nothing is saved.",
+  "noscript": "This page needs JavaScript to check a table. It makes no network requests and stores nothing.",
+  "allApps": "All apps",
+  "editor": {
+    "heading": "The table",
+    "startFrom": "Start from",
+    "brokenExample": "Broken demo table",
+    "loaded": "Loaded: {name}",
+    "textareaLabel": "Table JSON",
+    "textareaHint": "The checker reads the text a moment after you stop typing.",
+    "reset": "Reset"
+  },
+  "rules": {
+    "heading": "Remove a rule",
+    "intro": "Each button deletes one rule from the JSON above.",
+    "remove": "Remove",
+    "removeNamed": "Remove rule {id}",
+    "unnamed": "rule {n}",
+    "unavailable": "The rule list needs JSON with a list of rules.",
+    "empty": "The table has no rules."
+  },
+  "results": {
+    "heading": "What the checker finds",
+    "passes": "Passes: {rules}, {combinations}, all covered",
+    "fails": "Fails: {reason}",
+    "reasonCheck": "{gaps}, {conflicts}",
+    "reasonStructure": "{problems}",
+    "reasonSyntax": "invalid JSON at line {line}, column {column}",
+    "coverage": "{covered} of {total} combinations covered",
+    "syntaxHeading": "Invalid JSON",
+    "syntaxDetail": "Line {line}, column {column}: {reason}",
+    "jsonReasons": {
+      "end": "the text ends too soon",
+      "character": "unexpected character {character}",
+      "string": "bad character inside a string",
+      "trailing": "extra text after the table"
+    },
+    "structureHeading": "Structural errors",
+    "gapsHeading": "Gaps: combinations no rule covers",
+    "gapsNone": "No gaps.",
+    "conflictsHeading": "Conflicts: combinations two rules answer differently",
+    "conflictsNone": "No conflicts.",
+    "conflictLine": "{a} gives {outcomeA}, {b} gives {outcomeB}. For example: {example}",
+    "more": "and {count} more",
+    "warningsHeading": "Warnings"
+  },
+  "plural": {
+    "rule": { "one": "{n} rule", "other": "{n} rules" },
+    "combination": { "one": "{n} combination", "other": "{n} combinations" },
+    "gap": { "one": "{n} gap", "other": "{n} gaps" },
+    "conflict": { "one": "{n} conflict", "other": "{n} conflicts" },
+    "problem": { "one": "{n} structural error", "other": "{n} structural errors" }
+  },
+  "app": {
+    "heading": "The app",
+    "noBuildHeading": "This table fails the check",
+    "noBuildText": "npm run build stops on a table with structural errors, gaps or conflicts, so no app would be written from it. This page checks the table only, not the rest of the build.",
+    "noBuildReason": "Why: {reason}"
+  },
+  "footer": [
+    { "text": "This page checks the text you type with the same engine as the build. It saves nothing and sends nothing." }
+  ]
+}

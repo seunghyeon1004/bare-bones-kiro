@@ -1,3 +1,4 @@
+import type { PlaygroundCopy } from '../playground/types.ts';
 import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
 
 const KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -29,6 +30,17 @@ export function bootApp(copy: Copy): string {
     `<p>${escapeHtml(copy.tagline)}</p>` +
     `<p>${escapeHtml(copy.intro)}</p>` +
     `<noscript><p>${escapeHtml(copy.labels.noscript)}</p></noscript>` +
+    '</div>'
+  );
+}
+
+/** The static block for the playground page: the title, the intro and the no-script notice. */
+export function bootPlayground(copy: PlaygroundCopy): string {
+  return (
+    '<div id="boot" class="page">' +
+    `<h1>${escapeHtml(copy.title)}</h1>` +
+    `<p>${escapeHtml(copy.intro)}</p>` +
+    `<noscript><p>${escapeHtml(copy.noscript)}</p></noscript>` +
     '</div>'
   );
 }

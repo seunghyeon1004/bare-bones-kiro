@@ -27,6 +27,7 @@ Checkbox tasks. Each names the requirements it covers (`Requirements: 1.1, 2.3`)
 1. `engine`: validate, check, decide, with properties I1 to I10.
 2. `shell-and-cli`: page shell, build, `bones check`, `bones new`, MCP server, template, examples.
 3. `apps`: `which-bin` and `which-licence` (table.json, copy.json, theme.css), e2e with axe, GitHub Pages workflow.
+4. `playground` (added 2026-11-12): the table editor page with the live check and the mounted shell.
 
 Do not start a spec before the previous one is fully ticked.
 

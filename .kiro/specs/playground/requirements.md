@@ -190,3 +190,23 @@ The playground is a demonstration of the checker. It is not an authoring tool: i
 9.3 THE SYSTEM SHALL leave `skeleton/engine/`, `apps/`, `skeleton/template/`, `skeleton/examples/`, `package.json` and `tsconfig.json` unedited, and SHALL NOT stage, commit or push.
 
 9.4 THE SYSTEM SHALL keep `skeleton/shell/` from importing `skeleton/playground/`.
+
+## Owner answers
+
+Given after the first design pass. They settle the open questions of `design.md`.
+
+1. Keep `headingOffset`. Class selectors for headings in `shell.css` are accepted (Departure 5 / open question 3).
+2. Applying the preview theme with `style.setProperty` is accepted (Departure 4). The larger `--font-size` of which-bin need not show in the preview (open question 4).
+3. Re-serialising the JSON with two-space indentation on rule removal is fine (open question 5).
+4. "Would not build" covering structure, gaps and conflicts is enough. The page says "the table fails the check" and does not claim to run the whole build (open question 7). Applied in `playground.json`: `app.noBuildHeading` is "This table fails the check" and `app.noBuildText` and `intro` say so.
+5. The display caps (5 gaps, 5 conflicts, 10 errors) are accepted. Answers in the preview reset on a table change (open questions 6 and 8).
+6. `check` is measured once on the which-bin table in the browser (console timing in the e2e test is enough) and the number is reported (open question 10).
+
+### Amendments to older specs (Departure 3)
+
+Recorded as amendments; the original wording stays.
+
+- shell-and-cli 11.1: amended, the build also reads `skeleton/examples/which-bin-broken.table.json` for the playground page (and `skeleton/playground/playground.json`, `playground.css`).
+- shell-and-cli 11.7: amended, a build writes the eight files for one app plus the five files of `dist/playground/` (thirteen).
+- shell-and-cli 10.1 to 10.4 and the `Landing` type: amended, `landing.json` and `Landing` gain `playground: { title, text }`, validated as non-empty strings.
+- apps 10.10 and the Verify of apps task 5: amended, the end-to-end suite holds 16 tests (12 + 4 from `e2e/playground.spec.ts`), so the count check reads `Total: 16 tests`.

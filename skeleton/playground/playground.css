@@ -1,0 +1,191 @@
+/* Written against the theme contract only: every var(--…) names a contract property. */
+
+.pg-page {
+  box-sizing: border-box;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: calc(var(--space) * 2);
+  overflow-wrap: anywhere;
+}
+
+.pg-intro {
+  max-width: 48rem;
+  margin: var(--space) 0 calc(var(--space) * 2);
+}
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--space) * 2);
+}
+
+.pg-editor,
+.pg-results,
+.pg-app {
+  min-width: 0;
+}
+
+@media (min-width: 60rem) {
+  .pg-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.pg-example-buttons,
+.pg-reset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+}
+
+.pg-start,
+.pg-hint {
+  margin: 0 0 calc(var(--space) / 2);
+}
+
+.pg-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.pg-loaded {
+  margin: var(--space) 0;
+  font-weight: bold;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+.pg-text {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 16rem;
+  margin-bottom: var(--space);
+  padding: var(--space);
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.pg-text[aria-invalid='true'] {
+  border-width: 3px;
+}
+
+.pg-rules {
+  margin-top: calc(var(--space) * 2);
+}
+
+.pg-rule-list,
+.pg-details {
+  max-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-rule-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  border-top: 1px solid var(--border);
+}
+
+.pg-rule:first-child {
+  border-top: 0;
+}
+
+.pg-rule-id {
+  min-width: 0;
+}
+
+.pg-rule > button {
+  flex-shrink: 0;
+}
+
+.pg-rules-note {
+  margin: 0;
+  padding: var(--space);
+}
+
+/* State is told in words (Passes / Fails), the bar is only decoration. */
+.pg-status {
+  margin: 0 0 calc(var(--space) / 2);
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+  font-weight: bold;
+}
+
+.pg-coverage {
+  margin: 0 0 var(--space);
+  color: var(--muted);
+}
+
+.pg-details {
+  max-height: 24rem;
+  padding: 0 var(--space) var(--space);
+}
+
+.pg-details h3 {
+  margin: var(--space) 0 calc(var(--space) / 2);
+  font-size: 1rem;
+}
+
+.pg-details p,
+.pg-lines {
+  margin: 0 0 calc(var(--space) / 2);
+}
+
+.pg-lines {
+  padding-left: calc(var(--space) * 1.5);
+}
+
+.pg-more {
+  color: var(--muted);
+}
+
+.pg-frame {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-preview {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.pg-notice {
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border-left: 0.5rem solid var(--accent);
+}
+
+.pg-notice h3 {
+  margin: 0 0 var(--space);
+}
+
+.pg-notice p {
+  margin: 0 0 calc(var(--space) / 2);
+}
