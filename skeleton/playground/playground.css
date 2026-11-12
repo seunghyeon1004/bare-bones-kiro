@@ -1,4 +1,20 @@
-/* Written against the theme contract only: every var(--…) names a contract property. */
+/* Written against the theme contract only: every var(--…) names a contract property, except the --pg- status tokens below.
+   Status tokens: a pass is green, a fail is red; text on the tint is the theme's --text, the border and the mark are 3:1 or better on the tint, light and dark. */
+.pg-page {
+  --pg-pass-bg: #e8f5ec;
+  --pg-pass-border: #1b7a3a;
+  --pg-fail-bg: #fdecea;
+  --pg-fail-border: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pg-page {
+    --pg-pass-bg: #123222;
+    --pg-pass-border: #6fcf8f;
+    --pg-fail-bg: #3b1815;
+    --pg-fail-border: #ff8a80;
+  }
+}
 
 .pg-page {
   box-sizing: border-box;
@@ -13,21 +29,54 @@
   margin: var(--space) 0 calc(var(--space) * 2);
 }
 
+/* Narrow: status, editor (with the rules), details, app. Wide: editor on the left, status, details and app on the right. */
 .pg-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: calc(var(--space) * 2);
+  gap: calc(var(--space) * 1.5);
 }
 
+.pg-status-block,
 .pg-editor,
-.pg-results,
+.pg-details,
 .pg-app {
   min-width: 0;
 }
 
+.pg-status-block h2,
+.pg-editor h2,
+.pg-app h2 {
+  margin: 0 0 var(--space);
+  font-size: 1.25rem;
+}
+
 @media (min-width: 60rem) {
   .pg-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    column-gap: calc(var(--space) * 2);
+    row-gap: var(--space);
+  }
+
+  .pg-editor {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+  }
+
+  .pg-status-block {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .pg-details {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .pg-app {
+    grid-column: 2;
+    grid-row: 3;
   }
 }
 
@@ -112,8 +161,45 @@ label {
   border-top: 0;
 }
 
-.pg-rule-id {
+.pg-rule-text {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+}
+
+.pg-rule-id {
+  font-weight: bold;
+}
+
+.pg-rule-summary {
+  color: var(--muted);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
+.pg-removed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  margin: 0 0 var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-removed[hidden] {
+  display: none;
+}
+
+.pg-removed-text {
+  min-width: 0;
+  font-weight: bold;
+}
+
+.pg-removed > button {
+  flex-shrink: 0;
 }
 
 .pg-rule > button {
@@ -125,15 +211,51 @@ label {
   padding: var(--space);
 }
 
-/* State is told in words (Passes / Fails), the bar is only decoration. */
+/* State is told by the mark and the words (Passes / Fails); the colour is a third cue, not the only one. */
 .pg-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
   margin: 0 0 calc(var(--space) / 2);
   padding: var(--space);
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 0.5rem solid var(--accent);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
+  color: var(--text);
   font-weight: bold;
+}
+
+.pg-status[data-state='pass'] {
+  background: var(--pg-pass-bg);
+  border-color: var(--pg-pass-border);
+}
+
+.pg-status[data-state='fail'] {
+  background: var(--pg-fail-bg);
+  border-color: var(--pg-fail-border);
+}
+
+.pg-mark {
+  display: inline-flex;
+  flex: none;
+}
+
+.pg-status[data-state='pass'] .pg-mark {
+  color: var(--pg-pass-border);
+}
+
+.pg-status[data-state='fail'] .pg-mark {
+  color: var(--pg-fail-border);
+}
+
+.pg-mark .icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.75;
+}
+
+.pg-status-text {
+  min-width: 0;
 }
 
 .pg-coverage {
@@ -142,7 +264,7 @@ label {
 }
 
 .pg-details {
-  max-height: 24rem;
+  max-height: 16rem;
   padding: 0 var(--space) var(--space);
 }
 

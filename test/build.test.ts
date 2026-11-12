@@ -4,8 +4,11 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build } from '../skeleton/build/build.ts';
 import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';
+import { summariseApp } from '../skeleton/build/page.ts';
 import { THEME_PROPS, parseTheme, validateTheme } from '../skeleton/build/theme-check.ts';
 import { run } from '../skeleton/cli/bones.ts';
+import type { Table } from '../skeleton/engine/index.ts';
+import type { Copy } from '../skeleton/shell/copy-type.ts';
 
 const repo = path.resolve(import.meta.dirname, '..');
 const temps: string[] = [];
@@ -230,10 +233,18 @@ describe('build', () => {
 
   it('keeps playground.css within the contract', () => {
     const css = readFileSync(path.join(repo, 'skeleton/playground/playground.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    const used = [...css.matchAll(/var\(\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
+    // The one exception (playground spec, owner answer 7e): the status tokens, `--pg-name: value;`, may hold colour literals,
+    // and `var(--pg-name)` may use a token the file defines. Everything else stays under the original rules.
+    const tokens = new Set([...css.matchAll(/(--pg-[a-z-]+)\s*:/g)].map((m) => m[1] ?? ''));
+    expect(tokens.size).toBeGreaterThan(0);
+    const rest = css.replace(/--pg-[a-z-]+\s*:[^;]*;/g, '');
+    const used = [...rest.matchAll(/var\(\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
     expect(used.length).toBeGreaterThan(0);
-    for (const name of used) expect(THEME_PROPS as readonly string[]).toContain(name);
-    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@import/);
+    for (const name of used) {
+      if (name.startsWith('--pg-')) expect([...tokens]).toContain(name);
+      else expect(THEME_PROPS as readonly string[]).toContain(name);
+    }
+    expect(rest).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(|@import/);
   });
 
   it('reads the light and dark values of a theme', () => {
@@ -267,10 +278,34 @@ describe('playground copy', () => {
 });
 
 describe('landing copy', () => {
-  it('rejects a landing.json without the playground link', () => {
-    const landing: Record<string, unknown> = JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8'));
-    expect(landing['playground']).toBeDefined();
-    delete landing['playground'];
-    expect(validateLanding(landing)).toContain('playground: missing');
+  const real = (): Record<string, unknown> =>
+    JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')) as Record<string, unknown>;
+
+  it('accepts the real file', () => {
+    expect(validateLanding(real())).toEqual([]);
+  });
+
+  it.each([
+    { name: 'a missing playground link', edit: (l: Record<string, unknown>) => delete l['playground'], expected: 'playground: missing' },
+    { name: 'a missing diagram word', edit: (l: Record<string, unknown>) => delete (l['diagram'] as Record<string, unknown>)['gaps'], expected: 'diagram.gaps: missing' },
+    { name: 'a repository URL with a trailing slash', edit: (l: Record<string, unknown>) => (l['repo'] = 'https://github.com/o/r/'), expected: 'repo: must be an https:// URL without a trailing slash' },
+    { name: 'the removed intro paragraph', edit: (l: Record<string, unknown>) => (l['intro'] = 'x'), expected: 'intro: unknown key' },
+  ])('rejects $name', ({ edit, expected }) => {
+    const landing = real();
+    edit(landing);
+    expect(validateLanding(landing)).toContain(expected);
+  });
+});
+
+describe('app summary for the landing page', () => {
+  it('carries the theme and the first question with three answers', () => {
+    const read = (file: string): string => readFileSync(path.join(repo, 'apps/which-bin', file), 'utf8');
+    const table = JSON.parse(read('table.json')) as Table;
+    const summary = summariseApp('which-bin', table, JSON.parse(read('copy.json')) as Copy, read('theme.css'));
+    const first = table.conditions[0];
+    expect(summary.preview.question).toBe(first?.question);
+    expect(summary.preview.answers).toEqual((first?.values ?? []).slice(0, 3).map((v) => v.label));
+    expect(summary.theme.light['--accent']).toBe('#a63d00');
+    expect(summary.theme.dark['--bg']).toBe('#2a1a10');
   });
 });

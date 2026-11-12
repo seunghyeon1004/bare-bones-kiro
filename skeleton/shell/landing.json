@@ -1,13 +1,27 @@
 {
   "title": "Bare Bones",
-  "tagline": "Small decision tools, each one a table that has been checked for gaps and conflicts.",
-  "intro": "A decision is a table: conditions go in, one outcome comes out. A checker reads each table and finds the gaps (answers no rule covers) and the conflicts (answers two rules disagree on). The page then asks only the questions that can still change the answer, and shows the rule and source behind it.",
-  "styles": { "tiles": "Answers as tiles", "list": "Answers as a list" },
-  "noteTitle": "Same skeleton, three files each",
-  "note": "Every app here is made of table.json (the decision), copy.json (the words) and theme.css (the colours and fonts). Nothing else.",
+  "tagline": "A decision is a table. A checker proves it has no gaps or conflicts. A page asks only the questions that matter.",
+  "diagram": {
+    "title": "How Bare Bones works",
+    "description": "A decision table goes into a checker, which reports zero gaps and zero conflicts. The checked table becomes a small app that asks a question with two answers.",
+    "tableLabel": "Decision table",
+    "checkerLabel": "Checker",
+    "gaps": "gaps: 0",
+    "conflicts": "conflicts: 0",
+    "appLabel": "Small app",
+    "question": "Has a battery?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "appsHeading": "Two small tools built this way",
   "playground": {
     "title": "Break a table and watch the checker catch it",
-    "text": "Delete a rule from a table and watch the checker find the gap and the app refuse to build. Then press Reset."
+    "text": "Delete a rule and see the gap the checker finds and how the app reacts. Then press Reset."
   },
+  "noteTitle": "Same skeleton, three files each",
+  "note": "table.json is the decision, copy.json the words, theme.css the colours and fonts. Nothing else.",
+  "newApp": "Start your own with",
+  "newAppCommand": "npm run bones -- new my-app",
+  "repo": "https://github.com/seunghyeon1004/bare-bones-kiro",
   "footer": [{ "text": "Every answer comes from a checked decision table." }]
 }

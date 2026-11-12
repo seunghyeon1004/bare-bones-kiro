@@ -1,6 +1,6 @@
 import type { Table } from '../engine/index.ts';
 import type { Plural, PlaygroundCopy } from '../playground/types.ts';
-import type { Copy, FilterCopy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';
+import type { Copy, DiagramCopy, FilterCopy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';
 
 // `satisfies` makes the compiler fail if this list and `Labels` ever differ.
 const LABEL_KEYS = {
@@ -40,7 +40,33 @@ const FILTER_KEYS = {
 } satisfies Record<keyof FilterCopy, true>;
 /** Digits, path command letters, exponent, space, comma, dot, plus, minus. */
 const PATH_CHARACTERS = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/;
-const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'playground', 'footer'] as const satisfies readonly (keyof Landing)[];
+const LANDING_KEYS = [
+  'title',
+  'tagline',
+  'diagram',
+  'appsHeading',
+  'playground',
+  'noteTitle',
+  'note',
+  'newApp',
+  'newAppCommand',
+  'repo',
+  'footer',
+] as const satisfies readonly (keyof Landing)[];
+const DIAGRAM_KEYS = {
+  title: true,
+  description: true,
+  tableLabel: true,
+  checkerLabel: true,
+  gaps: true,
+  conflicts: true,
+  appLabel: true,
+  question: true,
+  yes: true,
+  no: true,
+} satisfies Record<keyof DiagramCopy, true>;
+/** An object whose listed keys are all non-empty strings. */
+const STRING_GROUPS: Record<string, readonly string[]> = { playground: ['title', 'text'], diagram: Object.keys(DIAGRAM_KEYS) };
 const PLACEHOLDERS: Partial<Record<keyof Labels, string[]>> = { questionOf: ['{n}', '{max}'], badLink: ['{count}'] };
 
 type Obj = Record<string, unknown>;
@@ -199,29 +225,28 @@ export function validateLanding(input: unknown): string[] {
   const problems: string[] = [];
   if (!isObj(input)) return ['$: must be an object'];
   for (const key of LANDING_KEYS) {
-    if (!Object.hasOwn(input, key)) problems.push(`${key}: missing`);
-    else if (key === 'footer') checkFooter(input[key], problems);
-    else if (key === 'playground') {
-      const playground = input[key];
-      if (!isObj(playground)) problems.push('playground: must be an object');
+    if (!Object.hasOwn(input, key)) {
+      problems.push(`${key}: missing`);
+      continue;
+    }
+    const group = STRING_GROUPS[key];
+    if (key === 'footer') checkFooter(input[key], problems);
+    else if (group !== undefined) {
+      const value = input[key];
+      if (!isObj(value)) problems.push(`${key}: must be an object`);
       else {
-        for (const name of ['title', 'text']) {
-          if (!Object.hasOwn(playground, name)) problems.push(`playground.${name}: missing`);
-          else nonEmptyString(playground[name], `playground.${name}`, problems);
+        for (const name of group) {
+          if (!Object.hasOwn(value, name)) problems.push(`${key}.${name}: missing`);
+          else nonEmptyString(value[name], `${key}.${name}`, problems);
         }
-        unknownKeys(playground, ['title', 'text'], 'playground.', problems);
+        unknownKeys(value, group, `${key}.`, problems);
       }
-    } else if (key === 'styles') {
-      const styles = input[key];
-      if (!isObj(styles)) problems.push('styles: must be an object');
-      else {
-        for (const name of ['tiles', 'list']) {
-          if (!Object.hasOwn(styles, name)) problems.push(`styles.${name}: missing`);
-          else nonEmptyString(styles[name], `styles.${name}`, problems);
-        }
-        unknownKeys(styles, ['tiles', 'list'], 'styles.', problems);
+    } else {
+      const value = input[key];
+      if (nonEmptyString(value, key, problems) && key === 'repo' && !/^https:\/\/[^\s/]+(\/[^\s/]+)*$/.test(value)) {
+        problems.push('repo: must be an https:// URL without a trailing slash');
       }
-    } else nonEmptyString(input[key], key, problems);
+    }
   }
   unknownKeys(input, LANDING_KEYS, '', problems);
   return problems;
@@ -256,6 +281,11 @@ const SHAPE: Shape = {
     unnamed: ['{n}'],
     unavailable: [],
     empty: [],
+    summary: ['{when}', '{outcome}'],
+    whenAny: [],
+    noOutcome: [],
+    removed: ['{id}'],
+    undo: [],
   },
   results: {
     heading: [],

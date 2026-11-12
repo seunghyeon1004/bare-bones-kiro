@@ -15,12 +15,17 @@
   },
   "rules": {
     "heading": "Remove a rule",
-    "intro": "Each button deletes one rule from the JSON above.",
+    "intro": "Each button deletes one rule from the JSON. Undo puts the last one back.",
     "remove": "Remove",
     "removeNamed": "Remove rule {id}",
     "unnamed": "rule {n}",
     "unavailable": "The rule list needs JSON with a list of rules.",
-    "empty": "The table has no rules."
+    "empty": "The table has no rules.",
+    "summary": "{when} → {outcome}",
+    "whenAny": "any answers",
+    "noOutcome": "no outcome",
+    "removed": "Removed {id}",
+    "undo": "Undo"
   },
   "results": {
     "heading": "What the checker finds",

@@ -201,6 +201,13 @@ Given after the first design pass. They settle the open questions of `design.md`
 4. "Would not build" covering structure, gaps and conflicts is enough. The page says "the table fails the check" and does not claim to run the whole build (open question 7). Applied in `playground.json`: `app.noBuildHeading` is "This table fails the check" and `app.noBuildText` and `intro` say so.
 5. The display caps (5 gaps, 5 conflicts, 10 errors) are accepted. Answers in the preview reset on a table change (open questions 6 and 8).
 6. `check` is measured once on the which-bin table in the browser (console timing in the e2e test is enough) and the number is reported (open question 10).
+7. Polish after the owner looked at the page at 1280 px (limited to `skeleton/playground/`, the `copyLink` mount option in `skeleton/shell/mount.ts`, and the tests):
+    a. Layout. From 60 rem the left column holds the editor and the rule list; the right column holds the status, the checker's details and, directly under them, the app preview. Below 60 rem the page stacks: status, editor, rules, details, app. The status is therefore its own block, before the editor in the document.
+    b. Status. A small inline SVG mark (check or cross, `aria-hidden`, built with `createElementNS`) before the words "Passes" / "Fails", a green-family border and tint for a pass and a red-family one for a fail. The colours are tokens (`--pg-pass-*`, `--pg-fail-*`) at the top of `playground.css`, with a light and a dark value each, chosen for AA contrast (text on tint 4.5:1, border and mark on tint 3:1).
+    c. Rule rows show the rule id, a short summary `{when} -> {outcome}` made of text nodes (`rules.summary`, `rules.whenAny`), and Remove. After a removal the page says "Removed {id}" (`rules.removed`) in a status region with an Undo button (`rules.undo`) that puts the rule back at its old position; one level only. Typing in the editor, Reset or loading an example clears the notice. Reset stays.
+    d. The preview hides the shell's "Copy link" button (`copyLink: false`), because the address would be the playground's, not the preview's.
+    e. Test change, to be reviewed: `test/build.test.ts` "keeps playground.css within the contract" forbade every colour literal and every custom property outside the theme contract. It now excepts the `--pg-` token definitions (and `var(--pg-…)` uses of tokens the file defines); everywhere else the same rules apply. This is the one check that was narrowed, because 7b asks for tokens in this file.
+    f. Tests: `e2e/playground.spec.ts` gains Undo (remove, Undo, "Passes" again) and the hidden "Copy link"; axe stays clean at 1280 and 390 px in light and dark.
 
 ### Amendments to older specs (Departure 3)
 

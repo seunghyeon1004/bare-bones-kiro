@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyse } from '../skeleton/playground/analyse.ts';
 import { locateJsonError } from '../skeleton/playground/json-error.ts';
-import { formatTable, listRules, removeRule } from '../skeleton/playground/rules.ts';
+import { formatTable, listRules, removeRule, restoreRule, takeRule } from '../skeleton/playground/rules.ts';
 import { summarise } from '../skeleton/playground/summary.ts';
 import type { PlaygroundCopy } from '../skeleton/playground/types.ts';
 import { check } from '../skeleton/engine/index.ts';
@@ -145,10 +145,37 @@ describe('rule list', () => {
     ]);
   });
 
+  it('summarises when and then as plain strings', () => {
+    const text = JSON.stringify({ rules: [{ id: 'a', when: { kind: 'x', size: ['s', 'm'] }, then: 'out' }, { id: 'b', when: {}, then: 3 }] });
+    expect(listRules(text)).toEqual([
+      { index: 0, id: 'a', when: 'kind=x, size=s/m', outcome: 'out' },
+      { index: 1, id: 'b', when: undefined, outcome: undefined },
+    ]);
+  });
+
   it('is undefined for invalid JSON, a top-level array and an object without a rules array', () => {
     expect(listRules('{"rules": [')).toBeUndefined();
     expect(listRules('[{"id":"a"}]')).toBeUndefined();
     expect(listRules('{"rules": 3}')).toBeUndefined();
     expect(listRules('null')).toBeUndefined();
+  });
+});
+
+describe('undo', () => {
+  const formatted = formatTable(licence);
+
+  it('puts a removed rule back where it was, so the text is the original again', () => {
+    for (const index of [0, 3, licence.rules.length - 1]) {
+      const taken = takeRule(formatted, index);
+      expect(taken?.rule).toEqual(licence.rules[index]);
+      expect(restoreRule(taken?.text ?? '', index, taken?.rule)).toBe(formatted);
+    }
+  });
+
+  it('puts the rule at the end when the list got shorter, and leaves text without a rules array alone', () => {
+    const taken = takeRule(formatted, 1);
+    const shorter = JSON.stringify({ rules: [{ id: 'only' }] });
+    expect(JSON.parse(restoreRule(shorter, 5, taken?.rule)).rules).toHaveLength(2);
+    expect(restoreRule('{"rules": [', 0, {})).toBe('{"rules": [');
   });
 });

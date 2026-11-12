@@ -1,10 +1,10 @@
-import { el, fill, readJson, renderFooter } from '../shell/dom.ts';
+import { el, fill, readJson, renderFooter, svgIcon } from '../shell/dom.ts';
 import type { Child } from '../shell/dom.ts';
 import { mountApp } from '../shell/mount.ts';
 import type { Mounted } from '../shell/mount.ts';
 import { analyse, passes } from './analyse.ts';
 import type { Analysis } from './analyse.ts';
-import { formatTable, listRules, removeRule } from './rules.ts';
+import { formatTable, listRules, restoreRule, takeRule } from './rules.ts';
 import { describeChar, plural, summarise } from './summary.ts';
 import { applyTheme } from './theme.ts';
 import type { PlaygroundCopy, PlaygroundData, PlaygroundExample } from './types.ts';
@@ -13,6 +13,12 @@ const DEBOUNCE_MS = 250;
 const MAX_GAPS = 5;
 const MAX_CONFLICTS = 5;
 const MAX_PROBLEMS = 10;
+/** Path data for the status mark, on the 24 by 24 grid of `svgIcon`. */
+const CHECK_MARK = ['M5 12.5l4.5 4.5L19 7.5'];
+const CROSS_MARK = ['M6 6l12 12', 'M18 6L6 18'];
+
+/** The last rule taken out of the list, kept so Undo can put it back where it was. */
+interface Removed { index: number; name: string; rule: unknown }
 
 function start(): void {
   const copy = readJson<PlaygroundCopy>('data-playground');
@@ -44,7 +50,16 @@ function start(): void {
     tabindex: '0',
     'aria-labelledby': 'pg-rules-intro',
   });
-  const status = el('p', { id: 'pg-status', class: 'pg-status', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
+  const statusMark = el('span', { class: 'pg-mark', 'aria-hidden': 'true' });
+  const statusText = el('span', { class: 'pg-status-text' });
+  const status = el(
+    'p',
+    { id: 'pg-status', class: 'pg-status', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
+    statusMark,
+    statusText,
+  );
+  const removedNotice = el('div', { class: 'pg-removed', role: 'status', 'aria-live': 'polite' });
+  let removed: Removed | undefined;
   const coverage = el('p', { class: 'pg-coverage' });
   const details = el('div', { class: 'pg-details', role: 'region', tabindex: '0', 'aria-labelledby': 'pg-status' });
   const frame = el('div', { class: 'pg-frame' });
@@ -57,6 +72,8 @@ function start(): void {
 
   function load(example: PlaygroundExample): void {
     loaded = example;
+    removed = undefined;
+    renderRemoved();
     loadedLine.textContent = fill(copy.editor.loaded, { name: example.label });
     textarea.value = formatTable(example.table);
     analyseNow();
@@ -72,6 +89,10 @@ function start(): void {
   }
 
   function onInput(): void {
+    if (removed !== undefined) {
+      removed = undefined;
+      renderRemoved();
+    }
     window.clearTimeout(timer);
     timer = window.setTimeout(analyseNow, DEBOUNCE_MS);
   }
@@ -93,7 +114,12 @@ function start(): void {
   function renderResults(analysis: Analysis): void {
     const r = copy.results;
     const summary = summarise(analysis, copy);
-    if (status.textContent !== summary.line) status.textContent = summary.line;
+    if (statusText.textContent !== summary.line) statusText.textContent = summary.line;
+    const state = summary.passes ? 'pass' : 'fail';
+    if (status.getAttribute('data-state') !== state) {
+      status.setAttribute('data-state', state);
+      statusMark.replaceChildren(svgIcon(summary.passes ? CHECK_MARK : CROSS_MARK));
+    }
     coverage.textContent = summary.coverage ?? '';
     coverage.hidden = summary.coverage === undefined;
     if (analysis.kind === 'syntax') textarea.setAttribute('aria-invalid', 'true');
@@ -161,24 +187,55 @@ function start(): void {
     }
     const items = rows.map((row) => {
       const name = row.id ?? fill(copy.rules.unnamed, { n: row.index + 1 });
+      const summary = fill(copy.rules.summary, { when: row.when ?? copy.rules.whenAny, outcome: row.outcome ?? copy.rules.noOutcome });
       return el(
         'li',
         { class: 'pg-rule' },
-        el('span', { class: 'pg-rule-id' }, name),
+        el('span', { class: 'pg-rule-text' }, el('span', { class: 'pg-rule-id' }, name), el('span', { class: 'pg-rule-summary' }, summary)),
         button([copy.rules.remove], () => remove(row.index), { 'aria-label': fill(copy.rules.removeNamed, { id: name }) }),
       );
     });
     ruleRegion.replaceChildren(el('ul', { class: 'pg-rule-rows' }, ...items));
   }
 
+  function renderRemoved(): void {
+    removedNotice.hidden = removed === undefined;
+    if (removed === undefined) {
+      removedNotice.replaceChildren();
+      return;
+    }
+    removedNotice.replaceChildren(
+      el('span', { class: 'pg-removed-text' }, fill(copy.rules.removed, { id: removed.name })),
+      button([copy.rules.undo], undo),
+    );
+  }
+
   function remove(index: number): void {
+    const taken = takeRule(textarea.value, index);
+    if (taken === undefined) return;
+    const rule = taken.rule;
+    const id = typeof rule === 'object' && rule !== null && !Array.isArray(rule) ? (rule as Record<string, unknown>)['id'] : undefined;
+    removed = { index, name: typeof id === 'string' ? id : fill(copy.rules.unnamed, { n: index + 1 }), rule };
     const scrollTop = textarea.scrollTop;
-    textarea.value = removeRule(textarea.value, index);
+    textarea.value = taken.text;
     textarea.scrollTop = scrollTop;
     analyseNow();
+    renderRemoved();
     const buttons = ruleRegion.querySelectorAll('button');
     const target = buttons[Math.min(index, buttons.length - 1)];
     (target ?? textarea).focus();
+  }
+
+  function undo(): void {
+    if (removed === undefined) return;
+    const { index, rule } = removed;
+    removed = undefined;
+    const scrollTop = textarea.scrollTop;
+    textarea.value = restoreRule(textarea.value, index, rule);
+    textarea.scrollTop = scrollTop;
+    analyseNow();
+    renderRemoved();
+    (ruleRegion.querySelectorAll('button')[index] ?? textarea).focus();
   }
 
   function renderFrame(analysis: Analysis): void {
@@ -189,7 +246,7 @@ function start(): void {
       const preview = el('div', { class: 'pg-preview' });
       applyTheme(preview, loaded.theme, darkQuery.matches);
       frame.replaceChildren(preview);
-      const handle = mountApp(preview, analysis.table, loaded.copy, { hash: false, embedded: true, headingOffset: 2 });
+      const handle = mountApp(preview, analysis.table, loaded.copy, { hash: false, embedded: true, headingOffset: 2, copyLink: false });
       mounted = { key, handle, preview };
       return;
     }
@@ -232,6 +289,7 @@ function start(): void {
       el(
         'div',
         { class: 'pg-grid' },
+        el('section', { class: 'pg-status-block', 'aria-labelledby': 'pg-results-h' }, el('h2', { id: 'pg-results-h' }, copy.results.heading), status, coverage),
         el(
           'section',
           { class: 'pg-editor', 'aria-labelledby': 'pg-editor-h' },
@@ -252,19 +310,13 @@ function start(): void {
             { class: 'pg-rules', 'aria-labelledby': 'pg-rules-h' },
             el('h3', { id: 'pg-rules-h' }, copy.rules.heading),
             el('p', { id: 'pg-rules-intro' }, copy.rules.intro),
+            removedNotice,
             ruleRegion,
           ),
         ),
-        el(
-          'section',
-          { class: 'pg-results', 'aria-labelledby': 'pg-results-h' },
-          el('h2', { id: 'pg-results-h' }, copy.results.heading),
-          status,
-          coverage,
-          details,
-        ),
+        details,
+        el('section', { class: 'pg-app', 'aria-labelledby': 'pg-app-h' }, el('h2', { id: 'pg-app-h' }, copy.app.heading), frame),
       ),
-      el('section', { class: 'pg-app', 'aria-labelledby': 'pg-app-h' }, el('h2', { id: 'pg-app-h' }, copy.app.heading), frame),
     ),
     renderFooter(copy.footer),
   );

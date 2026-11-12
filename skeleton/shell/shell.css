@@ -205,8 +205,8 @@ input {
 
 .icon {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .list {
@@ -258,12 +258,12 @@ input {
   appearance: none;
   border: 0;
   border-radius: var(--radius);
-  background: var(--border);
+  background: color-mix(in srgb, var(--border) 30%, var(--surface));
   overflow: hidden;
 }
 
 .bar::-webkit-progress-bar {
-  background: var(--border);
+  background: color-mix(in srgb, var(--border) 30%, var(--surface));
 }
 
 .bar::-webkit-progress-value {
@@ -506,68 +506,311 @@ td {
 }
 
 /* Landing page. */
+.landing {
+  max-width: 56rem;
+}
+
+.hero {
+  padding-top: var(--space);
+}
+
+.landing h1 {
+  margin: 0 0 var(--space);
+  font-size: clamp(2.5rem, 9vw, 4rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
 .lede {
-  margin: var(--space) 0 calc(var(--space) * 2);
+  max-width: 38rem;
+  margin: 0 0 calc(var(--space) * 2);
+  font-size: 1.25rem;
+}
+
+.hero-figure {
+  box-sizing: border-box;
+  margin: 0;
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+}
+
+.diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.diagram.stacked {
+  max-width: 20rem;
+}
+
+/* The picture takes every colour and font from the theme, so it follows light and dark. */
+.dg-cell {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.dg-head {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.dg-line {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.dg-arrow path {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dg-box {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.dg-tick circle {
+  fill: var(--accent);
+}
+
+.dg-tick path {
+  fill: none;
+  stroke: var(--accent-text);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dg-phone {
+  fill: var(--bg);
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.dg-speaker {
+  fill: var(--border);
+}
+
+.dg-button {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.dg-button.dg-primary {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.dg-title,
+.dg-text,
+.dg-question,
+.dg-button-text,
+.dg-caption {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+
+.dg-title {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: bold;
+}
+
+.dg-question,
+.dg-button-text {
+  font-weight: bold;
+}
+
+.dg-button-text.dg-primary-text {
+  fill: var(--accent-text);
+}
+
+.dg-caption {
+  fill: var(--muted);
+  font-size: 14px;
+}
+
+.section-heading {
+  margin: calc(var(--space) * 3) 0 var(--space);
+  font-size: 1.5rem;
 }
 
 .apps {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
   gap: var(--space);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.apps li {
+.apps > li {
+  display: flex;
+}
+
+/* A card wears the app's own colours, fonts and radius (set on it by landing.ts). */
+.app-card {
+  box-sizing: border-box;
+  display: block;
+  flex: 1;
   padding: calc(var(--space) * 1.5);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--border);
   border-left: 0.5rem solid var(--accent);
   border-radius: var(--radius);
+  font-family: var(--font-body);
+  text-decoration: none;
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
-.apps p {
-  margin: calc(var(--space) / 2) 0 0;
+.app-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
-.playground-card {
-  margin-top: calc(var(--space) * 2);
-  padding: calc(var(--space) * 1.5);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 0.5rem solid var(--accent);
-  border-radius: var(--radius);
-}
-
-.playground-card p {
-  margin: calc(var(--space) / 2) 0 0;
-}
-
-.app-link {
+.card-title {
+  margin: 0;
+  color: inherit;
   font-family: var(--font-heading);
   font-size: 1.5rem;
+}
+
+.card-tagline {
+  margin: calc(var(--space) / 2) 0 var(--space);
+  color: var(--muted);
+}
+
+.card-preview {
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 1rem);
+}
+
+.preview-question {
+  margin: 0 0 calc(var(--space) / 2);
+  font-size: 0.9375rem;
   font-weight: bold;
 }
 
-.app-style {
-  color: var(--muted);
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
+}
+
+.chip {
+  padding: 0.25rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 1rem);
   font-size: 0.875rem;
 }
 
-.note-block {
+.list-card .chips {
+  flex-direction: column;
+}
+
+.list-card .chip {
+  border-radius: min(var(--radius), 0.5rem);
+}
+
+.playground-card {
+  box-sizing: border-box;
+  display: block;
   margin-top: calc(var(--space) * 2);
+  padding: calc(var(--space) * 2);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.playground-card:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.playground-card .card-title {
+  font-size: 1.75rem;
+}
+
+.playground-card p {
+  max-width: 40rem;
+  margin: calc(var(--space) / 2) 0 0;
+}
+
+.files-note,
+.new-app {
+  margin: 0 0 var(--space);
+}
+
+.files {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space);
+  margin: 0 0 var(--space);
+  padding: 0;
+  list-style: none;
+}
+
+.files-app {
   padding: var(--space);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
-.note-block h2 {
-  margin: 0 0 calc(var(--space) / 2);
+.files-name {
+  display: block;
+  margin-bottom: calc(var(--space) / 2);
+  font-weight: bold;
 }
 
-.note-block p {
+.file-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-links a {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 0.75rem);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+}
+
+code {
+  padding: 0.125rem 0.375rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.9em;
 }
 
 .vh {
@@ -597,6 +840,12 @@ td {
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .app-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
@@ -609,4 +858,11 @@ td {
 .step > button {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* By hand (owner, accessibility review): the stand-alone "All apps" link gets a 24 px target (WCAG 2.2, 2.5.8). */
+.back a {
+  display: inline-block;
+  min-height: 24px;
+  padding-block: 4px;
 }

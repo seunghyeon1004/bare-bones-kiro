@@ -1,0 +1,2100 @@
+# Kiro CLI 3.2.1, 2026-11-12T06:23:29Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --agent bonesetter --trust-all-tools --trust-workspace --model auto "$(cat docs/kiro-evidence/prompts/15-landing.md)"
+
+--- prompt ---
+Redesign the landing page. Record it as the next "Owner answers" item in the shell-and-cli spec's requirements.md first. Change only skeleton/shell (landing.ts, landing.json, shell.css or a landing.css, neutral-theme.css), skeleton/build (if the landing needs app colours or new copy), and tests. The apps and the engine do not change.
+
+The owner's review: it reads like a README. It needs one clear picture of the idea and should look designed.
+1. A hero: the title "Bare Bones", one line ("A decision is a table. A checker proves it has no gaps or conflicts. A page asks only the questions that matter."), and one picture of the idea: an inline SVG diagram drawn with createElementNS (no innerHTML, no external assets): a small table (rows of cells) on the left, an arrow into a "checker" box in the middle with two small marks for "gaps: 0" and "conflicts: 0", an arrow out to a small phone-shaped app on the right showing a question and two buttons. Text in the SVG comes from landing.json; the SVG has a `<title>` and `role="img"` with an accessible name; it scales down to 360 px (stacks vertically or scales) and uses the theme's colours so it works in light and dark.
+2. The two apps as cards that look like the apps they open: each card uses that app's own colours and fonts (the build passes each app's theme custom properties to the landing page as data, and the card sets them on itself through the CSSOM, no inline style attributes, because the CSP forbids them), its title, its tagline, and a tiny preview of its first question with two or three answer chips (taken from the table's first condition at build time). The whole card is one link.
+3. The playground entry right after the cards, as its own prominent card: "Break a table and watch the checker catch it", linking to ./playground/.
+4. "Same skeleton, three files each": the three real file names for each app (table.json, copy.json, theme.css), each linking to the file in the repository (https://github.com/seunghyeon1004/bare-bones-kiro/blob/main/apps/<app>/<file>), plus one line on `npm run bones -- new my-app`. The repository URL lives in landing.json.
+5. Keep it fast and plain: no stock imagery, no web fonts, no animation beyond a reduced-motion-safe hover. One h1, links are links, axe clean in light and dark, no horizontal scroll at 360 px. Update the landing e2e test for the new structure (it must still find both app links and the playground link) and add axe on the landing page in dark if not already covered.
+
+Verify: `npm run typecheck && npm test && npm run test:e2e`. Do not stage, commit or push. End with the files changed and the real result lines.
+
+Also polish the playground page (skeleton/playground/, its CSS and copy file; record it in the playground spec's Owner answers). The owner looked at it at 1280 px after removing a rule:
+6. Layout: at wide widths the left column holds the editor and the rule list; the right column holds the checker result and, directly under it, the app preview, so breaking a rule and seeing both the gap and the app's reaction needs no scrolling. At 390 px it stacks: status, editor, rules, results, app.
+7. Status: make pass and fail unmistakable without relying on colour alone: a small inline SVG mark (check or cross, aria-hidden) plus the word, a green-family border and tint for pass and a red-family one for fail, both AA in light and dark, defined as tokens in the playground's CSS.
+8. Rule list: each row shows the rule id, a short "when -> outcome" summary (text nodes only), and Remove. After a removal, show "Removed rule-id" with an Undo button that puts that rule back where it was (Reset stays).
+9. In the preview, hide the shell's "Copy link" button (a mount option), because the link would point at the playground, not the preview.
+Add one e2e assertion for Undo (remove, Undo, "Passes" again). Keep axe clean at 1280 and 390, light and dark.
+
+Two small shell touches from the owner's look at the new Which bin? screen: draw the tile pictograms at 36 px (they render at about 24 px now), and make the progress bar's unfilled track a quiet colour (the surface or border colour mixed lighter), so the filled part reads as progress; the bar is decorative and aria-hidden, so this is visual only.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the specs and the current code.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -n "Owner answers" -A40 .kiro/specs/shell-and-cli/requirements.md | head -120; echo ----; grep -n "Owner answers" -A40 .kiro/specs/playground/requirements.md | head -80
+    … (31 earlier lines not shown)
+    285-
+    286-### Amendment: pictograms, short tiles and a filter box (owner answers, after the review of the Which bin? first screen)
+    287-
+    288-11. Amendment (outside the three specs, same session as the `apps` item "amendment after the review of the Which bin? first screen"). Limited to `skeleton/shell/`, the copy check in `skeleton/build/`, and the tests. The engine, the theme contract, the labels (still 20) and the template are unchanged; both new `copy.json` keys are optional.
+    289-    a. `Copy.icons?: Record<string, string[]>`: value id to a list of SVG path `d` strings on a 24 by 24 grid. The shell draws each with `createElementNS`: `aria-hidden="true"`, `fill="none"`, `stroke="currentColor"`, `stroke-width` 1.75, round caps and joins, 32 px in a tile. No `innerHTML`, no inline style.
+    290-    b. The build rejects an `icons` key that is not a value id of the app's table (`icons.<key>: not a value id of the table`), and a path string with any character other than SVG path characters (digits, the path command letters, `e`/`E`, space, comma, dot, plus, minus).
+    291-    c. In the tiles style a tile holds the pictogram and the label only. All tiles in a row have the same height. The value's `hint` shows as a muted secondary line in its "Your answers" row after the value is chosen. In the list style the hint stays in the choice, as before.
+    292-    d. `Copy.filter?: { condition, label, placeholder, noMatch, showAll, count, countOne, keywords }`. When present and the current question is `filter.condition`, the shell shows a visible label and an `<input type="search" autocomplete="off">` above the choices. Typing narrows the choices to the values whose label or keywords contain every word typed (case-insensitive); an `aria-live="polite"` line says `count` (with `{n}`) or `countOne`, or `noMatch` when nothing matches, and then a `showAll` button restores every choice. Enter with exactly one match chooses it. The matching function is pure: `skeleton/shell/filter.ts`.
+    293-    e. The build checks `filter` (all strings non-empty, `count` contains `{n}`, `condition` is a condition id of the table, every `keywords` key is a value id of that condition, every keyword a non-empty string) and rejects unknown keys inside it.
+    294-    f. Tests: `test/filter.test.ts` (matching function), `test/build.test.ts` (icon key that is not a value id; bad path characters; bad filter condition), `e2e/filter.spec.ts` (one test).
+    ----
+    194:## Owner answers
+    195-
+    196-Given after the first design pass. They settle the open questions of `design.md`.
+    197-
+    198-1. Keep `headingOffset`. Class selectors for headings in `shell.css` are accepted (Departure 5 / open question 3).
+    199-2. Applying the preview theme with `style.setProperty` is accepted (Departure 4). The larger `--font-size` of which-bin need not show in the preview (open question 4).
+    200-3. Re-serialising the JSON with two-space indentation on rule removal is fine (open question 5).
+    201-4. "Would not build" covering structure, gaps and conflicts is enough. The page says "the table fails the check" and does not claim to run the whole build (open question 7). Applied in `playground.json`: `app.noBuildHeading` is "This table fails the check" and `app.noBuildText` and `intro` say so.
+    202-5. The display caps (5 gaps, 5 conflicts, 10 errors) are accepted. Answers in the preview reset on a table change (open questions 6 and 8).
+    203-6. `check` is measured once on the which-bin table in the browser (console timing in the e2e test is enough) and the number is reported (open question 10).
+    204-
+    205-### Amendments to older specs (Departure 3)
+    206-
+    207-Recorded as amendments; the original wording stays.
+    208-
+    209-- shell-and-cli 11.1: amended, the build also reads `skeleton/examples/which-bin-broken.table.json` for the playground page (and `skeleton/playground/playground.json`, `playground.css`).
+    210-- shell-and-cli 11.7: amended, a build writes the eight files for one app plus the five files of `dist/playground/` (thirteen).
+    211-- shell-and-cli 10.1 to 10.4 and the `Landing` type: amended, `landing.json` and `Landing` gain `playground: { title, text }`, validated as non-empty strings.
+    212-- apps 10.10 and the Verify of apps task 5: amended, the end-to-end suite holds 16 tests (12 + 4 from `e2e/playground.spec.ts`), so the count check reads `Total: 16 tests`.
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && sed -n 295,400p .kiro/specs/shell-and-cli/requirements.md; ls skeleton/* e2e test; wc -l skeleton/shell/* skeleton/build/* skeleton/playground/*; cat package.json | head -30
+    … (100 earlier lines not shown)
+          66 skeleton/playground/summary.ts
+           7 skeleton/playground/theme.ts
+          70 skeleton/playground/types.ts
+        3026 total
+    {
+      "name": "barebones",
+      "private": true,
+      "type": "module",
+      "scripts": {
+        "typecheck": "tsc --noEmit",
+        "test": "vitest --run",
+        "test:props": "vitest --run test/props",
+        "build": "tsx skeleton/build/build.ts",
+        "bones": "tsx skeleton/cli/bones.ts",
+        "mcp": "tsx skeleton/mcp/server.ts",
+        "test:e2e": "npm run build && playwright test"
+      },
+      "devDependencies": {
+        "@axe-core/playwright": "4.14.0",
+        "@modelcontextprotocol/sdk": "1.32.2",
+        "@playwright/test": "1.65.0",
+        "@types/node": "22.20.5",
+        "esbuild": "0.28.2",
+        "fast-check": "4.10.2",
+        "tsx": "4.23.15",
+        "typescript": "6.0.3",
+        "vitest": "5.1.0",
+        "zod": "4.6.7"
+      }
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && cat shell/landing.ts shell/landing.json shell/neutral-theme.css shell/page.html shell/shell.ts shell/dom.ts build/page.ts build/build.ts; cat ../e2e/landing.spec.ts ../e2e/helpers.ts
+    … (592 earlier lines not shown)
+    /** The result heading text: the lead phrase, a space, the outcome label. */
+    export function resultHeading(copy: Copy, table: Table, outcome: string): string {
+      const label = table.outcomes.find((o) => o.id === outcome)?.label;
+      if (label === undefined) throw new Error(`no outcome ${outcome}`);
+      return `${copy.resultLead} ${label}`;
+    }
+    
+    export function steps(page: Page, copy: Copy): Locator {
+      return page.getByRole('region', { name: copy.labels.yourAnswers }).getByRole('listitem');
+    }
+    
+    export function skipped(page: Page, copy: Copy): Locator {
+      return page.getByRole('heading', { name: copy.labels.notAsked }).locator('xpath=following-sibling::ul[1]/li');
+    }
+    
+    export async function scanAxe(page: Page): Promise<string[]> {
+      const { violations } = await new AxeBuilder({ page }).analyze();
+      return violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
+    }
+    
+    /** Opens the whole-table view with the toggle button. */
+    export async function openTable(page: Page, copy: Copy, table: Table): Promise<Locator> {
+      const toggle = page.getByRole('button', { name: copy.labels.showTable });
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await toggle.click();
+      await expect(page.getByRole('button', { name: copy.labels.hideTable })).toHaveAttribute('aria-expanded', 'true');
+      const view = page.getByRole('table', { name: table.title });
+      await expect(view).toBeVisible();
+      return view;
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && cat shell/copy-type.ts; sed -n 1,140p build/copy-check.ts | grep -n "Landing" ; grep -n "validateLanding" -A45 build/copy-check.ts | head -90; cat ../playwright.config.ts
+    … (102 earlier lines not shown)
+    234-const PLURAL: Shape = { one: ['{n}'], other: ['{n}'] } satisfies Record<keyof Plural, string[]>;
+    235-
+    236-const SHAPE: Shape = {
+    237-  title: [],
+    238-  tagline: [],
+    239-  intro: [],
+    240-  noscript: [],
+    241-  allApps: [],
+    242-  editor: {
+    243-    heading: [],
+    import { defineConfig, devices } from '@playwright/test';
+    
+    const PORT = 4173;
+    const BASE = `http://127.0.0.1:${PORT}/bare-bones-kiro/`;
+    
+    export default defineConfig({
+      testDir: 'e2e',
+      fullyParallel: true,
+      retries: 0,
+      forbidOnly: Boolean(process.env['CI']),
+      reporter: process.env['CI'] ? 'github' : 'list',
+      use: { baseURL: BASE, trace: 'retain-on-failure' },
+      projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+      webServer: {
+        command: 'node scripts/serve.mjs',
+        url: BASE,
+        reuseExistingServer: !process.env['CI'],
+        env: { PORT: String(PORT) },
+      },
+    });
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && cat shell/mount.ts
+    … (388 earlier lines not shown)
+        });
+        return el('table', {}, el('caption', {}, table.title), el('thead', {}, head), el('tbody', {}, ...rows));
+      }
+    
+      function readAddress(): void {
+        const read = readHash(table, location.hash);
+        steps = read.steps;
+        ignored = read.ignored;
+      }
+    
+      const onHashChange = (): void => {
+        readAddress();
+        update(true);
+      };
+    
+      if (useHash) {
+        window.addEventListener('hashchange', onHashChange);
+        readAddress();
+      }
+      update(steps.length > 0);
+    
+      return {
+        unmount(): void {
+          if (!mounted) return;
+          mounted = false;
+          if (useHash) window.removeEventListener('hashchange', onHashChange);
+          page.remove();
+        },
+      };
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && cat shell/shell.css | sed -n 1,330p
+    … (300 earlier lines not shown)
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .step-text {
+      min-width: 0;
+    }
+    
+    .step-question,
+    .step-answer {
+      display: block;
+    }
+    
+    .step-question {
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    
+    .step-answer {
+      font-weight: bold;
+    }
+    
+    /* The result card. */
+    .stage {
+      margin-top: calc(var(--space) * 2);
+    }
+    
+    .card {
+      box-sizing: border-box;
+      margin-bottom: calc(var(--space) * 3);
+      padding: calc(var(--space) * 1.5);
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && sed -n 330,612p shell/shell.css
+    … (253 earlier lines not shown)
+    }
+    
+    [hidden] {
+      display: none;
+    }
+    
+    @media (max-width: 36rem) {
+      .row {
+        grid-template-columns: 1fr;
+        gap: calc(var(--space) / 4);
+      }
+    
+      .row dd + dd {
+        grid-column: 1;
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+    
+    /* By hand (owner): keep the "Change" button on one line beside a long question. */
+    .step > button {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && cat playground.ts playground.css playground.json types.ts rules.ts summary.ts theme.ts
+    … (682 earlier lines not shown)
+        total: report.counts.combinations,
+      });
+      if (report.passed) {
+        return {
+          passes: true,
+          line: fill(r.passes, {
+            rules: plural(p.rule, report.counts.rules),
+            combinations: plural(p.combination, report.counts.combinations),
+          }),
+          reason: undefined,
+          coverage,
+        };
+      }
+      return {
+        ...fails(
+          fill(r.reasonCheck, {
+            gaps: plural(p.gap, report.gaps.count),
+            conflicts: plural(p.conflict, report.conflicts.length),
+          }),
+        ),
+        coverage,
+      };
+    }
+    import type { ThemeVars } from './types.ts';
+    
+    /** Sets the theme's custom properties on `element` through the CSS object model: light first, then dark over it. */
+    export function applyTheme(element: HTMLElement, theme: ThemeVars, dark: boolean): void {
+      for (const [name, value] of Object.entries(theme.light)) element.style.setProperty(name, value);
+      if (dark) for (const [name, value] of Object.entries(theme.dark)) element.style.setProperty(name, value);
+    }
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat e2e/playground.spec.ts e2e/a11y.spec.ts e2e/layout.spec.ts; cat skeleton/build/theme-check.ts | sed -n 1,125p; grep -n "landing\|Landing\|AppSummary\|bootLanding" test/*.ts | head -40; cat apps/which-bin/theme.css; git status --short | head
+    … (378 earlier lines not shown)
+    test/build.test.ts:274:    expect(validateLanding(landing)).toContain('playground: missing');
+    :root {
+      --bg: #fff4e0;
+      --surface: #fffbf2;
+      --text: #2b1a0e;
+      --muted: #6b4a2f;
+      --accent: #a63d00;
+      --accent-text: #ffffff;
+      --border: #8a5a2b;
+      --focus: #0b57d0;
+      --font-body: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      --font-heading: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      --font-size: 1.25rem;
+      --radius: 1.25rem;
+      --space: 1rem;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #2a1a10;
+        --surface: #3a2616;
+        --text: #fdeedb;
+        --muted: #e0c3a2;
+        --accent: #ffb36b;
+        --accent-text: #2a1204;
+        --border: #b58a5f;
+        --focus: #8ab4f8;
+      }
+    }
+    ?? docs/kiro-evidence/15-landing.txt
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && sed -n 1,80p skeleton/build/copy-check.ts; sed -n 215,300p test/build.test.ts; cat test/playground.test.ts | head -60; grep -n "bootLanding\|AppSummary\|summaries" -r test e2e | head
+    … (172 earlier lines not shown)
+    
+    describe('summary line', () => {
+      const rows: { name: string; text: string; line: string }[] = [
+        { name: 'a passing table', text: licenceText, line: 'Passes: 7 rules, 32 combinations, all covered' },
+        { name: 'a table with a gap', text: gapText, line: 'Fails: 1 gap, 0 conflicts' },
+        { name: 'a table with a conflict', text: conflictText, line: 'Fails: 0 gaps, 1 conflict' },
+        { name: 'a structurally invalid table', text: badOutcomeText(), line: 'Fails: 1 structural error' },
+      ];
+    
+      it.each(rows)('$name', ({ text, line }) => {
+        const summary = summarise(analyse(text), copy);
+        expect(summary.line).toBe(line);
+        expect(summary.passes).toBe(line.startsWith('Passes'));
+        expect(summary.reason === undefined).toBe(line.startsWith('Passes'));
+      });
+    
+      it('reports coverage from the engine report for a passing table and for a gap', () => {
+        const passing = summarise(analyse(licenceText), copy);
+        const report = check(licence);
+        expect(passing.coverage).toBe(fill(copy.results.coverage, { covered: report.counts.combinations, total: report.counts.combinations }));
+    
+        const gapAnalysis = analyse(gapText);
+        if (gapAnalysis.kind !== 'checked') throw new Error('gap table should be checked');
+        const { combinations } = gapAnalysis.report.counts;
+        expect(summarise(gapAnalysis, copy).coverage).toBe(
+          fill(copy.results.coverage, { covered: combinations - gapAnalysis.report.gaps.count, total: combinations }),
+        );
+        expect(summarise(analyse('{'), copy).coverage).toBeUndefined();
+      });
+    });
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && tail -c 600 .kiro/specs/shell-and-cli/requirements.md | cat -A | tail -3; python3 - <<'EOF'
+p='.kiro/specs/shell-and-cli/requirements.md'
+s=open(p).read()
+if not s.endswith('\n'): s+='\n'
+s+='''
+### Amendment: landing page redesign and two shell touches (owner answers, after the review of the landing page and the Which bin? screen)
+
+12. Amendment (outside the three specs). The owner found the landing page read like a README. Limited to `skeleton/shell/` (`landing.ts`, a new `diagram.ts`, `landing.json`, `shell.css`, `copy-type.ts`), `skeleton/build/` (`page.ts`, `build.ts`, `copy-check.ts`) and the tests. The engine and the apps do not change; no new package.
+    a. Hero: the `h1` (the title), one line (`tagline`: "A decision is a table. A checker proves it has no gaps or conflicts. A page asks only the questions that matter.") and one picture: an inline SVG built with `createElementNS` (no `innerHTML`, no external asset) showing a small table, an arrow into a "checker" box with two marks ("gaps: 0", "conflicts: 0"), and an arrow out to a phone-shaped app with a question and two buttons. Every word in it comes from `landing.json` (`diagram`). The SVG has `role="img"`, an accessible name through `aria-labelledby` and a `<title>`; it is coloured only through the neutral theme's custom properties (so it follows light and dark) and has two layouts, side by side above 40rem and stacked at or below it, so it stays legible at 360 px.
+    b. The two apps are cards that look like the apps. The build adds each app's theme (`parseTheme`) and a preview (the question of the table's first condition and up to three of its value labels) to `AppSummary`. The landing script sets the theme's custom properties on the card through `style.setProperty` (light, then dark over it when `prefers-color-scheme: dark` matches, and again when it changes); no `style` attribute is written, because the CSP forbids it. The whole card is one link: title, tagline and the preview (the preview is `aria-hidden`, decorative).
+    c. The playground is its own prominent card after the app cards, one link, text from `landing.playground`.
+    d. "Same skeleton, three files each": for each app the three file names (`table.json`, `copy.json`, `theme.css`), each a link to `<repo>/blob/main/apps/<app>/<file>` (with the app title as visually hidden text so the links differ), and one line naming `npm run bones -- new my-app`. `landing.json` gains `repo` (an `https://` URL without a trailing slash).
+    e. `landing.json` keys: `title`, `tagline`, `diagram`, `appsHeading`, `playground`, `noteTitle`, `note`, `newApp`, `repo`, `footer`. `intro` and `styles` are removed (the paragraph and the "Answers as tiles" line); `validateLanding` checks the new shape and rejects unknown keys. `AppSummary` loses nothing (`answerStyle` stays, it shapes the preview chips) and gains `theme` and `preview`.
+    f. No stock imagery, no web fonts, no animation beyond a hover transition that the reduced-motion rule already switches off. One `h1`. Axe clean in light and dark, no horizontal scroll at 360 px.
+    g. Shell touch: tile pictograms are drawn at 36 px (amends 11a, which said 32 px). The progress bar's unfilled track is the border colour mixed with the surface colour (a quiet colour) so the accent-coloured filled part reads as progress; the bar stays decorative and `aria-hidden`.
+    h. Shell touch for the playground (see the playground spec, owner answer 7): `MountOptions.copyLink` (default `true`); `false` leaves out the "Copy link" button.
+    i. Tests: `test/build.test.ts` (new landing shape; the app summary), `e2e/landing.spec.ts` (structure, links, 360 px, axe in light and dark), `e2e/playground.spec.ts` (the landing selector).
+'''
+open(p,'w').write(s)
+p='.kiro/specs/playground/requirements.md'
+s=open(p).read()
+marker="6. `check` is measured once"
+i=s.index(marker); j=s.index('\n',i)
+add='''
+7. Polish after the owner looked at the page at 1280 px (limited to `skeleton/playground/`, the `copyLink` mount option in `skeleton/shell/mount.ts`, and the tests):
+    a. Layout. From 60 rem the left column holds the editor and the rule list; the right column holds the status, the checker's details and, directly under them, the app preview. Below 60 rem the page stacks: status, editor, rules, details, app. The status is therefore its own block, before the editor in the document.
+    b. Status. A small inline SVG mark (check or cross, `aria-hidden`, built with `createElementNS`) before the words "Passes" / "Fails", a green-family border and tint for a pass and a red-family one for a fail. The colours are tokens (`--pg-pass-*`, `--pg-fail-*`) at the top of `playground.css`, with a light and a dark value each, chosen for AA contrast (text on tint 4.5:1, border and mark on tint 3:1).
+    c. Rule rows show the rule id, a short summary `{when} -> {outcome}` made of text nodes (`rules.summary`, `rules.whenAny`), and Remove. After a removal the page says "Removed {id}" (`rules.removed`) in a status region with an Undo button (`rules.undo`) that puts the rule back at its old position; one level only. Typing in the editor, Reset or loading an example clears the notice. Reset stays.
+    d. The preview hides the shell's "Copy link" button (`copyLink: false`), because the address would be the playground's, not the preview's.
+    e. Test change, to be reviewed: `test/build.test.ts` "keeps playground.css within the contract" forbade every colour literal and every custom property outside the theme contract. It now excepts the `--pg-` token definitions (and `var(--pg-…)` uses of tokens the file defines); everywhere else the same rules apply. This is the one check that was narrowed, because 7b asks for tokens in this file.
+    f. Tests: `e2e/playground.spec.ts` gains Undo (remove, Undo, "Passes" again) and the hidden "Copy link"; axe stays clean at 1280 and 390 px in light and dark.
+'''
+s=s[:j+1]+add+s[j+1:]
+open(p,'w').write(s)
+EOF
+sed -n 200,215p .kiro/specs/playground/requirements.md | cut -c1-100
+    cat: illegal option -- A
+    usage: cat [-belnstuv] [file ...]
+    3. Re-serialising the JSON with two-space indentation on rule removal is fine (open question 5).
+    4. "Would not build" covering structure, gaps and conflicts is enough. The page says "the table fail
+    5. The display caps (5 gaps, 5 conflicts, 10 errors) are accepted. Answers in the preview reset on a
+    6. `check` is measured once on the which-bin table in the browser (console timing in the e2e test is
+    
+    7. Polish after the owner looked at the page at 1280 px (limited to `skeleton/playground/`, the `cop
+        a. Layout. From 60 rem the left column holds the editor and the rule list; the right column hold
+        b. Status. A small inline SVG mark (check or cross, `aria-hidden`, built with `createElementNS`)
+        c. Rule rows show the rule id, a short summary `{when} -> {outcome}` made of text nodes (`rules.
+        d. The preview hides the shell's "Copy link" button (`copyLink: false`), because the address wou
+        e. Test change, to be reviewed: `test/build.test.ts` "keeps playground.css within the contract" 
+        f. Tests: `e2e/playground.spec.ts` gains Undo (remove, Undo, "Passes" again) and the hidden "Cop
+    
+    ### Amendments to older specs (Departure 3)
+    
+    Recorded as amendments; the original wording stays.
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='.kiro/specs/playground/requirements.md'
+s=open(p).read()
+s=s.replace("(console timing in the e2e test is enough) and the number is reported (open question 10).\n\n7.","(console timing in the e2e test is enough) and the number is reported (open question 10).\n7.")
+open(p,'w').write(s)
+EOF
+grep -n "^6\.\|^7\." .kiro/specs/playground/requirements.md | cut -c1-60
+    138:6.1 THE SYSTEM SHALL contain exactly one `h1` (the playg
+    140:6.2 THE SYSTEM SHALL label the textarea with a `<label f
+    142:6.3 THE SYSTEM SHALL use `<button type="button">` for ev
+    144:6.4 THE SYSTEM SHALL set the textarea in a monospace fon
+    146:6.5 WHEN the viewport is 390 CSS px wide THE SYSTEM SHAL
+    148:6.6 WHEN the passing state and the failing state (a rule
+    150:6.7 WHERE the visitor prefers reduced motion THE SYSTEM 
+    152:6.8 THE SYSTEM SHALL write `playground.css` against the 
+    158:7.1 THE SYSTEM SHALL put table text, rule ids, engine me
+    160:7.2 WHEN the table text holds markup (for example a rule
+    162:7.3 THE SYSTEM SHALL make no network request from the pa
+    164:7.4 THE SYSTEM SHALL take every visible word of the play
+    203:6. `check` is measured once on the which-bin table in th
+    204:7. Polish after the owner looked at the page at 1280 px
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && python3 - <<'EOF'
+p='copy-type.ts'
+s=open(p).read()
+i=s.index('export interface Landing')
+s=s[:i]+'''/** The words in the hero picture. Every string is drawn as SVG text. */
+export interface DiagramCopy {
+  title: string; // the SVG's <title> and accessible name
+  description: string; // the SVG's <desc>
+  tableLabel: string;
+  checkerLabel: string;
+  gaps: string;
+  conflicts: string;
+  appLabel: string;
+  question: string; // the phone's question
+  yes: string;
+  no: string;
+}
+
+export interface Landing {
+  title: string;
+  tagline: string;
+  diagram: DiagramCopy;
+  appsHeading: string;
+  playground: { title: string; text: string };
+  noteTitle: string;
+  note: string;
+  newApp: string; // the line before the command
+  newAppCommand: string;
+  repo: string; // https URL of the repository, no trailing slash
+  footer: FooterEntry[];
+}
+
+/** An app's custom properties from its theme.css: the light values, and the dark values that replace them. */
+export interface AppTheme { light: Record<string, string>; dark: Record<string, string> }
+
+/** The first question of an app's table with up to three answers, for the card on the landing page. */
+export interface AppPreview { question: string; answers: string[] }
+
+export interface AppSummary {
+  id: string;
+  title: string;
+  tagline: string;
+  answerStyle: 'tiles' | 'list';
+  theme: AppTheme;
+  preview: AppPreview;
+}
+'''
+open(p,'w').write(s)
+EOF
+cat > landing.json <<'EOF'
+{
+  "title": "Bare Bones",
+  "tagline": "A decision is a table. A checker proves it has no gaps or conflicts. A page asks only the questions that matter.",
+  "diagram": {
+    "title": "How Bare Bones works",
+    "description": "A decision table goes into a checker, which reports zero gaps and zero conflicts. The checked table becomes a small app that asks a question with two answers.",
+    "tableLabel": "Decision table",
+    "checkerLabel": "Checker",
+    "gaps": "gaps: 0",
+    "conflicts": "conflicts: 0",
+    "appLabel": "Small app",
+    "question": "Has a battery?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "appsHeading": "Two small tools built this way",
+  "playground": {
+    "title": "Break a table and watch the checker catch it",
+    "text": "Delete a rule and see the gap the checker finds and how the app reacts. Then press Reset."
+  },
+  "noteTitle": "Same skeleton, three files each",
+  "note": "table.json is the decision, copy.json the words, theme.css the colours and fonts. Nothing else.",
+  "newApp": "Start your own with",
+  "newAppCommand": "npm run bones -- new my-app",
+  "repo": "https://github.com/seunghyeon1004/bare-bones-kiro",
+  "footer": [{ "text": "Every answer comes from a checked decision table." }]
+}
+EOF
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && python3 - <<'EOF'
+p='copy-check.ts'
+s=open(p).read()
+s=s.replace("const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'playground', 'footer'] as const satisfies readonly (keyof Landing)[];",
+"""const LANDING_KEYS = [
+  'title',
+  'tagline',
+  'diagram',
+  'appsHeading',
+  'playground',
+  'noteTitle',
+  'note',
+  'newApp',
+  'newAppCommand',
+  'repo',
+  'footer',
+] as const satisfies readonly (keyof Landing)[];
+const DIAGRAM_KEYS = {
+  title: true,
+  description: true,
+  tableLabel: true,
+  checkerLabel: true,
+  gaps: true,
+  conflicts: true,
+  appLabel: true,
+  question: true,
+  yes: true,
+  no: true,
+} satisfies Record<keyof DiagramCopy, true>;
+/** An object whose listed keys are all non-empty strings. */
+const STRING_GROUPS: Record<string, readonly string[]> = { playground: ['title', 'text'], diagram: Object.keys(DIAGRAM_KEYS) };""")
+s=s.replace("import type { Copy, FilterCopy,","import type { Copy, DiagramCopy, FilterCopy,")
+a=s.index("export function validateLanding")
+b=s.index("/** The expected shape of playground.json")
+new='''export function validateLanding(input: unknown): string[] {
+  const problems: string[] = [];
+  if (!isObj(input)) return ['$: must be an object'];
+  for (const key of LANDING_KEYS) {
+    if (!Object.hasOwn(input, key)) {
+      problems.push(`${key}: missing`);
+      continue;
+    }
+    const group = STRING_GROUPS[key];
+    if (key === 'footer') checkFooter(input[key], problems);
+    else if (group !== undefined) {
+      const value = input[key];
+      if (!isObj(value)) problems.push(`${key}: must be an object`);
+      else {
+        for (const name of group) {
+          if (!Object.hasOwn(value, name)) problems.push(`${key}.${name}: missing`);
+          else nonEmptyString(value[name], `${key}.${name}`, problems);
+        }
+        unknownKeys(value, group, `${key}.`, problems);
+      }
+    } else if (nonEmptyString(input[key], key, problems) && key === 'repo' && !/^https:\\/\\/[^\\s/]+(\\/[^\\s/]+)*$/.test(input[key])) {
+      problems.push('repo: must be an https:// URL without a trailing slash');
+    }
+  }
+  unknownKeys(input, LANDING_KEYS, '', problems);
+  return problems;
+}
+
+
+'''
+s=s[:a]+new+s[b:]
+open(p,'w').write(s)
+EOF
+sed -n 190,200p copy-check.ts
+            for (const [id, words] of Object.entries(keywords)) {
+              if (!Array.isArray(words) || words.some((w: unknown) => typeof w !== 'string' || w.trim() === '')) {
+                problems.push(`${path}.${id}: must be an array of non-empty strings`);
+              }
+            }
+          }
+        } else if (nonEmptyString(value[key], path, problems) && key === 'count' && !(value[key] as string).includes('{n}')) {
+          problems.push(`${path}: must contain {n}`);
+        }
+      }
+      unknownKeys(value, Object.keys(FILTER_KEYS), 'filter.', problems);
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && python3 - <<'EOF'
+p='copy-check.ts'
+s=open(p).read()
+s=s.replace("""    } else if (nonEmptyString(input[key], key, problems) && key === 'repo' && !/^https:\\/\\/[^\\s/]+(\\/[^\\s/]+)*$/.test(input[key])) {
+      problems.push('repo: must be an https:// URL without a trailing slash');
+    }""","""    } else {
+      const value = input[key];
+      if (nonEmptyString(value, key, problems) && key === 'repo' && !/^https:\\/\\/[^\\s/]+(\\/[^\\s/]+)*$/.test(value)) {
+        problems.push('repo: must be an https:// URL without a trailing slash');
+      }
+    }""")
+open(p,'w').write(s)
+EOF
+
+    
+    exit 0
+
+Now the build: page.ts (summary + boot) and build.ts.
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && python3 - <<'EOF'
+p='page.ts'
+s=open(p).read()
+s=s.replace("""import type { PlaygroundCopy } from '../playground/types.ts';
+import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+""","""import type { Table } from '../engine/index.ts';
+import type { PlaygroundCopy } from '../playground/types.ts';
+import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+import { parseTheme } from './theme-check.ts';
+
+const PREVIEW_ANSWERS = 3;
+
+/** What the landing page needs to draw an app's card: its words, its theme and the first question with up to three answers. */
+export function summariseApp(id: string, table: Table, copy: Copy, themeCss: string): AppSummary {
+  const first = table.conditions[0];
+  return {
+    id,
+    title: copy.title,
+    tagline: copy.tagline,
+    answerStyle: copy.answerStyle,
+    theme: parseTheme(themeCss),
+    preview: {
+      question: first?.question ?? '',
+      answers: (first?.values ?? []).slice(0, PREVIEW_ANSWERS).map((v) => v.label),
+    },
+  };
+}
+""")
+open(p,'w').write(s)
+p='build.ts'
+s=open(p).read()
+s=s.replace("const summaries: AppSummary[] = apps.map((a) => ({ id: a.name, title: a.copy.title, tagline: a.copy.tagline, answerStyle: a.copy.answerStyle }));",
+"const summaries: AppSummary[] = apps.map((a) => summariseApp(a.name, a.table, a.copy, a.themeCss));")
+s=s.replace("import { bootApp, bootLanding, bootPlayground, renderPage }","import { bootApp, bootLanding, bootPlayground, renderPage, summariseApp }")
+s=s.replace("import type { AppSummary, Copy, Landing }","import type { AppSummary, Copy, Landing }")
+open(p,'w').write(s)
+EOF
+grep -n "Table" page.ts | head -3
+    1:import type { Table } from '../engine/index.ts';
+    9:export function summariseApp(id: string, table: Table, copy: Copy, themeCss: string): AppSummary {
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/diagram.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && python3 - <<'EOF'
+p='diagram.ts'
+s=open(p).read()
+s=s.replace("""      label(104, 268, 'dg-caption', copy.tableLabel),""","""      label(103, 284, 'dg-caption', copy.tableLabel),""")
+s=s.replace("""      label(652, 284, 'dg-caption', copy.appLabel),
+    );
+    // The table caption sits under the table, centred on it.
+    root.querySelector('.dg-caption')?.setAttribute('x', '104');
+""","""      label(652, 284, 'dg-caption', copy.appLabel),
+    );
+""")
+s=s.replace("""      tableDrawing(60, 12, { w: 60, h: 34 }),
+      label(150, 178, 'dg-caption', copy.tableLabel),
+      arrow(150, 194, 150, 240),
+      checkerDrawing(copy, 50, 248, 200, 152),
+      arrow(150, 408, 150, 454),
+      phoneDrawing(copy, 58, 462, 184, 150),
+      label(150, 632, 'dg-caption', copy.appLabel),""","""      tableDrawing(60, 12, { w: 60, h: 34 }),
+      label(150, 172, 'dg-caption', copy.tableLabel),
+      arrow(150, 184, 150, 230),
+      checkerDrawing(copy, 50, 238, 200, 152),
+      arrow(150, 398, 150, 444),
+      phoneDrawing(copy, 58, 452, 184, 232),
+      label(150, 710, 'dg-caption', copy.appLabel),""")
+s=s.replace("const height = wide ? 300 : 640;","const height = wide ? 300 : 724;")
+s=s.replace("phoneDrawing(copy, 560, 24, 184, 232)","phoneDrawing(copy, 560, 24, 184, 232)")
+open(p,'w').write(s)
+EOF
+    
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && python3 - <<'EOF'
+p='shell.css'
+s=open(p).read()
+a=s.index("/* Landing page. */")
+b=s.index(".vh {")
+new='''/* Landing page. */
+.landing {
+  max-width: 56rem;
+}
+
+.hero {
+  padding-top: var(--space);
+}
+
+.landing h1 {
+  margin: 0 0 var(--space);
+  font-size: clamp(2.5rem, 9vw, 4rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.lede {
+  max-width: 38rem;
+  margin: 0 0 calc(var(--space) * 2);
+  font-size: 1.25rem;
+}
+
+.hero-figure {
+  box-sizing: border-box;
+  margin: 0;
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+}
+
+.diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.diagram.stacked {
+  max-width: 20rem;
+}
+
+/* The picture takes every colour and font from the theme, so it follows light and dark. */
+.dg-cell {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.dg-head {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.dg-line {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.dg-arrow path {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dg-box {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.dg-tick circle {
+  fill: var(--accent);
+}
+
+.dg-tick path {
+  fill: none;
+  stroke: var(--accent-text);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dg-phone {
+  fill: var(--bg);
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.dg-speaker {
+  fill: var(--border);
+}
+
+.dg-button {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.dg-button.dg-primary {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.dg-title,
+.dg-text,
+.dg-question,
+.dg-button-text,
+.dg-caption {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+
+.dg-title {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: bold;
+}
+
+.dg-question,
+.dg-button-text {
+  font-weight: bold;
+}
+
+.dg-button-text.dg-primary-text {
+  fill: var(--accent-text);
+}
+
+.dg-caption {
+  fill: var(--muted);
+  font-size: 14px;
+}
+
+.section-heading {
+  margin: calc(var(--space) * 3) 0 var(--space);
+  font-size: 1.5rem;
+}
+
+.apps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apps > li {
+  display: flex;
+}
+
+/* A card wears the app's own colours, fonts and radius (set on it by landing.ts). */
+.app-card {
+  box-sizing: border-box;
+  display: block;
+  flex: 1;
+  padding: calc(var(--space) * 1.5);
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  text-decoration: none;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.app-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.card-title {
+  margin: 0;
+  color: inherit;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+}
+
+.card-tagline {
+  margin: calc(var(--space) / 2) 0 var(--space);
+  color: var(--muted);
+}
+
+.card-preview {
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 1rem);
+}
+
+.preview-question {
+  margin: 0 0 calc(var(--space) / 2);
+  font-size: 0.9375rem;
+  font-weight: bold;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
+}
+
+.chip {
+  padding: 0.25rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 1rem);
+  font-size: 0.875rem;
+}
+
+.list-card .chips {
+  flex-direction: column;
+}
+
+.list-card .chip {
+  border-radius: min(var(--radius), 0.5rem);
+}
+
+.playground-card {
+  box-sizing: border-box;
+  display: block;
+  margin-top: calc(var(--space) * 2);
+  padding: calc(var(--space) * 2);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.playground-card:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.playground-card .card-title {
+  font-size: 1.75rem;
+}
+
+.playground-card p {
+  max-width: 40rem;
+  margin: calc(var(--space) / 2) 0 0;
+}
+
+.files-note,
+.new-app {
+  margin: 0 0 var(--space);
+}
+
+.files {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space);
+  margin: 0 0 var(--space);
+  padding: 0;
+  list-style: none;
+}
+
+.files-app {
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.files-name {
+  display: block;
+  margin-bottom: calc(var(--space) / 2);
+  font-weight: bold;
+}
+
+.file-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-links a {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: min(var(--radius), 0.75rem);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+}
+
+code {
+  padding: 0.125rem 0.375rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+'''
+s=s[:a]+new+s[b:]
+# hover lift only when motion is fine
+s=s.replace("@media (prefers-reduced-motion: reduce) {","""@media (prefers-reduced-motion: no-preference) {
+  .app-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {""",1)
+# tiles 36px
+s=s.replace(""".icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}""",""".icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+}""")
+# progress track
+track="color-mix(in srgb, var(--border) 30%, var(--surface))"
+s=s.replace("""  border-radius: var(--radius);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.bar::-webkit-progress-bar {
+  background: var(--border);
+}""",f"""  border-radius: var(--radius);
+  background: {track};
+  overflow: hidden;
+}}
+
+.bar::-webkit-progress-bar {{
+  background: {track};
+}}""")
+open(p,'w').write(s)
+p='diagram.ts'
+s=open(p).read()
+s=s.replace("class: 'diagram',","class: wide ? 'diagram' : 'diagram stacked',")
+open(p,'w').write(s)
+EOF
+grep -n "color-mix\|36px" shell.css; grep -n "moz-progress" -B1 -A3 shell.css
+    208:  width: 36px;
+    209:  height: 36px;
+    261:  background: color-mix(in srgb, var(--border) 30%, var(--surface));
+    266:  background: color-mix(in srgb, var(--border) 30%, var(--surface));
+    272-
+    273:.bar::-moz-progress-bar {
+    274-  background: var(--accent);
+    275-}
+    276-
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/build && sed -n 238,330p copy-check.ts
+    … (63 earlier lines not shown)
+        conflictLine: ['{a}', '{b}', '{outcomeA}', '{outcomeB}', '{example}'],
+        more: ['{count}'],
+        warningsHeading: [],
+      },
+      plural: { rule: PLURAL, combination: PLURAL, gap: PLURAL, conflict: PLURAL, problem: PLURAL },
+      app: { heading: [], noBuildHeading: [], noBuildText: [], noBuildReason: ['{reason}'] },
+      footer: 'footer',
+    } satisfies Record<keyof PlaygroundCopy, Shape>;
+    
+    function walk(shape: Shape, value: unknown, path: string, problems: string[]): void {
+      if (shape === 'footer') {
+        checkFooter(value, problems);
+      } else if (Array.isArray(shape)) {
+        if (typeof value !== 'string') {
+          problems.push(`${path}: must be a string`);
+        } else if (value.trim() === '') {
+          problems.push(`${path}: must not be empty`);
+        } else {
+          for (const placeholder of shape) if (!value.includes(placeholder)) problems.push(`${path}: must contain ${placeholder}`);
+        }
+      } else if (!isObj(value)) {
+        problems.push(`${path}: must be an object`);
+      } else {
+        for (const [key, child] of Object.entries(shape)) {
+          const childPath = path === '' ? key : `${path}.${key}`;
+          if (!Object.hasOwn(value, key)) problems.push(`${childPath}: missing`);
+          else walk(child, value[key], childPath, problems);
+        }
+        for (const key of Object.keys(value)) {
+          if (!Object.hasOwn(shape, key)) problems.push(`${path === '' ? key : `${path}.${key}`}: unknown key`);
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton && python3 - <<'EOF'
+p='build/copy-check.ts'
+s=open(p).read()
+s=s.replace("""    unnamed: ['{n}'],
+    unavailable: [],
+    empty: [],
+  },""","""    unnamed: ['{n}'],
+    unavailable: [],
+    empty: [],
+    summary: ['{when}', '{outcome}'],
+    whenAny: [],
+    noOutcome: [],
+    removed: ['{id}'],
+    undo: [],
+  },""")
+open(p,'w').write(s)
+p='playground/types.ts'
+s=open(p).read()
+s=s.replace("""    unavailable: string;
+    empty: string;
+  };""","""    unavailable: string;
+    empty: string;
+    summary: string; // {when} {outcome}
+    whenAny: string; // shown for {when} when the rule names no condition
+    noOutcome: string; // shown for {outcome} when the rule has no usable `then`
+    removed: string; // {id}
+    undo: string;
+  };""")
+open(p,'w').write(s)
+p='playground/playground.json'
+s=open(p).read()
+s=s.replace('''    "empty": "The table has no rules."
+''','''    "empty": "The table has no rules.",
+    "summary": "{when} → {outcome}",
+    "whenAny": "any answers",
+    "noOutcome": "no outcome",
+    "removed": "Removed {id}",
+    "undo": "Undo"
+''')
+s=s.replace('"intro": "Each button deletes one rule from the JSON above."','"intro": "Each button deletes one rule from the JSON. Undo puts the last one back."')
+open(p,'w').write(s)
+EOF
+grep -n "Each button" playground/playground.json; grep -rn "Each button deletes" ../test ../e2e | head
+    18:    "intro": "Each button deletes one rule from the JSON. Undo puts the last one back.",
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && python3 - <<'EOF'
+p='rules.ts'
+s=open(p).read()
+a=s.index("/** One row per element")
+s=s[:a]+'''function isObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+/** `condition=value` pairs joined by commas; several values of one condition are joined by `/`. Undefined when there are none. */
+function describeWhen(when: unknown): string | undefined {
+  if (!isObject(when)) return undefined;
+  const parts: string[] = [];
+  for (const [condition, entry] of Object.entries(when)) {
+    const values = (Array.isArray(entry) ? entry : [entry]).filter((v): v is string => typeof v === 'string');
+    if (values.length > 0) parts.push(`${condition}=${values.join('/')}`);
+  }
+  return parts.length === 0 ? undefined : parts.join(', ');
+}
+
+/** One row per element of `rules`; undefined unless the text is a JSON object with a `rules` array. */
+export function listRules(text: string): RuleRow[] | undefined {
+  const found = parseRules(text);
+  if (found === undefined) return undefined;
+  return found.rules.map((rule, index) => {
+    const fields = isObject(rule) ? rule : {};
+    const { id, then } = fields;
+    return {
+      index,
+      id: typeof id === 'string' ? id : undefined,
+      when: describeWhen(fields['when']),
+      outcome: typeof then === 'string' ? then : undefined,
+    };
+  });
+}
+
+/** The text without the rule at `index` (by position), re-serialised with two-space indentation. */
+export function removeRule(text: string, index: number): string {
+  return takeRule(text, index)?.text ?? text;
+}
+
+/** The text without the rule at `index`, and the rule itself; undefined when there is no such rule. */
+export function takeRule(text: string, index: number): { text: string; rule: unknown } | undefined {
+  const found = parseRules(text);
+  if (found === undefined || !Number.isInteger(index) || index < 0 || index >= found.rules.length) return undefined;
+  const [rule] = found.rules.splice(index, 1);
+  return { text: formatTable(found.parsed), rule };
+}
+
+/** The text with `rule` put back at `index` (clamped to the end); the text unchanged when it holds no `rules` array. */
+export function restoreRule(text: string, index: number, rule: unknown): string {
+  const found = parseRules(text);
+  if (found === undefined) return text;
+  found.rules.splice(Math.max(0, Math.min(index, found.rules.length)), 0, rule);
+  return formatTable(found.parsed);
+}
+'''
+s=s.replace("export interface RuleRow { index: number; id: string | undefined }","export interface RuleRow { index: number; id: string | undefined; when: string | undefined; outcome: string | undefined }")
+open(p,'w').write(s)
+EOF
+    
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && python3 - <<'EOF'
+p='playground.ts'
+s=open(p).read()
+s=s.replace("import { el, fill, readJson, renderFooter } from '../shell/dom.ts';","import { el, fill, readJson, renderFooter, svgIcon } from '../shell/dom.ts';")
+s=s.replace("import { formatTable, listRules, removeRule } from './rules.ts';","import { formatTable, listRules, restoreRule, takeRule } from './rules.ts';")
+s=s.replace("""const MAX_PROBLEMS = 10;
+""","""const MAX_PROBLEMS = 10;
+/** Path data for the status mark, on the 24 by 24 grid of `svgIcon`. */
+const CHECK_MARK = ['M5 12.5l4.5 4.5L19 7.5'];
+const CROSS_MARK = ['M6 6l12 12', 'M18 6L6 18'];
+
+/** The last rule taken out of the list, kept so Undo can put it back where it was. */
+interface Removed { index: number; name: string; rule: unknown }
+""")
+s=s.replace("""  const status = el('p', { id: 'pg-status', class: 'pg-status', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
+""","""  const statusMark = el('span', { class: 'pg-mark', 'aria-hidden': 'true' });
+  const statusText = el('span', { class: 'pg-status-text' });
+  const status = el(
+    'p',
+    { id: 'pg-status', class: 'pg-status', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
+    statusMark,
+    statusText,
+  );
+  const removedNotice = el('div', { class: 'pg-removed', role: 'status', 'aria-live': 'polite' });
+  let removed: Removed | undefined;
+""")
+s=s.replace("""    loaded = example;
+    loadedLine""","""    loaded = example;
+    removed = undefined;
+    renderRemoved();
+    loadedLine""")
+s=s.replace("""  function onInput(): void {
+    window.clearTimeout(timer);""","""  function onInput(): void {
+    if (removed !== undefined) {
+      removed = undefined;
+      renderRemoved();
+    }
+    window.clearTimeout(timer);""")
+s=s.replace("""    if (status.textContent !== summary.line) status.textContent = summary.line;
+""","""    if (statusText.textContent !== summary.line) statusText.textContent = summary.line;
+    const state = summary.passes ? 'pass' : 'fail';
+    if (status.getAttribute('data-state') !== state) {
+      status.setAttribute('data-state', state);
+      statusMark.replaceChildren(svgIcon(summary.passes ? CHECK_MARK : CROSS_MARK));
+    }
+""")
+# rules rendering
+a=s.index("    const items = rows.map((row) => {")
+b=s.index("  function renderFrame")
+s=s[:a]+'''    const items = rows.map((row) => {
+      const name = row.id ?? fill(copy.rules.unnamed, { n: row.index + 1 });
+      const summary = fill(copy.rules.summary, { when: row.when ?? copy.rules.whenAny, outcome: row.outcome ?? copy.rules.noOutcome });
+      return el(
+        'li',
+        { class: 'pg-rule' },
+        el('span', { class: 'pg-rule-text' }, el('span', { class: 'pg-rule-id' }, name), el('span', { class: 'pg-rule-summary' }, summary)),
+        button([copy.rules.remove], () => remove(row.index), { 'aria-label': fill(copy.rules.removeNamed, { id: name }) }),
+      );
+    });
+    ruleRegion.replaceChildren(el('ul', { class: 'pg-rule-rows' }, ...items));
+  }
+
+  function renderRemoved(): void {
+    removedNotice.hidden = removed === undefined;
+    if (removed === undefined) {
+      removedNotice.replaceChildren();
+      return;
+    }
+    removedNotice.replaceChildren(
+      el('span', { class: 'pg-removed-text' }, fill(copy.rules.removed, { id: removed.name })),
+      button([copy.rules.undo], undo),
+    );
+  }
+
+  function remove(index: number): void {
+    const taken = takeRule(textarea.value, index);
+    if (taken === undefined) return;
+    const rule = taken.rule;
+    const id = typeof rule === 'object' && rule !== null && !Array.isArray(rule) ? (rule as Record<string, unknown>)['id'] : undefined;
+    removed = { index, name: typeof id === 'string' ? id : fill(copy.rules.unnamed, { n: index + 1 }), rule };
+    const scrollTop = textarea.scrollTop;
+    textarea.value = taken.text;
+    textarea.scrollTop = scrollTop;
+    analyseNow();
+    renderRemoved();
+    const buttons = ruleRegion.querySelectorAll('button');
+    const target = buttons[Math.min(index, buttons.length - 1)];
+    (target ?? textarea).focus();
+  }
+
+  function undo(): void {
+    if (removed === undefined) return;
+    const { index, rule } = removed;
+    removed = undefined;
+    const scrollTop = textarea.scrollTop;
+    textarea.value = restoreRule(textarea.value, index, rule);
+    textarea.scrollTop = scrollTop;
+    analyseNow();
+    renderRemoved();
+    (ruleRegion.querySelectorAll('button')[index] ?? textarea).focus();
+  }
+
+'''+s[b:]
+s=s.replace("{ hash: false, embedded: true, headingOffset: 2 }","{ hash: false, embedded: true, headingOffset: 2, copyLink: false }")
+# layout
+a=s.index("      el(\n        'div',\n        { class: 'pg-grid' },")
+b=s.index("    renderFooter(copy.footer),\n  );\n  document.body")
+s=s[:a]+'''      el(
+        'div',
+        { class: 'pg-grid' },
+        el('section', { class: 'pg-status-block', 'aria-labelledby': 'pg-results-h' }, el('h2', { id: 'pg-results-h' }, copy.results.heading), status, coverage),
+        el(
+          'section',
+          { class: 'pg-editor', 'aria-labelledby': 'pg-editor-h' },
+          el('h2', { id: 'pg-editor-h' }, copy.editor.heading),
+          el(
+            'div',
+            { class: 'pg-examples' },
+            el('p', { id: 'pg-start', class: 'pg-start' }, copy.editor.startFrom),
+            el('div', { class: 'pg-example-buttons', role: 'group', 'aria-labelledby': 'pg-start' }, ...exampleButtons),
+          ),
+          loadedLine,
+          el('label', { for: 'pg-text' }, copy.editor.textareaLabel),
+          el('p', { id: 'pg-hint', class: 'pg-hint' }, copy.editor.textareaHint),
+          textarea,
+          el('div', { class: 'pg-reset-row' }, reset),
+          el(
+            'section',
+            { class: 'pg-rules', 'aria-labelledby': 'pg-rules-h' },
+            el('h3', { id: 'pg-rules-h' }, copy.rules.heading),
+            el('p', { id: 'pg-rules-intro' }, copy.rules.intro),
+            removedNotice,
+            ruleRegion,
+          ),
+        ),
+        details,
+        el('section', { class: 'pg-app', 'aria-labelledby': 'pg-app-h' }, el('h2', { id: 'pg-app-h' }, copy.app.heading), frame),
+      ),
+    ),
+'''+s[b:]
+open(p,'w').write(s)
+EOF
+sed -n '/el(\s*$/,$p' playground.ts | tail -70 | head -20
+            { class: 'pg-notice', role: 'group', 'aria-labelledby': 'pg-notice-h' },
+            el('h3', { id: 'pg-notice-h' }, copy.app.noBuildHeading),
+            el('p', {}, copy.app.noBuildText),
+            el('p', { class: 'pg-notice-reason' }, fill(copy.app.noBuildReason, { reason })),
+          ),
+        );
+      }
+    
+      darkQuery.addEventListener('change', () => {
+        if (mounted !== undefined) applyTheme(mounted.preview, loaded.theme, darkQuery.matches);
+      });
+      textarea.addEventListener('input', onInput);
+    
+      const exampleButtons = data.examples.map((example) => button([example.label], () => load(example)));
+      const reset = button([copy.editor.reset], () => load(loaded), { class: 'pg-reset' });
+    
+      const page = el(
+        'div',
+        { class: 'pg-page' },
+        el(
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/shell && python3 - <<'EOF'
+p='mount.ts'
+s=open(p).read()
+s=s.replace("""  headingOffset?: number;
+}""","""  headingOffset?: number;
+  /** Default true. False: the "Copy link" button is left out (the address would not lead back to this view). */
+  copyLink?: boolean;
+}""")
+s=s.replace("""    const copyButton = button([labels.copyLink], () => void copyLink(copyButton), 'primary');
+    return el(
+      'div',
+      { class: 'actions' },
+      copyButton,
+""","""    const copyButton = button([labels.copyLink], () => void copyLink(copyButton), 'primary');
+    return el(
+      'div',
+      { class: 'actions' },
+      ...(options.copyLink === false ? [] : [copyButton]),
+""")
+open(p,'w').write(s)
+EOF
+cd ../.. && npm run typecheck 2>&1 | tail -20
+    
+    > typecheck
+    > tsc --noEmit
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones/skeleton/playground && python3 - <<'EOF'
+p='playground.css'
+s=open(p).read()
+s=s.replace("/* Written against the theme contract only: every var(--…) names a contract property. */\n","""/* Written against the theme contract only: every var(--…) names a contract property, except the --pg- status tokens below.
+   Status tokens: a pass is green, a fail is red; text on the tint is the theme's --text, the border and the mark are 3:1 or better on the tint, light and dark. */
+.pg-page {
+  --pg-pass-bg: #e8f5ec;
+  --pg-pass-border: #1b7a3a;
+  --pg-fail-bg: #fdecea;
+  --pg-fail-border: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pg-page {
+    --pg-pass-bg: #123222;
+    --pg-pass-border: #6fcf8f;
+    --pg-fail-bg: #3b1815;
+    --pg-fail-border: #ff8a80;
+  }
+}
+""",1)
+# grid
+a=s.index(".pg-grid {")
+b=s.index(".pg-example-buttons")
+s=s[:a]+'''/* Narrow: status, editor (with the rules), details, app. Wide: editor on the left, status, details and app on the right. */
+.pg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--space) * 1.5);
+}
+
+.pg-status-block,
+.pg-editor,
+.pg-details,
+.pg-app {
+  min-width: 0;
+}
+
+.pg-status-block h2,
+.pg-editor h2,
+.pg-app h2 {
+  margin: 0 0 var(--space);
+  font-size: 1.25rem;
+}
+
+@media (min-width: 60rem) {
+  .pg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    column-gap: calc(var(--space) * 2);
+    row-gap: var(--space);
+  }
+
+  .pg-editor {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+  }
+
+  .pg-status-block {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .pg-details {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .pg-app {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+'''+s[b:]
+# rule rows
+s=s.replace(""".pg-rule-id {
+  min-width: 0;
+}
+""",""".pg-rule-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pg-rule-id {
+  font-weight: bold;
+}
+
+.pg-rule-summary {
+  color: var(--muted);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
+.pg-removed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  margin: 0 0 var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pg-removed[hidden] {
+  display: none;
+}
+
+.pg-removed-text {
+  min-width: 0;
+  font-weight: bold;
+}
+
+.pg-removed > button {
+  flex-shrink: 0;
+}
+""")
+# status
+a=s.index("/* State is told in words")
+b=s.index(".pg-coverage")
+s=s[:a]+'''/* State is told by the mark and the words (Passes / Fails); the colour is a third cue, not the only one. */
+.pg-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  margin: 0 0 calc(var(--space) / 2);
+  padding: var(--space);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: bold;
+}
+
+.pg-status[data-state='pass'] {
+  background: var(--pg-pass-bg);
+  border-color: var(--pg-pass-border);
+}
+
+.pg-status[data-state='fail'] {
+  background: var(--pg-fail-bg);
+  border-color: var(--pg-fail-border);
+}
+
+.pg-mark {
+  display: inline-flex;
+  flex: none;
+}
+
+.pg-status[data-state='pass'] .pg-mark {
+  color: var(--pg-pass-border);
+}
+
+.pg-status[data-state='fail'] .pg-mark {
+  color: var(--pg-fail-border);
+}
+
+.pg-mark .icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.75;
+}
+
+.pg-status-text {
+  min-width: 0;
+}
+
+'''+s[b:]
+s=s.replace(""".pg-details {
+  max-height: 24rem;
+  padding: 0 var(--space) var(--space);
+}""",""".pg-details {
+  max-height: 16rem;
+  padding: 0 var(--space) var(--space);
+}""")
+open(p,'w').write(s)
+EOF
+grep -n "pg-coverage" -A4 playground.css | head; grep -n "pg-status\b" playground.css | head
+    261:.pg-coverage {
+    262-  margin: 0 0 var(--space);
+    263-  color: var(--muted);
+    264-}
+    265-
+    39:.pg-status-block,
+    46:.pg-status-block h2,
+    67:  .pg-status-block {
+    215:.pg-status {
+    228:.pg-status[data-state='pass'] {
+    233:.pg-status[data-state='fail'] {
+    243:.pg-status[data-state='pass'] .pg-mark {
+    247:.pg-status[data-state='fail'] .pg-mark {
+    257:.pg-status-text {
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run typecheck 2>&1 | tail -5; npm test 2>&1 | tail -40
+    … (5 earlier lines not shown)
+    > test
+    > vitest --run
+    
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+     ❯ test/build.test.ts (24 tests | 1 failed) 104ms
+       ❯ build (18)
+         × keeps playground.css within the contract 3ms
+    bare-bones MCP server ready
+    
+    ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+    
+     FAIL  test/build.test.ts > build > keeps playground.css within the contract
+    AssertionError: expected [ Array(13) ] to include '--pg-pass-bg'
+     ❯ test/build.test.ts:235:71
+        233|     const used = [...css.matchAll(/var\(\s*(--[a-z-]*)/g)].map((m) => …
+        234|     expect(used.length).toBeGreaterThan(0);
+        235|     for (const name of used) expect(THEME_PROPS as readonly string[]).…
+           |                                                                       ^
+        236|     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|url\(…
+        237|   });
+    
+    ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+    
+    
+     Test Files  1 failed | 13 passed (14)
+          Tests  1 failed | 128 passed (129)
+       Start at  15:29:00
+       Duration  523ms (tests 53%, import 26%, transform 20%, worker 1%)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/build.test.ts'
+s=open(p).read()
+old=s[s.index("  it('keeps playground.css within the contract'"):s.index("  it('reads the light and dark values of a theme'")]
+new='''  it('keeps playground.css within the contract', () => {
+    const css = readFileSync(path.join(repo, 'skeleton/playground/playground.css'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, '');
+    // The one exception (playground spec, owner answer 7e): the status tokens, `--pg-name: value;`, may hold colour literals,
+    // and `var(--pg-name)` may use a token the file defines. Everything else stays under the original rules.
+    const tokens = new Set([...css.matchAll(/(--pg-[a-z-]+)\\s*:/g)].map((m) => m[1] ?? ''));
+    expect(tokens.size).toBeGreaterThan(0);
+    const rest = css.replace(/--pg-[a-z-]+\\s*:[^;]*;/g, '');
+    const used = [...rest.matchAll(/var\\(\\s*(--[a-z-]*)/g)].map((m) => m[1] ?? '');
+    expect(used.length).toBeGreaterThan(0);
+    for (const name of used) {
+      if (name.startsWith('--pg-')) expect([...tokens]).toContain(name);
+      else expect(THEME_PROPS as readonly string[]).toContain(name);
+    }
+    expect(rest).not.toMatch(/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|url\\(|@import/);
+  });
+
+'''
+s=s.replace(old,new)
+# landing tests
+a=s.index("describe('landing copy'")
+s=s[:a]+'''describe('landing copy', () => {
+  const real = (): Record<string, unknown> =>
+    JSON.parse(readFileSync(path.join(repo, 'skeleton/shell/landing.json'), 'utf8')) as Record<string, unknown>;
+
+  it('accepts the real file', () => {
+    expect(validateLanding(real())).toEqual([]);
+  });
+
+  it.each([
+    { name: 'a missing playground link', edit: (l: Record<string, unknown>) => delete l['playground'], expected: 'playground: missing' },
+    { name: 'a missing diagram word', edit: (l: Record<string, unknown>) => delete (l['diagram'] as Record<string, unknown>)['gaps'], expected: 'diagram.gaps: missing' },
+    { name: 'a repository URL with a trailing slash', edit: (l: Record<string, unknown>) => (l['repo'] = 'https://github.com/o/r/'), expected: 'repo: must be an https:// URL without a trailing slash' },
+    { name: 'the removed intro paragraph', edit: (l: Record<string, unknown>) => (l['intro'] = 'x'), expected: 'intro: unknown key' },
+  ])('rejects $name', ({ edit, expected }) => {
+    const landing = real();
+    edit(landing);
+    expect(validateLanding(landing)).toContain(expected);
+  });
+});
+
+describe('app summary for the landing page', () => {
+  it('carries the theme and the first question with three answers', () => {
+    const read = (file: string): string => readFileSync(path.join(repo, 'apps/which-bin', file), 'utf8');
+    const table = JSON.parse(read('table.json')) as Table;
+    const summary = summariseApp('which-bin', table, JSON.parse(read('copy.json')) as Copy, read('theme.css'));
+    const first = table.conditions[0];
+    expect(summary.preview.question).toBe(first?.question);
+    expect(summary.preview.answers).toEqual((first?.values ?? []).slice(0, 3).map((v) => v.label));
+    expect(summary.theme.light['--accent']).toBe('#a63d00');
+    expect(summary.theme.dark['--bg']).toBe('#2a1a10');
+  });
+});
+'''
+open(p,'w').write(s)
+EOF
+sed -n 1,25p test/build.test.ts
+    import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+    import { tmpdir } from 'node:os';
+    import path from 'node:path';
+    import { afterEach, describe, expect, it } from 'vitest';
+    import { build } from '../skeleton/build/build.ts';
+    import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';
+    import { THEME_PROPS, parseTheme, validateTheme } from '../skeleton/build/theme-check.ts';
+    import { run } from '../skeleton/cli/bones.ts';
+    
+    const repo = path.resolve(import.meta.dirname, '..');
+    const temps: string[] = [];
+    
+    interface Workspace { root: string; apps: string; dist: string; app: string }
+    
+    /** A temp repo root with `apps/demo` made by `bones new`. */
+    function workspace(withApp = true): Workspace {
+      const root = mkdtempSync(path.join(tmpdir(), 'bones-build-'));
+      temps.push(root);
+      const apps = path.join(root, 'apps');
+      mkdirSync(apps);
+      if (withApp) expect(run(['new', 'demo', '--apps', apps], { cwd: repo }).code).toBe(0);
+      return { root, apps, dist: path.join(root, 'dist'), app: path.join(apps, 'demo') };
+    }
+    
+    function runBuild(w: Workspace, outDir = w.dist): ReturnType<typeof build> {
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/build.test.ts'
+s=open(p).read()
+s=s.replace("import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';","""import { validateLanding, validatePlayground } from '../skeleton/build/copy-check.ts';
+import { summariseApp } from '../skeleton/build/page.ts';""")
+s=s.replace("import { run } from '../skeleton/cli/bones.ts';","""import { run } from '../skeleton/cli/bones.ts';
+import type { Table } from '../skeleton/engine/index.ts';
+import type { Copy } from '../skeleton/shell/copy-type.ts';""")
+open(p,'w').write(s)
+EOF
+grep -n "listRules\|removeRule" -B2 -A12 test/playground.test.ts | sed -n 1,80p
+    … (30 earlier lines not shown)
+    125-    const doubled = JSON.stringify({ rules: [{ id: 'same', n: 1 }, { id: 'same', n: 2 }] }, null, 2);
+    126:    expect(JSON.parse(removeRule(doubled, 1))).toEqual({ rules: [{ id: 'same', n: 1 }] });
+    127-  });
+    128-
+    129-  it('returns the text unchanged for invalid JSON or an out-of-range position', () => {
+    130:    expect(removeRule('{"rules": [', 0)).toBe('{"rules": [');
+    131:    expect(removeRule(formatted, 99)).toBe(formatted);
+    132:    expect(removeRule(formatted, -1)).toBe(formatted);
+    133-  });
+    134-});
+    135-
+    136-describe('rule list', () => {
+    137-  it('lists ids in order, and undefined for a rule without a string id', () => {
+    138:    const list = listRules(formatTable(licence));
+    139-    expect(list?.map((row) => row.id)).toEqual(licence.rules.map((r) => r.id));
+    140-    expect(list?.map((row) => row.index)).toEqual(licence.rules.map((_, i) => i));
+    141:    expect(listRules('{"rules":[{"id":"a"},{"id":3},"x"]}')).toEqual([
+    142-      { index: 0, id: 'a' },
+    143-      { index: 1, id: undefined },
+    144-      { index: 2, id: undefined },
+    145-    ]);
+    146-  });
+    147-
+    148-  it('is undefined for invalid JSON, a top-level array and an object without a rules array', () => {
+    149:    expect(listRules('{"rules": [')).toBeUndefined();
+    150:    expect(listRules('[{"id":"a"}]')).toBeUndefined();
+    151:    expect(listRules('{"rules": 3}')).toBeUndefined();
+    152:    expect(listRules('null')).toBeUndefined();
+    153-  });
+    154-});
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='test/playground.test.ts'
+s=open(p).read()
+s=s.replace("import { formatTable, listRules, removeRule } from","import { formatTable, listRules, removeRule, restoreRule, takeRule } from")
+s=s.replace("""  it('is undefined for invalid JSON, a top-level array""","""  it('summarises when and then as plain strings', () => {
+    const text = JSON.stringify({ rules: [{ id: 'a', when: { kind: 'x', size: ['s', 'm'] }, then: 'out' }, { id: 'b', when: {}, then: 3 }] });
+    expect(listRules(text)).toEqual([
+      { index: 0, id: 'a', when: 'kind=x, size=s/m', outcome: 'out' },
+      { index: 1, id: 'b', when: undefined, outcome: undefined },
+    ]);
+  });
+
+  it('is undefined for invalid JSON, a top-level array""")
+s+='''
+describe('undo', () => {
+  const formatted = formatTable(licence);
+
+  it('puts a removed rule back where it was, so the text is the original again', () => {
+    for (const index of [0, 3, licence.rules.length - 1]) {
+      const taken = takeRule(formatted, index);
+      expect(taken?.rule).toEqual(licence.rules[index]);
+      expect(restoreRule(taken?.text ?? '', index, taken?.rule)).toBe(formatted);
+    }
+  });
+
+  it('puts the rule at the end when the list got shorter, and leaves text without a rules array alone', () => {
+    const taken = takeRule(formatted, 1);
+    const shorter = JSON.stringify({ rules: [{ id: 'only' }] });
+    expect(JSON.parse(restoreRule(shorter, 5, taken?.rule)).rules).toHaveLength(2);
+    expect(restoreRule('{"rules": [', 0, {})).toBe('{"rules": [');
+  });
+});
+'''
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -5; npm test 2>&1 | tail -15
+    
+    > typecheck
+    > tsc --noEmit
+    
+    
+    > test
+    > vitest --run
+    
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    bare-bones MCP server ready
+    
+     Test Files  14 passed (14)
+          Tests  137 passed (137)
+       Start at  15:29:23
+       Duration  529ms (tests 54%, import 27%, transform 18%, worker 1%)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && cat > e2e/landing.spec.ts <<'EOF'
+import { expect, test } from '@playwright/test';
+import { APPS, loadApp, loadLanding, scanAxe } from './helpers.ts';
+
+const FILES = ['table.json', 'copy.json', 'theme.css'];
+
+test('landing page: hero picture, two app cards, playground card, the three files', async ({ page }) => {
+  const landing = loadLanding();
+  await page.goto('./');
+  await expect(page).toHaveTitle(landing.title);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(landing.title);
+  await expect(page.getByText(landing.tagline, { exact: true })).toBeVisible();
+
+  // The picture: an image with a name, its words from landing.json.
+  const picture = page.getByRole('img', { name: landing.diagram.title });
+  await expect(picture).toBeVisible();
+  await expect(picture.locator('title')).toHaveText(landing.diagram.title);
+  for (const words of [landing.diagram.checkerLabel, landing.diagram.gaps, landing.diagram.conflicts, landing.diagram.question]) {
+    await expect(picture.getByText(words, { exact: true })).toBeAttached();
+  }
+
+  // One link per app card, in the apps region; each card shows its own first question and wears the app's colours.
+  const cards = page.getByRole('region', { name: landing.appsHeading }).getByRole('link');
+  await expect(cards).toHaveCount(APPS.length);
+  for (const [index, name] of APPS.entries()) {
+    const { table, copy } = loadApp(name);
+    const card = cards.nth(index);
+    await expect(card).toHaveAttribute('href', `./${name}/`);
+    await expect(card).toHaveAccessibleName(`${copy.title} ${copy.tagline}`);
+    const first = table.conditions[0];
+    await expect(card.getByText(first?.question ?? '', { exact: true })).toBeVisible();
+    await expect(card.locator('.chip').first()).toHaveText(first?.values[0]?.label ?? '');
+    const accent = /--accent:\s*([^;]+);/.exec((await import('node:fs')).readFileSync(`apps/${name}/theme.css`, 'utf8'))?.[1]?.trim();
+    expect(await card.evaluate((node) => getComputedStyle(node).getPropertyValue('--accent').trim())).toBe(accent);
+  }
+
+  // The playground card comes after the app cards.
+  const playground = page.getByRole('link', { name: landing.playground.title });
+  await expect(playground).toHaveAttribute('href', './playground/');
+  const [playgroundBox, lastCardBox] = [await playground.boundingBox(), await cards.last().boundingBox()];
+  expect(playgroundBox?.y ?? 0).toBeGreaterThan((lastCardBox?.y ?? Infinity) + (lastCardBox?.height ?? 0) - 1);
+
+  // Three real files per app, linked into the repository, and the command for a new one.
+  for (const name of APPS) {
+    const { copy } = loadApp(name);
+    for (const file of FILES) {
+      await expect(page.getByRole('link', { name: `${file} (${copy.title})` })).toHaveAttribute('href', `${landing.repo}/blob/main/apps/${name}/${file}`);
+    }
+  }
+  await expect(page.getByText(landing.newAppCommand, { exact: true })).toBeVisible();
+
+  await page.keyboard.press('Tab');
+  await expect(cards.first()).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/which-bin\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(loadApp('which-bin').copy.title);
+});
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`landing page: axe and no horizontal scroll, ${scheme}`, async ({ page }) => {
+    // Reduced motion: the hover transitions must not make axe read a colour mid-transition.
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
+    for (const [width, height] of [
+      [1280, 800],
+      [360, 740],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto('about:blank');
+      await page.goto('./');
+      await expect(page.getByRole('img', { name: loadLanding().diagram.title })).toBeVisible();
+      expect(await scanAxe(page), `${width}px`).toEqual([]);
+      const size = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+      expect(size.scroll, `${width}px`).toBeLessThanOrEqual(size.client);
+    }
+  });
+}
+EOF
+python3 - <<'EOF'
+p='e2e/landing.spec.ts'
+s=open(p).read()
+s=s.replace("import { expect, test } from '@playwright/test';","import { expect, test } from '@playwright/test';\nimport { readFileSync } from 'node:fs';\nimport path from 'node:path';",1)
+s=s.replace("(await import('node:fs')).readFileSync(`apps/${name}/theme.css`, 'utf8')","readFileSync(path.join(root, 'apps', name, 'theme.css'), 'utf8')")
+s=s.replace("const FILES =","const root = path.resolve(import.meta.dirname, '..');\nconst FILES =",1)
+open(p,'w').write(s)
+p='e2e/playground.spec.ts'
+s=open(p).read()
+s=s.replace("const lastApp = page.getByRole('list').getByRole('link').last();","const lastApp = page.getByRole('region', { name: landing.appsHeading }).getByRole('link').last();")
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -5
+    
+    > typecheck
+    > tsc --noEmit
+    exit 0
+
+Now the playground e2e additions (Undo, hidden Copy link, layout).
+
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'EOF'
+p='e2e/playground.spec.ts'
+s=open(p).read()
+s=s.replace("""  // Answering in the preview leaves the address alone.
+  await preview.getByRole('button', { name: new RegExp(`^${firstLabel.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`) }).first().click();
+  await expect(preview.getByRole('heading', { name: question })).toHaveCount(0);
+  expect(page.url()).toBe(url);
+""","""  // Answering in the preview leaves the address alone, and the preview has no "Copy link" (it would point at this page).
+  await preview.getByRole('button', { name: new RegExp(`^${firstLabel.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`) }).first().click();
+  await expect(preview.getByRole('heading', { name: question })).toHaveCount(0);
+  await expect(preview.getByRole('button', { name: licence.copy.labels.startOver })).toBeVisible();
+  await expect(preview.getByRole('button', { name: licence.copy.labels.copyLink })).toHaveCount(0);
+  expect(page.url()).toBe(url);
+""")
+assert 'toHaveCount(0);\n  await expect(preview.getByRole(\'button\', { name: licence.copy.labels.startOver' in s
+s=s.replace("""test('playground: markup in the table""","""test('playground: Undo puts a removed rule back where it was', async ({ page }) => {
+  const passing = passingLine(check(licence.table));
+  await page.goto('playground/');
+  await expect(status(page)).toHaveText(passing);
+  const original = await textarea(page).inputValue();
+
+  await page.getByRole('button', { name: fill(copy.rules.removeNamed, { id: REMOVED }) }).click();
+  await expect(status(page)).toContainText(failsPrefix);
+  await expect(page.getByText(fill(copy.rules.removed, { id: REMOVED }), { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: copy.rules.undo }).click();
+  await expect(status(page)).toHaveText(passing);
+  expect(await textarea(page).inputValue()).toBe(original);
+  await expect(page.getByRole('button', { name: copy.rules.undo })).toHaveCount(0);
+});
+
+test('playground: markup in the table""",1)
+# layout assertion at 1280 inside axe test: after first goto at width 1280
+s=s.replace("""      if (width === 390) expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+      await page.getByRole('button'""","""      if (width === 390) expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await expectLayout(page, width);
+
+      await page.getByRole('button'""")
+s=s.replace("""const status = (page: Page)""","""/** Wide: the editor is left of the status and the app, and the app sits under the status. Narrow: status, editor, app, in that order. */
+async function expectLayout(page: Page, width: number): Promise<void> {
+  const box = async (selector: string): Promise<{ x: number; y: number; width: number }> => {
+    const found = await page.locator(selector).first().boundingBox();
+    if (found === null) throw new Error(`${selector} is not visible`);
+    return found;
+  };
+  const [editor, statusBox, app] = [await box('.pg-editor'), await box('#pg-status'), await box('.pg-app')];
+  if (width >= 960) {
+    expect(statusBox.x).toBeGreaterThan(editor.x + editor.width - 1);
+    expect(app.x).toBeGreaterThan(editor.x + editor.width - 1);
+    expect(app.y).toBeGreaterThan(statusBox.y);
+  } else {
+    expect(statusBox.y).toBeLessThan(editor.y);
+    expect(app.y).toBeGreaterThan(editor.y);
+  }
+}
+
+const status = (page: Page)""",1)
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -5; npm run test:e2e 2>&1 | tail -60
+    … (9 earlier lines not shown)
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 20 tests using 6 workers
+    
+      ✓   3 [chromium] › e2e/filter.spec.ts:4:1 › which-bin: filter narrows the tiles and Enter chooses the only match (190ms)
+      ✓   5 [chromium] › e2e/landing.spec.ts:9:1 › landing page: hero picture, two app cards, playground card, the three files (336ms)
+      ✓   7 [chromium] › e2e/landing.spec.ts:62:3 › landing page: axe and no horizontal scroll, light (812ms)
+      ✓   4 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.1s)
+      ✓   8 [chromium] › e2e/landing.spec.ts:62:3 › landing page: axe and no horizontal scroll, dark (757ms)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.2s)
+      ✓  11 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (135ms)
+      ✓  10 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (162ms)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (1.3s)
+      ✓   9 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (320ms)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (1.4s)
+      ✓  13 [chromium] › e2e/playground.spec.ts:148:1 › playground: Undo puts a removed rule back where it was (194ms)
+    playground: check on which-bin (960 combinations, 33 rules), click to summary line: 4.1 ms
+      ✓  17 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (193ms)
+      ✓  12 [chromium] › e2e/playground.spec.ts:60:1 › playground: from the landing page, remove a rule, see the checker refuse it, reset (417ms)
+      ✓  18 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (134ms)
+      ✓  20 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (152ms)
+      ✓  19 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (170ms)
+      ✓  14 [chromium] › e2e/playground.spec.ts:164:1 › playground: markup in the table is shown as text; invalid JSON gets a position (721ms)
+      ✓  16 [chromium] › e2e/playground.spec.ts:199:3 › playground: axe and layout, dark (1.3s)
+      ✓  15 [chromium] › e2e/playground.spec.ts:199:3 › playground: axe and layout, light (1.3s)
+    
+      20 passed (3.4s)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && grep -rn "Total: 1[0-9]\|Total: 2" --include=* .github .kiro/specs scripts package.json e2e 2>/dev/null | cut -c1-200
+    zsh:1: no matches found: --include=*
+    exit 0
+[tool:search] Grep Search
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && (PORT=4180 node scripts/serve.mjs >/dev/null 2>&1 &) ; sleep 1; cat > tmp-shot.mjs <<'EOF'
+import { chromium } from '@playwright/test';
+const b = await chromium.launch();
+const base = 'http://127.0.0.1:4180/bare-bones-kiro/';
+async function shot(name, url, w, h, scheme, fn) {
+  const ctx = await b.newContext({ viewport: { width: w, height: h }, colorScheme: scheme, reducedMotion: 'reduce' });
+  const p = await ctx.newPage();
+  await p.goto(base + url);
+  await p.waitForTimeout(300);
+  if (fn) await fn(p);
+  await p.screenshot({ path: `/tmp/${name}.png`, fullPage: true });
+  await ctx.close();
+}
+await shot('land-wide', '', 1280, 900, 'light');
+await shot('land-narrow-dark', '', 360, 800, 'dark');
+await shot('pg-wide-fail', 'playground/', 1280, 800, 'light', async (p) => { await p.getByRole('button', { name: 'Remove rule permissive-nothing' }).click(); await p.waitForTimeout(400); });
+await shot('pg-wide-pass-dark', 'playground/', 1280, 800, 'dark');
+await shot('pg-narrow-fail', 'playground/', 390, 844, 'light', async (p) => { await p.getByRole('button', { name: 'Remove rule permissive-nothing' }).click(); await p.waitForTimeout(400); });
+await shot('bin', 'which-bin/', 390, 844, 'light');
+const ctx = await b.newContext({ viewport: { width: 1280, height: 800 } });
+const p = await ctx.newPage(); await p.goto(base + 'which-bin/');
+console.log('icon', JSON.stringify(await p.locator('.icon').first().boundingBox()));
+await b.close();
+EOF
+node tmp-shot.mjs
+    icon {"x":344.5,"y":666.75,"width":36,"height":36}
+    exit 0
+[tool:read] Read File /tmp/land-wide.png
+[tool:read] Read File /tmp/land-narrow-dark.png
+[tool:read] Read File /tmp/pg-wide-fail.png
+[tool:read] Read File /tmp/pg-narrow-fail.png
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && rm -f tmp-shot.mjs /tmp/*.png; pkill -f "scripts/serve.mjs"; python3 - <<'EOF'
+p='.kiro/specs/shell-and-cli/requirements.md'
+s=open(p).read()
+s=s.rstrip('\n')+"\n    j. The e2e suite now holds 20 tests (landing 1 to 3, playground +1). The count in the Verify of apps task 5 (`Total: 17 tests`) is out of date; the owner decides whether to amend it.\n"
+open(p,'w').write(s)
+EOF
+npm run typecheck 2>&1 | tail -3; npm test 2>&1 | grep -E "Test Files|Tests "; npm run test:e2e 2>&1 | grep -E "passed|failed"; git status --short
+    > typecheck
+    > tsc --noEmit
+    
+     Test Files  14 passed (14)
+          Tests  137 passed (137)
+      20 passed (3.2s)
+     M .kiro/specs/playground/requirements.md
+     M .kiro/specs/shell-and-cli/requirements.md
+     M docs/kiro-evidence/hook-fires.log
+     M e2e/landing.spec.ts
+     M e2e/playground.spec.ts
+     M skeleton/build/build.ts
+     M skeleton/build/copy-check.ts
+     M skeleton/build/page.ts
+     M skeleton/playground/playground.css
+     M skeleton/playground/playground.json
+     M skeleton/playground/playground.ts
+     M skeleton/playground/rules.ts
+     M skeleton/playground/types.ts
+     M skeleton/shell/copy-type.ts
+     M skeleton/shell/landing.json
+     M skeleton/shell/landing.ts
+     M skeleton/shell/mount.ts
+     M skeleton/shell/shell.css
+     M test/build.test.ts
+     M test/playground.test.ts
+    ?? docs/kiro-evidence/15-landing.txt
+    ?? skeleton/shell/diagram.ts
+    exit 0
+
+The landing page redesign, the playground polish and the two shell touches are all in. I did not stage, commit or push.
+
+**Verify** (`npm run typecheck && npm test && npm run test:e2e`)
+- `npm run typecheck`: exit 0, no errors.
+- `npm test`: `Test Files  14 passed (14)`, `Tests  137 passed (137)`.
+- `npm run test:e2e`: `20 passed (3.2s)`.
+
+I also looked at screenshots of the landing page (1280 and 360 px, dark) and of the playground in its failing state (1280 and 390 px). Tile icons measure 36 px in the browser.
+
+**Specs**
+- `.kiro/specs/shell-and-cli/requirements.md`: new Owner answers item 12 (landing redesign and the two shell touches).
+- `.kiro/specs/playground/requirements.md`: new Owner answers item 7 (layout, status mark, rule rows with Undo, hidden Copy link).
+
+**Code**
+- **Landing, new files and data:**
+  - New `skeleton/shell/diagram.ts` for the hero SVG.
+  - `landing.json` is reshaped: the `intro` and `styles` keys are gone, and `diagram`, `appsHeading`, `newApp`, `newAppCommand` and `repo` are new.
+  - `copy-type.ts` carries the new types.
+- **Landing, behaviour:**
+  - `landing.ts` draws the hero, the app cards, the playground card and the file links.
+  - `shell.css` has the landing styles, tiles at 36 px and the quieter progress track.
+  - The build adds each app's theme and first-question preview to the landing data (`build/page.ts`, `build/build.ts`, `build/copy-check.ts`).
+- **Playground:** `playground.ts`, `rules.ts`, `playground.css`, `playground.json` and `types.ts`. The shell's `mount.ts` gets a `copyLink` option, which the playground sets to `false`.
+- **Tests:** `test/build.test.ts`, `test/playground.test.ts`, `e2e/landing.spec.ts` and `e2e/playground.spec.ts`. The Undo test and the hidden "Copy link" assertion are in the playground spec.
+
+**Decisions for you**
+1. **Existing test narrowed.** The existing check "keeps playground.css within the contract" banned every colour literal and every non-contract custom property. Your item 7 asks for `--pg-*` colour tokens in that file. I narrowed the test to except only those token definitions and their uses, and kept every other rule. This is recorded as item 7e so you can reject it.
+2. **Apps task 5 count.** The Verify of apps task 5 still says `Total: 17 tests` and the suite now holds 20. I did not edit that spec; the mismatch is noted in item 12j.
+3. **Removed keys.** I removed `intro` and `styles` from `landing.json` because the hero replaces them, and I dropped the old "Answers as tiles" line from the cards.
+4. **Rule summary arrow.** The rule summary uses "→" in `playground.json`, not the ASCII "->" from your note. It is easy to change.
+
+**Not verified**
+- Firefox and Safari: only Chromium was run.
+- Hero legibility at widths between 360 and 640 px: I checked only 360 px visually, and the stacked layout switches at 40 rem.
+- The `-moz-progress-bar` track.
+
+`docs/kiro-evidence/hook-fires.log` changed on its own when the hooks ran.
+
+--- run success (end_turn); credits reported by this session: 15.62 ---
+--- exit 0; account credit meter before 3525.39, after 3541.34 (shared account) ---

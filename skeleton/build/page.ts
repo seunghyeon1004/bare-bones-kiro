@@ -1,5 +1,25 @@
+import type { Table } from '../engine/index.ts';
 import type { PlaygroundCopy } from '../playground/types.ts';
 import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
+import { parseTheme } from './theme-check.ts';
+
+const PREVIEW_ANSWERS = 3;
+
+/** What the landing page needs to draw an app's card: its words, its theme and the first question with up to three answers. */
+export function summariseApp(id: string, table: Table, copy: Copy, themeCss: string): AppSummary {
+  const first = table.conditions[0];
+  return {
+    id,
+    title: copy.title,
+    tagline: copy.tagline,
+    answerStyle: copy.answerStyle,
+    theme: parseTheme(themeCss),
+    preview: {
+      question: first?.question ?? '',
+      answers: (first?.values ?? []).slice(0, PREVIEW_ANSWERS).map((v) => v.label),
+    },
+  };
+}
 
 const KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 

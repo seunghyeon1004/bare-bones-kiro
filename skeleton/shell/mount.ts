@@ -16,6 +16,8 @@ export interface MountOptions {
   embedded?: boolean;
   /** Default 0. Integer 0 to 4: a heading of level L is rendered at level min(6, L + offset). */
   headingOffset?: number;
+  /** Default true. False: the "Copy link" button is left out (the address would not lead back to this view). */
+  copyLink?: boolean;
 }
 
 export interface Mounted { unmount(): void }
@@ -296,7 +298,7 @@ export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: M
     return el(
       'div',
       { class: 'actions' },
-      copyButton,
+      ...(options.copyLink === false ? [] : [copyButton]),
       button([labels.startOver], () => {
         steps = [];
         ignored = 0;

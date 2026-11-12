@@ -36,6 +36,24 @@ function firstQuestion(table: Table): { question: string; firstLabel: string } {
   return { question: result.next.question, firstLabel: value.label };
 }
 
+/** Wide: the editor is left of the status and the app, and the app sits under the status. Narrow: status, editor, app, in that order. */
+async function expectLayout(page: Page, width: number): Promise<void> {
+  const box = async (selector: string): Promise<{ x: number; y: number; width: number }> => {
+    const found = await page.locator(selector).first().boundingBox();
+    if (found === null) throw new Error(`${selector} is not visible`);
+    return found;
+  };
+  const [editor, statusBox, app] = [await box('.pg-editor'), await box('#pg-status'), await box('.pg-app')];
+  if (width >= 960) {
+    expect(statusBox.x).toBeGreaterThan(editor.x + editor.width - 1);
+    expect(app.x).toBeGreaterThan(editor.x + editor.width - 1);
+    expect(app.y).toBeGreaterThan(statusBox.y);
+  } else {
+    expect(statusBox.y).toBeLessThan(editor.y);
+    expect(app.y).toBeGreaterThan(editor.y);
+  }
+}
+
 const status = (page: Page) => page.locator('#pg-status');
 const textarea = (page: Page) => page.getByLabel(copy.editor.textareaLabel);
 
@@ -55,7 +73,7 @@ test('playground: from the landing page, remove a rule, see the checker refuse i
   await page.goto('./');
   const link = page.getByRole('link', { name: landing.playground.title });
   await expect(link).toBeVisible();
-  const lastApp = page.getByRole('list').getByRole('link').last();
+  const lastApp = page.getByRole('region', { name: landing.appsHeading }).getByRole('link').last();
   const [linkBox, appBox] = [await link.boundingBox(), await lastApp.boundingBox()];
   expect(linkBox?.y ?? 0).toBeGreaterThan(appBox?.y ?? Infinity);
   await link.click();
@@ -97,9 +115,11 @@ test('playground: from the landing page, remove a rule, see the checker refuse i
   await expect(page.getByRole('heading', { name: copy.app.noBuildHeading })).toHaveCount(0);
   await expect(preview.getByRole('heading', { name: question })).toBeVisible();
 
-  // Answering in the preview leaves the address alone.
+  // Answering in the preview leaves the address alone, and the preview has no "Copy link" (it would point at this page).
   await preview.getByRole('button', { name: new RegExp(`^${firstLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).first().click();
   await expect(preview.getByRole('heading', { name: question })).toHaveCount(0);
+  await expect(preview.getByRole('button', { name: licence.copy.labels.startOver })).toBeVisible();
+  await expect(preview.getByRole('button', { name: licence.copy.labels.copyLink })).toHaveCount(0);
   expect(page.url()).toBe(url);
 
   // One measurement for the report: the time from the click on the which-bin example to the new summary line,
@@ -123,6 +143,22 @@ test('playground: from the landing page, remove a rule, see the checker refuse i
   );
   console.log(`playground: check on which-bin (${binReport.counts.combinations} combinations, ${binReport.counts.rules} rules), click to summary line: ${elapsed.toFixed(1)} ms`);
   await expect(status(page)).toHaveText(passingLine(binReport));
+});
+
+test('playground: Undo puts a removed rule back where it was', async ({ page }) => {
+  const passing = passingLine(check(licence.table));
+  await page.goto('playground/');
+  await expect(status(page)).toHaveText(passing);
+  const original = await textarea(page).inputValue();
+
+  await page.getByRole('button', { name: fill(copy.rules.removeNamed, { id: REMOVED }) }).click();
+  await expect(status(page)).toContainText(failsPrefix);
+  await expect(page.getByText(fill(copy.rules.removed, { id: REMOVED }), { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: copy.rules.undo }).click();
+  await expect(status(page)).toHaveText(passing);
+  expect(await textarea(page).inputValue()).toBe(original);
+  await expect(page.getByRole('button', { name: copy.rules.undo })).toHaveCount(0);
 });
 
 test('playground: markup in the table is shown as text; invalid JSON gets a position', async ({ page }) => {
@@ -175,6 +211,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page.locator('.pg-preview').getByRole('heading', { name: firstQuestion(licence.table).question })).toBeVisible();
       expect(await scanAxe(page), `passing, ${width}px`).toEqual([]);
       if (width === 390) expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await expectLayout(page, width);
 
       await page.getByRole('button', { name: fill(copy.rules.removeNamed, { id: REMOVED }) }).click();
       await expect(status(page)).toContainText(failsPrefix);

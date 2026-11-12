@@ -7,7 +7,7 @@ import type { Table } from '../engine/index.ts';
 import type { PlaygroundCopy, PlaygroundData, PlaygroundExample } from '../playground/types.ts';
 import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
 import { validateCopy, validateCopyAgainstTable, validateLanding, validatePlayground } from './copy-check.ts';
-import { bootApp, bootLanding, bootPlayground, renderPage } from './page.ts';
+import { bootApp, bootLanding, bootPlayground, renderPage, summariseApp } from './page.ts';
 import { parseTheme, validateTheme } from './theme-check.ts';
 
 export interface BuildOptions { appsDir: string; outDir: string; repoRoot: string }
@@ -174,7 +174,7 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   const template = readFileSync(path.join(SHELL_DIR, 'page.html'), 'utf8');
   const shellCss = readFileSync(path.join(SHELL_DIR, 'shell.css'), 'utf8');
   const landing = landingJson as Landing;
-  const summaries: AppSummary[] = apps.map((a) => ({ id: a.name, title: a.copy.title, tagline: a.copy.tagline, answerStyle: a.copy.answerStyle }));
+  const summaries: AppSummary[] = apps.map((a) => summariseApp(a.name, a.table, a.copy, a.themeCss));
 
   const playgroundCopy = playgroundJson as PlaygroundCopy;
   const playgroundTemplate = template.replace('<link rel="stylesheet" href="shell.css">', (link) => `${link}\n<link rel="stylesheet" href="playground.css">`);

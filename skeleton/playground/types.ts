@@ -38,6 +38,11 @@ export interface PlaygroundCopy {
     unnamed: string; // {n}
     unavailable: string;
     empty: string;
+    summary: string; // {when} {outcome}
+    whenAny: string; // shown for {when} when the rule names no condition
+    noOutcome: string; // shown for {outcome} when the rule has no usable `then`
+    removed: string; // {id}
+    undo: string;
   };
   results: {
     heading: string;

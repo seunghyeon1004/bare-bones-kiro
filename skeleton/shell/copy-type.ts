@@ -50,15 +50,45 @@ export interface Copy {
   filter?: FilterCopy;
 }
 
+/** The words in the hero picture. Every string is drawn as SVG text. */
+export interface DiagramCopy {
+  title: string; // the SVG's <title> and accessible name
+  description: string; // the SVG's <desc>
+  tableLabel: string;
+  checkerLabel: string;
+  gaps: string;
+  conflicts: string;
+  appLabel: string;
+  question: string; // the phone's question
+  yes: string;
+  no: string;
+}
+
 export interface Landing {
   title: string;
   tagline: string;
-  intro: string;
-  styles: { tiles: string; list: string };
+  diagram: DiagramCopy;
+  appsHeading: string;
+  playground: { title: string; text: string };
   noteTitle: string;
   note: string;
-  playground: { title: string; text: string };
+  newApp: string; // the line before the command
+  newAppCommand: string;
+  repo: string; // https URL of the repository, no trailing slash
   footer: FooterEntry[];
 }
 
-export interface AppSummary { id: string; title: string; tagline: string; answerStyle: 'tiles' | 'list' }
+/** An app's custom properties from its theme.css: the light values, and the dark values that replace them. */
+export interface AppTheme { light: Record<string, string>; dark: Record<string, string> }
+
+/** The first question of an app's table with up to three answers, for the card on the landing page. */
+export interface AppPreview { question: string; answers: string[] }
+
+export interface AppSummary {
+  id: string;
+  title: string;
+  tagline: string;
+  answerStyle: 'tiles' | 'list';
+  theme: AppTheme;
+  preview: AppPreview;
+}
