@@ -1,0 +1,325 @@
+# Kiro CLI 3.2.1, 2026-11-12T05:57:06Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --mode spec --trust-all-tools --trust-workspace --model claude-sonnet-5.5 "$(cat docs/kiro-evidence/prompts/12-spec-playground.md)"
+
+--- prompt ---
+Write a fourth spec, `playground`, in .kiro/specs/playground/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, all steering, the three existing specs and the code in skeleton/ (engine, shell, build) first. Write nothing outside .kiro/specs/playground/.
+
+Why: the checker is the heart of the project, but today it is only visible in a terminal. A judge should be able to delete one rule from the licence table and watch a gap appear and the app refuse to build, then undo it, in the browser, in ten seconds.
+
+What to build: a page at `dist/playground/` (linked from the landing page as the first thing after the two app cards: "Break a table and watch the checker catch it").
+1. Left: a table editor. A plain `<textarea>` with the table JSON (monospace, line numbers not required), and buttons to load three examples: Which licence? (default, because it is small: 7 rules), Which bin?, and the broken demo table. A "Reset" button restores the loaded example. Optional but wanted: a short list of the rules with a "remove" button per rule, so the judge can break the table without editing JSON; removing a rule edits the JSON text.
+2. Right, updated as you type (debounced, about 250 ms): a status line ("Passes: 7 rules, 32 combinations, all covered" or "Fails: 4 gaps, 0 conflicts"), the count of combinations covered out of the total, the structural errors with their paths (including invalid JSON with a line and column), the gaps with up to 5 example combinations, the conflicts with the two rules, their outcomes and an example. All from the same engine (`validate`, `check`), bundled for the browser.
+3. Under it, the generated app itself, running from the table being edited, through the real shell, when the table passes; when it does not, the app area says it would not build and why (the same rule as `npm run build`). The preview uses the copy and theme of the example that was loaded (the playground ships the copy and theme of both apps; for the broken demo, Which bin?'s). The theme's custom properties apply only inside the preview.
+4. This needs the shell to be mountable: refactor skeleton/shell so the app can be mounted into a given element with a given table and copy (for example `mountApp(root, table, copy, options)`), used both by the normal app pages and by the playground. The normal pages must behave exactly as now (every existing e2e test stays green unchanged). In the preview, the URL hash must not be touched (an option), so the playground page's own state is not mixed with the app's.
+5. Accessibility: labelled textarea, the status region is a polite live region (announce only the summary line, not every keystroke), buttons are buttons, focus visible, works at 390 px wide (editor above, results below), axe clean light and dark. No innerHTML with user text: the table JSON is untrusted and must only ever reach the DOM as text nodes.
+6. Static only: no server, no network, no storage. All words on the playground come from a playground copy file (skeleton/playground/playground.json or similar).
+7. Structure: put it in skeleton/playground/. It may import the engine and the shell; record this as a Departure for the owner to add to structure.md (the owner edits steering, not you).
+
+Tests, proportionate: a few vitest unit tests for the playground's pure logic (parse + check summary, rule removal editing the JSON, error position for invalid JSON) and one property if there is a real universal claim (for example: removing any one rule from a passing table either keeps it passing or yields a gap whose example matches no remaining rule). Two Playwright tests: (a) load Which licence?, remove one rule, see "Fails" with a gap example and the app replaced by the "would not build" notice, press Reset, see "Passes" and a working app; (b) type invalid JSON, see the error with a position. Axe on the playground in light and dark. The build test covers the new dist/playground/ output.
+
+Tasks: at most 6, each with one Verify command. End with a summary: criteria, properties, tasks, and open questions.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+I'll start by reading the brief, the steering, the existing specs and the skeleton code.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/skeleton
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/docs/product-brief.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro/specs
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/.kiro/steering
+[tool:execute] $ find skeleton test e2e scripts -type f | sort; ls; cat package.json; wc -l skeleton/*/*.ts
+    … (90 earlier lines not shown)
+        "@modelcontextprotocol/sdk": "1.32.2",
+        "@playwright/test": "1.65.0",
+        "@types/node": "22.20.5",
+        "esbuild": "0.28.2",
+        "fast-check": "4.10.2",
+        "tsx": "4.23.15",
+        "typescript": "6.0.3",
+        "vitest": "5.1.0",
+        "zod": "4.6.7"
+      }
+    }
+         191 skeleton/build/build.ts
+         137 skeleton/build/copy-check.ts
+          62 skeleton/build/page.ts
+          93 skeleton/build/theme-check.ts
+         109 skeleton/cli/bones.ts
+          80 skeleton/engine/check.ts
+         185 skeleton/engine/decide.ts
+          37 skeleton/engine/format.ts
+           5 skeleton/engine/index.ts
+         113 skeleton/engine/space.ts
+          75 skeleton/engine/types.ts
+         221 skeleton/engine/validate.ts
+         118 skeleton/mcp/server.ts
+          48 skeleton/shell/copy-type.ts
+          54 skeleton/shell/dom.ts
+          43 skeleton/shell/hash.ts
+          43 skeleton/shell/landing.ts
+         336 skeleton/shell/shell.ts
+        1950 total
+    exit 0
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/engine/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/requirements.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/design.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/apps/tasks.md
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/shell.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/dom.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/hash.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/copy-type.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/build/build.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/build/page.ts
+[tool:execute] $ cat skeleton/shell/landing.json; echo ----; cat e2e/landing.spec.ts e2e/helpers.ts playwright.config.ts; echo ----; cat skeleton/engine/format.ts skeleton/engine/index.ts; echo ----; sed -n 1,80p test/build.test.ts; cat tsconfig.json vitest.config.ts
+    … (261 earlier lines not shown)
+    
+        expect(readdirSync(w.dist)).not.toContain('template');
+        expect(readdirSync(w.dist)).not.toContain('examples');
+      });
+    
+    {
+      "compilerOptions": {
+        "strict": true,
+        "noUncheckedIndexedAccess": true,
+        "noFallthroughCasesInSwitch": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true,
+        "target": "ES2023",
+        "lib": ["ES2023", "DOM"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
+        "skipLibCheck": true,
+        "types": ["node"]
+      },
+      "include": ["skeleton", "test", "e2e", "vitest.config.ts", "playwright.config.ts"]
+    }
+    import { defineConfig } from 'vitest/config';
+    
+    export default defineConfig({
+      test: {
+        include: ['test/**/*.test.ts'],
+        environment: 'node',
+      },
+    });
+    exit 0
+[tool:execute] $ cat skeleton/shell/shell.css | head -150; echo; grep -n "^\.\|^[a-z:\[]" skeleton/shell/shell.css | wc -l; cat e2e/a11y.spec.ts; cat skeleton/build/theme-check.ts | sed -n 1,40p; cat .kiro/README.md | head -40; ls .kiro/agents .kiro/hooks
+    … (238 earlier lines not shown)
+    | `tech.md` | always | Node, TypeScript strict, the pinned dev dependencies, the npm scripts, six rules for Kiro (never commit, never read secrets, never weaken a check, never mock the subject, tick only after Verify, stop when spec and code disagree) |
+    | `structure.md` | always | Folders and the dependency direction (the engine imports nothing) |
+    | `invariants.md` | always | I1 to I10, each with the name of the property test that proves it |
+    | `table-format.md` | fileMatch `apps/**`, `skeleton/template/**`, `skeleton/examples/**` | The JSON format, the 100,000 combination limit, "every rule cites a quoted row; when the sources are silent, say so with an explicit outcome" |
+    | `kiro-workflow.md` | always | EARS criteria, Correctness properties, tasks with one Verify command, tests proportionate |
+    
+    What made the biggest difference: `table-format.md` rule 5. When Kiro designed the waste table it did not invent answers for cases the sources do not cover; it listed them (three groups, with combination counts) and asked. The owner then found the missing lines in the Ministry FAQ and added them to the source notes, and only one case still goes to "Ask your district office".
+    
+    ## Specs (`specs/`)
+    
+    | Spec | Criteria | Properties | Tasks | What it built |
+    | --- | --- | --- | --- | --- |
+    | `engine` | 49 | 10 | 8 | validate, check, decide, evaluate; the oracle and generators for the properties |
+    | `shell-and-cli` | 87 | 2 | 8 | copy.json and theme.css contracts, page shell, landing page, build, `bones check` and `bones new`, template, examples, MCP server, a timing of decide at 100,000 combinations |
+    | `apps` | 62 | 0 | 7 | Which bin? and Which licence?, the broken demo table, golden examples, 12 Playwright tests with axe, the Pages workflow |
+    
+    All 23 tasks are ticked, each with its Verify command's result line. The full suite is 93 vitest tests (12 of them properties) and 12 Playwright tests.
+    
+    Did the properties earn their keep? Kiro found no failing case while writing them, so the owner checked that they can fail: three hand-made mutants of the engine (asking a question that cannot change the outcome, missing one in seven gaps, the wrong tie-break for the next question) each turned at least one property red (Properties 6; 1, 3, 4 and 6; 6). They were reverted.
+    
+    ## Agents (`agents/`)
+    
+    | Agent | Job | Real use |
+    | --- | --- | --- |
+    .kiro/agents:
+    bonesetter.json
+    x-ray.json
+    
+    .kiro/hooks:
+    check-table-on-save.json
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones; sed -n 150,420p skeleton/shell/shell.css; echo ----; sed -n 40,93p skeleton/build/theme-check.ts; echo ----; wc -c apps/*/table.json skeleton/examples/*.json apps/*/theme.css; head -c 600 skeleton/examples/which-bin-broken.table.json; cat skeleton/shell/neutral-theme.css | head -30; ls docs/kiro-evidence/prompts | tail -2; head -c 1500 docs/kiro-evidence/prompts/12-spec-playground.md
+    … (358 earlier lines not shown)
+      --border: #767676;
+      --focus: #0b57d0;
+      --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-heading: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-size: 1rem;
+      --radius: 0.5rem;
+      --space: 0.75rem;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --text: #f2f2f2;
+        --muted: #b8b8b8;
+        --accent: #8ab4f8;
+        --accent-text: #0b1b33;
+        --border: #8a8a8a;
+        --focus: #8ab4f8;
+      }
+    }
+    14-which-bin-first-screen.md
+    15-landing.md
+    Write a fourth spec, `playground`, in .kiro/specs/playground/ (requirements.md, design.md, tasks.md), following .kiro/steering/kiro-workflow.md. Read docs/product-brief.md, all steering, the three existing specs and the code in skeleton/ (engine, shell, build) first. Write nothing outside .kiro/specs/playground/.
+    
+    Why: the checker is the heart of the project, but today it is only visible in a terminal. A judge should be able to delete one rule from the licence table and watch a gap appear and the app refuse to build, then undo it, in the browser, in ten seconds.
+    
+    What to build: a page at `dist/playground/` (linked from the landing page as the first thing after the two app cards: "Break a table and watch the checker catch it").
+    1. Left: a table editor. A plain `<textarea>` with the table JSON (monospace, line numbers not required), and buttons to load three examples: Which licence? (default, because it is small: 7 rules), Which bin?, and the broken demo table. A "Reset" button restores the loaded example. Optional but wanted: a short list of the rules with a "remove" button per rule, so the judge can break the table without editing JSON; removing a rule edits the JSON text.
+    2. Right, updated as you type (debounced, about 250 ms): a status line ("Passes: 7 rules, 32 combinations, all covered" or "Fails: 4 gaps, 0 conflicts"), the count of combinations covered out of the total, the structural errors with their paths (including invalid JSON with a line and column), the gaps with
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones; ls .kiro/specs .kiro/specs/playground skeleton skeleton/playground 2>&1 | head -30; git status --short | head -20; git log --oneline | head -8; ls e2e; grep -n "\[hidden\]\|^h[1-6]\|h[23] {" skeleton/shell/shell.css
+    … (14 earlier lines not shown)
+    template
+    ?? docs/kiro-evidence/12-spec-playground.txt
+    ?? docs/kiro-evidence/prompts/12-spec-playground.md
+    ?? docs/kiro-evidence/prompts/14-which-bin-first-screen.md
+    ?? docs/kiro-evidence/prompts/15-landing.md
+    07cc340 Devpost draft with gallery and form texts (by hand)
+    c67b1fb MCP session 09 evidence; README, .kiro/README, evidence README and gallery screens (by hand)
+    944005f which-bin: x-ray findings fixed (Kiro session 11, bonesetter, auto): amount condition for broken glass and lamps, one source per rule, sources-silent ref, hints and copy
+    374dfb1 x-ray read-only audit of which-bin (Kiro session 08, haiku); sources README: bin naming and the sources-silent ref (by hand)
+    4a31a34 Design pass on the shell and landing page (Kiro session 10, bonesetter, auto); by hand: Change button kept on one line, colons dropped from resultLead
+    d927054 Apps: which-bin and which-licence tables, copy, themes, broken demo table, 12 e2e tests with axe, Pages workflow (Kiro session 07, bonesetter, auto)
+    5daf976 Register the bones MCP server in the workspace with kiro-cli mcp add (by hand)
+    4202808 Shell, build, CLI, template, examples, MCP server (Kiro session 06, bonesetter, auto); steering: @types/node, mcp script and the build->shell type import recorded (by hand); x-ray checker agent (by hand)
+    a11y.spec.ts
+    helpers.ts
+    landing.spec.ts
+    layout.spec.ts
+    link.spec.ts
+    nojs.spec.ts
+    table.spec.ts
+    walk.spec.ts
+    15:h1,
+    16:h2,
+    17:h3,
+    18:h4 {
+    23:h1 {
+    219:.steps h2 {
+    305:.skipped h3 {
+    486:.note-block h2 {
+    506:[hidden] {
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/requirements.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones; grep -n "rules" skeleton/engine/validate.ts | head -20; grep -n "export" test/props/oracle.ts test/props/generators.ts | head -30; sed -n 420,520p skeleton/shell/shell.css
+    … (98 earlier lines not shown)
+    .note-block p {
+      margin: 0;
+    }
+    
+    .vh {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+    
+    [hidden] {
+      display: none;
+    }
+    
+    @media (max-width: 36rem) {
+      .row {
+        grid-template-columns: 1fr;
+        gap: calc(var(--space) / 4);
+      }
+    
+      .row dd + dd {
+        grid-column: 1;
+      }
+    }
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/requirements.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones; grep -n "main\|header\|footer" skeleton/shell/shell.css | head
+    423:.footer {
+    434:.footer p {
+    438:.footer-note {
+    exit 0
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/requirements.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/requirements.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/design.md
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/.kiro/specs/playground/tasks.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones; git status --short; grep -cE "^[0-9]+\.[0-9]+ " .kiro/specs/playground/requirements.md; grep -c "^- \[ \]" .kiro/specs/playground/tasks.md; grep -c "^Verify:\|  - Verify:" .kiro/specs/playground/tasks.md
+    ?? .kiro/specs/playground/
+    ?? docs/kiro-evidence/12-spec-playground.txt
+    ?? docs/kiro-evidence/prompts/12-spec-playground.md
+    ?? docs/kiro-evidence/prompts/14-which-bin-first-screen.md
+    ?? docs/kiro-evidence/prompts/15-landing.md
+    68
+    6
+    6
+    exit 0
+
+I wrote the `playground` spec in `.kiro/specs/playground/` (`requirements.md`, `design.md`, `tasks.md`) and nothing outside it. The other untracked files in `git status` were already there before this session. I haven't run any of the spec's checks or implemented anything.
+
+## Summary
+
+**Criteria: 68, in 9 requirements.**
+- Requirement 1 covers the mountable shell. `mountApp(root, table, copy, { hash, embedded, headingOffset })` lets the playground run the real shell without touching the URL hash.
+- Requirement 2 covers the build output and the landing link.
+- Requirements 3 to 5 cover the editor, the results and the preview.
+- Requirement 6 covers accessibility and layout, 7 covers untrusted text, 8 covers tests, and 9 covers the import boundaries.
+
+**Properties: 1.** Property 13 says that removing any one rule from a passing table exposes exactly the combinations only that rule covered. It goes through the playground's own text path and checks against the oracle. The JSON error position is covered by unit tests, not a property.
+
+**Tasks: 6.**
+1. Make the shell mountable. Verified by the unchanged existing e2e suite.
+2. Pure logic, copy file, unit tests and Property 13.
+3. The page (DOM and CSS), verified by typecheck and greps only.
+4. Build and landing link.
+5. Four e2e tests: the remove-and-Reset walk, invalid JSON plus markup as text, and axe in light and dark at 1280 and 390 px.
+6. Final gate.
+
+Task 3 has no behaviour test of its own, because there is no DOM library and none may be added. Its behaviour is first exercised by the task 5 e2e tests.
+
+## Departures for you to write into steering
+
+1. `product.md` and the brief list "no editor UI" as a non-goal, and the playground is a text editor. I suggest narrowing it to "no editor UI for authoring apps".
+2. `structure.md` needs the `skeleton/playground/` line and its import rules. The line "examples are never built into `dist/`" needs an exception, because the broken demo table ships inside the playground page's data block.
+3. Older specs change:
+   - `shell-and-cli` 11.1 and 11.7: the build now reads the examples folder, and the file count goes from 8 to 13.
+   - `apps` 10.10 and the Verify of its task 5: the e2e count goes from 12 to 16.
+   - The `Landing` type and `landing.json` gain a `playground` key.
+4. The preview theme is applied with `style.setProperty`, because the CSP forbids a `style` attribute. That should be allowed, and e2e test (a) proves it by reading the preview's computed `--bg`.
+5. `shell.css` heading selectors become class selectors, so heading levels can shift without changing how the app looks.
+
+## Open questions
+
+1. Keep the `headingOffset` option, which avoids a second `h1` at the cost of CSS churn in the shell? The alternative is a second `h1` inside the preview.
+2. Which bin?'s larger type (`--font-size`) won't show in the preview, because the shell sizes text in `rem`. Fixing it would be a shell change outside this spec.
+3. Removing a rule re-serialises the whole JSON with two-space indentation, replacing any custom formatting. Splicing the text instead would need a position-aware scanner.
+4. "Would not build" covers only structure, gaps and conflicts. `npm run build` also checks folder name against table `id`, source URL scheme, `copy.json` and `theme.css`.
+5. The display caps of 5 conflicts and 10 structural errors are my choice. The 5 gap examples were yours.
+6. Answers in the preview reset whenever the table changes. Whitespace-only edits keep them.
+7. The "write the status line only when it changes" rule has no browser test. `check` on a table near 100,000 combinations runs on the main thread and has not been measured.
+
+I verified that nothing exists yet at `skeleton/playground/` or `.kiro/specs/playground/`, so nothing was overwritten. I did not read `docs/kiro-evidence/12-spec-playground.txt`; it was already untracked and looks like an earlier attempt at this spec.
+
+--- run success (end_turn); credits reported by this session: 22.48 ---
+--- exit 0; account credit meter before 3472.99, after 3494.74 (shared account) ---

@@ -12,6 +12,7 @@ skeleton/cli/       bones check, bones new
 skeleton/mcp/       stdio MCP server (dev only): check_table, evaluate
 skeleton/template/  tiny valid app (2 questions) copied by `bones new`
 skeleton/examples/  deliberately broken tables for demos and tests
+skeleton/playground/ the playground page: table editor + live check + the shell mounted on the edited table
 apps/<name>/        table.json, copy.json, theme.css only
 test/               vitest unit tests; test/props/ holds fast-check properties
 e2e/                Playwright + axe tests, both apps
@@ -24,7 +25,8 @@ docs/               brief, sources, evidence
 - `engine` imports nothing (no Node built-ins, no packages, no other skeleton folder).
 - `shell`, `build`, `cli`, `mcp` import `engine`. They do not import each other, with one exception: `build` may `import type` the `Copy` type from `shell` (owner decision, shell-and-cli spec).
 - `apps/` contains no code. `test/` and `e2e/` may import anything.
-- `examples/` tables are never built into `dist/`.
+- `examples/` tables are never built into `dist/` as apps; the playground page carries them as example data (owner decision 2026-11-12).
+- `playground` may import `engine` and `shell` (owner decision 2026-11-12); nothing imports `playground`.
 
 ## Naming
 

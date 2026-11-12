@@ -13,7 +13,7 @@ Bare Bones is a skeleton for small web tools that are a decision in disguise. Th
 
 ## Non-goals
 
-No accounts, no saving, no editor UI, no translations, no analytics, no fuzzy matching or search over items, no server, no model calls, no external requests from the page. Each app is one or two screens.
+No accounts, no saving, no editor UI for authoring apps (the playground's table editor is a demo of the checker, owner decision 2026-11-12), no translations, no analytics, no fuzzy matching (a plain keyword filter over one question's answers, driven by copy.json, is allowed: owner decision 2026-11-12), no server, no model calls, no external requests from the page. Each app is one or two screens.
 
 ## Rule: the two app folders differ only in three files
 
