@@ -16,5 +16,9 @@ Every numbered `.txt` file here is one real Kiro CLI 3.2.1 run in this repositor
 | `09-mcp-check-draft.txt` | default, auto, `--require-mcp-startup` | Used the `bones` MCP server only: checked the broken table, explained the gap and the conflict, evaluated three answer sets. |
 | `10-design-polish.txt` | bonesetter, auto | Design pass on the shell and landing page after the owner looked at screenshots. |
 | `11-fix-x-ray-findings.txt` | bonesetter, auto | Fixed the audit findings: an amount question for broken glass and lamps, one source per rule, clearer notes and copy. 93 tests. |
+| `12-spec-playground.txt` | spec mode, sonnet 5.5 | Second round. The playground spec: 68 criteria, 1 property, 6 tasks; found the shell must become mountable and listed five departures from steering. |
+| `13-impl-playground.txt` | bonesetter, auto | The playground page and the mountable shell; the 12 existing browser tests stayed green unchanged. 122 tests, 16 e2e. |
+| `14-which-bin-first-screen.txt` | bonesetter, auto | Pictograms, short tiles and the keyword filter for Which bin?, switched on by copy data. 129 tests, 17 e2e. |
+| `15-landing.txt` | bonesetter, auto | Landing page with the idea diagram and app-styled cards; playground layout, pass/fail marks, Undo. 137 tests, 20 e2e. |
 
-The credit figures at the end of each file are the whole account's meter before and after the run. Other sessions may use the same account, so a difference is an upper bound for that run. Files are numbered in the order the prompts were written; `credits.log` has the order they ran (10, 08, 11, 09 at the end).
+The credit figures at the end of each file are the whole account's meter before and after the run. Other sessions may use the same account, so a difference is an upper bound for that run. Files are numbered in the order the prompts were written; `credits.log` has the order they ran (10, 08, 11, 09, then 12 to 15).
