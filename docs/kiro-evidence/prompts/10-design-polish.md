@@ -1,0 +1,15 @@
+A design pass on the page shell. Everything works and the tests are green; the pages now need to look designed. This is a deliberate small change outside the three specs: record it as an amendment in .kiro/specs/shell-and-cli/requirements.md ("Owner answers", item 10) with the list below, then do it. Change only skeleton/shell/ (shell.ts, dom.ts, landing.ts, landing.json, shell.css, neutral-theme.css), skeleton/build/ if the landing copy needs it, the e2e tests that select by text that changes, and copy.json files if a new label is needed (all three: both apps and skeleton/template, plus the copy check). Do not change the engine, the tables or the theme contract.
+
+The owner looked at headless screenshots of both apps (question, result, phone, dark) and the landing page. What to change:
+1. "Your answers": each answer is a row with the question small and muted above, the chosen answer in bold below it, and "Change" as a small text-style button at the right. No "question?: answer" run-on text anywhere, including "What mattered" in the result.
+2. The result is a card: surface background, a thick accent bar on the left, a small uppercase lead (`resultLead`) above the outcome label in large type, the outcome detail, then the rule note in its own inset block. Clear space between the card and what follows.
+3. "Why" is a quieter section below the card: a two-column definition list (term / description) for Rule, What mattered, Source (title as link, then the `at` text, then published and read dates on one line). On a 360 px screen the list stacks.
+4. Skipped questions: a short muted list under the heading, smaller type.
+5. Buttons: one primary style (accent background, accent-text colour) for "Copy link", secondary (outline) for "Start over" and the table toggle; answer options keep their tile or list style. A thin progress bar under "Question n of at most m" (decorative, aria-hidden; the text stays).
+6. Headings focused by script (tabindex -1) get no outline unless `:focus-visible` applies; every interactive element keeps a 3 px visible focus ring in `--focus`.
+7. Footer separated from the page by a top border and space, links in a row that wraps.
+8. A small link back to the landing page at the top of every app page ("All apps" or similar, from copy.json `labels`, relative href `../`).
+9. Landing page: the title, a one-paragraph explanation of the idea (a decision is a table; the checker finds gaps and conflicts; the page asks only questions that can still change the answer), then one card per app (title as the link, tagline, its answer style), then a short "Same skeleton, three files each" note naming table.json, copy.json and theme.css. All words from landing.json.
+10. Keep everything that is tested: one h1, the live region, buttons as buttons, the table view, the hash, no innerHTML, no inline styles, 44 px targets, no horizontal scroll at 360 px, axe clean in light and dark, reduced motion.
+
+Verify: `npm run typecheck && npm test && npm run test:e2e`. Do not stage, commit or push. End with the files changed and the real result lines.

@@ -45,6 +45,10 @@ export function renderFooter(entries: readonly FooterEntry[]): HTMLElement {
   return el(
     'footer',
     { class: 'footer' },
-    ...entries.map((entry) => el('p', {}, entry.href === undefined ? entry.text : linkOrText(entry.text, entry.href))),
+    ...entries.map((entry) =>
+      entry.href === undefined
+        ? el('p', { class: 'footer-note' }, entry.text)
+        : el('p', { class: 'footer-link' }, linkOrText(entry.text, entry.href)),
+    ),
   );
 }

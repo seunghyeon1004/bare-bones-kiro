@@ -284,9 +284,9 @@ describe('copy', () => {
   const bin = copyOf('which-bin');
   const licence = copyOf('which-licence');
 
-  it('both files use 19 labels and their answer style', () => {
-    expect(Object.keys(bin.labels)).toHaveLength(19);
-    expect(Object.keys(licence.labels)).toHaveLength(19);
+  it('both files use 20 labels and their answer style', () => {
+    expect(Object.keys(bin.labels)).toHaveLength(20);
+    expect(Object.keys(licence.labels)).toHaveLength(20);
     expect(bin.answerStyle).toBe('tiles');
     expect(licence.answerStyle).toBe('list');
   });

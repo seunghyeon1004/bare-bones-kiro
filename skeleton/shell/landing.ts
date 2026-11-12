@@ -10,7 +10,13 @@ function start(): void {
   const page = el(
     'div',
     { class: 'page' },
-    el('header', {}, el('h1', {}, landing.title), el('p', { class: 'tagline' }, landing.tagline)),
+    el(
+      'header',
+      {},
+      el('h1', {}, landing.title),
+      el('p', { class: 'tagline' }, landing.tagline),
+      el('p', { class: 'lede' }, landing.intro),
+    ),
     el(
       'main',
       {},
@@ -18,9 +24,16 @@ function start(): void {
         'ul',
         { class: 'apps' },
         ...apps.map((app) =>
-          el('li', {}, el('a', { href: `./${app.id}/` }, app.title), el('p', { class: 'tagline' }, app.tagline)),
+          el(
+            'li',
+            { class: 'app-card' },
+            el('a', { href: `./${app.id}/`, class: 'app-link' }, app.title),
+            el('p', { class: 'app-tagline' }, app.tagline),
+            el('p', { class: 'app-style' }, landing.styles[app.answerStyle]),
+          ),
         ),
       ),
+      el('section', { class: 'note-block' }, el('h2', { class: 'plain' }, landing.noteTitle), el('p', {}, landing.note)),
     ),
     renderFooter(landing.footer),
   );

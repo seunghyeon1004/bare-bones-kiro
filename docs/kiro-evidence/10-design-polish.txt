@@ -1,0 +1,343 @@
+# Kiro CLI 3.2.1, 2026-11-12T05:29:01Z. Rendered from the stream-json event stream by scripts/kiro-render.mjs; nothing added or removed except the home directory prefix (~).
+$ kiro-cli chat --output-format stream-json --v3 --agent bonesetter --trust-all-tools --trust-workspace --model auto "$(cat docs/kiro-evidence/prompts/10-design-polish.md)"
+
+--- prompt ---
+A design pass on the page shell. Everything works and the tests are green; the pages now need to look designed. This is a deliberate small change outside the three specs: record it as an amendment in .kiro/specs/shell-and-cli/requirements.md ("Owner answers", item 10) with the list below, then do it. Change only skeleton/shell/ (shell.ts, dom.ts, landing.ts, landing.json, shell.css, neutral-theme.css), skeleton/build/ if the landing copy needs it, the e2e tests that select by text that changes, and copy.json files if a new label is needed (all three: both apps and skeleton/template, plus the copy check). Do not change the engine, the tables or the theme contract.
+
+The owner looked at headless screenshots of both apps (question, result, phone, dark) and the landing page. What to change:
+1. "Your answers": each answer is a row with the question small and muted above, the chosen answer in bold below it, and "Change" as a small text-style button at the right. No "question?: answer" run-on text anywhere, including "What mattered" in the result.
+2. The result is a card: surface background, a thick accent bar on the left, a small uppercase lead (`resultLead`) above the outcome label in large type, the outcome detail, then the rule note in its own inset block. Clear space between the card and what follows.
+3. "Why" is a quieter section below the card: a two-column definition list (term / description) for Rule, What mattered, Source (title as link, then the `at` text, then published and read dates on one line). On a 360 px screen the list stacks.
+4. Skipped questions: a short muted list under the heading, smaller type.
+5. Buttons: one primary style (accent background, accent-text colour) for "Copy link", secondary (outline) for "Start over" and the table toggle; answer options keep their tile or list style. A thin progress bar under "Question n of at most m" (decorative, aria-hidden; the text stays).
+6. Headings focused by script (tabindex -1) get no outline unless `:focus-visible` applies; every interactive element keeps a 3 px visible focus ring in `--focus`.
+7. Footer separated from the page by a top border and space, links in a row that wraps.
+8. A small link back to the landing page at the top of every app page ("All apps" or similar, from copy.json `labels`, relative href `../`).
+9. Landing page: the title, a one-paragraph explanation of the idea (a decision is a table; the checker finds gaps and conflicts; the page asks only questions that can still change the answer), then one card per app (title as the link, tagline, its answer style), then a short "Same skeleton, three files each" note naming table.json, copy.json and theme.css. All words from landing.json.
+10. Keep everything that is tested: one h1, the live region, buttons as buttons, the table view, the hash, no innerHTML, no inline styles, 44 px targets, no horizontal scroll at 360 px, axe clean in light and dark, reduced motion.
+
+Verify: `npm run typecheck && npm test && npm run test:e2e`. Do not stage, commit or push. End with the files changed and the real result lines.
+
+--- transcript ---
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/invariants.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/kiro-workflow.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/product.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/structure.md","file://~/hackathons-2026/kiroween/barebones/.kiro/steering/tech.md"],"kind":"steering_inclusion"}
+
+Let me start by reading the spec and the shell.
+
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/skeleton
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/e2e
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/test
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/skeleton/shell
+[tool:search] List Directory ~/hackathons-2026/kiroween/barebones/skeleton/build
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/shell.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/dom.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/shell.css
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/copy-type.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/page.html
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/build/copy-check.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/build/build.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/build/page.ts
+[tool:search] Grep Search
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/apps/which-bin/copy.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/apps/which-licence/copy.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/template/copy.json
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/skeleton/shell/neutral-theme.css
+[tool:search] Grep Search
+[steering] {"steeringDocuments":["file://~/hackathons-2026/kiroween/barebones/.kiro/steering/table-format.md"],"kind":"steering_inclusion"}
+[tool:search] Grep Search
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/helpers.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/walk.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/landing.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/layout.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/link.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/a11y.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/table.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/e2e/nojs.spec.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/props/shell-generators.ts
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/apps/which-bin/theme.css
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/apps.test.ts
+[tool:search] Grep Search
+[tool:edit] Append to File ~/hackathons-2026/kiroween/barebones/.kiro/specs/shell-and-cli/requirements.md
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'E'
+import re
+def sub(p,a,b,c=1):
+    s=open(p).read()
+    assert a in s,(p,a)
+    open(p,'w').write(s.replace(a,b,c))
+sub('skeleton/shell/copy-type.ts',"  badLink: string; // must contain {count}\n","  badLink: string; // must contain {count}\n  allApps: string; // link back to the landing page\n")
+sub('skeleton/shell/copy-type.ts',"export interface Landing { title: string; tagline: string; footer: FooterEntry[] }","export interface Landing {\n  title: string;\n  tagline: string;\n  intro: string;\n  styles: { tiles: string; list: string };\n  noteTitle: string;\n  note: string;\n  footer: FooterEntry[];\n}")
+sub('skeleton/shell/copy-type.ts',"export interface AppSummary { id: string; title: string; tagline: string }","export interface AppSummary { id: string; title: string; tagline: string; answerStyle: 'tiles' | 'list' }")
+sub('skeleton/build/copy-check.ts',"  badLink: true,\n}","  badLink: true,\n  allApps: true,\n}")
+sub('skeleton/build/copy-check.ts',"const LANDING_KEYS = ['title', 'tagline', 'footer']","const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'footer']")
+sub('skeleton/build/copy-check.ts',"    else if (key === 'footer') checkFooter(input[key], problems);\n    else nonEmptyString(input[key], key, problems);",
+"""    else if (key === 'footer') checkFooter(input[key], problems);
+    else if (key === 'styles') {
+      const styles = input[key];
+      if (!isObj(styles)) problems.push('styles: must be an object');
+      else {
+        for (const name of ['tiles', 'list']) {
+          if (!Object.hasOwn(styles, name)) problems.push(`styles.${name}: missing`);
+          else nonEmptyString(styles[name], `styles.${name}`, problems);
+        }
+        unknownKeys(styles, ['tiles', 'list'], 'styles.', problems);
+      }
+    } else nonEmptyString(input[key], key, problems);""")
+sub('skeleton/build/copy-check.ts',"/** Problems with landing.json: `title`, `tagline` and `footer`. */","/** Problems with landing.json: `title`, `tagline`, `intro`, `styles`, `noteTitle`, `note` and `footer`. */")
+sub('skeleton/build/build.ts',"tagline: a.copy.tagline }","tagline: a.copy.tagline, answerStyle: a.copy.answerStyle }")
+sub('test/props/shell-generators.ts',"  'badLink',\n] as const","  'badLink',\n  'allApps',\n] as const")
+sub('test/apps.test.ts',"use 19 labels","use 20 labels")
+sub('test/apps.test.ts',"toHaveLength(19)","toHaveLength(20)",2)
+sub('apps/which-bin/copy.json','    "noscript"','    "allApps": "All apps",\n    "noscript"')
+sub('apps/which-licence/copy.json','    "badLink": "{count} answer(s) in this link were not recognised and were ignored.",\n','    "badLink": "{count} answer(s) in this link were not recognised and were ignored.",\n    "allApps": "All apps",\n')
+sub('skeleton/template/copy.json','    "badLink"','    "allApps": "All apps",\n    "badLink"')
+E
+sed -n 18,30p apps/which-licence/copy.json
+        "showTable": "Show the whole table",
+        "hideTable": "Hide the table",
+        "any": "any",
+        "outcome": "Licence",
+        "yourAnswers": "Your answers",
+        "questionOf": "Question {n} of at most {max}",
+        "badLink": "{count} answer(s) in this link were not recognised and were ignored.",
+        "allApps": "All apps",
+        "noscript": "This page needs JavaScript. It makes no network requests and stores nothing."
+      },
+      "resultLead": "Closest fit:",
+      "footer": [
+        { "text": "Licence data from choosealicense.com, CC BY 3.0", "href": "https://choosealicense.com/" },
+    exit 0
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.json
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/landing.ts
+[tool:edit] Replace in File ~/hackathons-2026/kiroween/barebones/skeleton/shell/dom.ts
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && python3 - <<'E'
+p='skeleton/shell/shell.ts'
+s=open(p).read()
+def sub(a,b):
+    global s
+    assert a in s,a
+    s=s.replace(a,b,1)
+
+sub("el('header', {}, el('h1', {}, copy.title), el('p', { class: 'tagline' }, copy.tagline)),",
+"""el(
+      'header',
+      {},
+      el('p', { class: 'back' }, el('a', { href: '../' }, labels.allApps)),
+      el('h1', {}, copy.title),
+      el('p', { class: 'tagline' }, copy.tagline),
+    ),""")
+
+sub("""        'li',
+        {},
+        el('span', {}, `${question}: ${valueLabel(step.condition, step.value)}`),
+        text(' '),
+        button(""","""        'li',
+        { class: 'step' },
+        el(
+          'span',
+          { class: 'step-text' },
+          el('span', { class: 'step-question' }, question),
+          text(' '),
+          el('span', { class: 'step-answer' }, valueLabel(step.condition, step.value)),
+        ),
+        button(""")
+sub("          'small',\n","          'quiet',\n")
+sub("      el('ol', {}, ...items),","      el('ol', { class: 'step-list' }, ...items),")
+
+sub("      el('p', { class: 'progress' }, progress),\n","      el('p', { class: 'progress' }, progress),\n      el('progress', { class: 'bar', max: String(steps.length + result.relevant.length), value: String(steps.length + 1), 'aria-hidden': 'true' }),\n")
+
+# result stage
+a=s.index("  function resultStage")
+b=s.index("  async function copyLink")
+new='''  function resultStage(result: DecidedResult): Stage {
+    const headingText = `${copy.resultLead} ${result.outcome.label}`;
+    const heading = el(
+      'h2',
+      { tabindex: '-1', class: 'result-heading' },
+      el('span', { class: 'lead' }, copy.resultLead),
+      text(' '),
+      el('span', { class: 'outcome' }, result.outcome.label),
+    );
+
+    const notes: string[] = [];
+    for (const rule of result.rules) {
+      if (rule.note !== undefined && !notes.includes(rule.note)) notes.push(rule.note);
+    }
+
+    const card = el(
+      'div',
+      { class: 'card' },
+      heading,
+      el('p', { class: 'detail' }, result.outcome.detail),
+      ...notes.map((note) => el('p', { class: 'note' }, note)),
+    );
+
+    const row = (term: string, ...details: Node[]): HTMLElement =>
+      el('div', { class: 'row' }, el('dt', {}, term), ...details);
+
+    const rows: HTMLElement[] = [row(labels.rule, el('dd', {}, result.rules.map((r) => r.id).join(', ')))];
+    if (result.mattered.length > 0) {
+      rows.push(
+        row(
+          labels.whatMattered,
+          el(
+            'dd',
+            {},
+            el(
+              'ul',
+              { class: 'matters' },
+              ...result.mattered.map((m) =>
+                el(
+                  'li',
+                  {},
+                  el('span', { class: 'matter-question' }, m.question),
+                  text(' '),
+                  el('span', { class: 'matter-answer' }, m.label),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    rows.push(
+      row(
+        labels.source,
+        ...result.sources.map((source) => {
+          const places = result.rules.filter((r) => r.source.ref === source.id).map((r) => r.source.at);
+          return el(
+            'dd',
+            { class: 'source' },
+            el('p', { class: 'source-title' }, linkOrText(source.title, source.url)),
+            ...places.map((at) => el('p', { class: 'source-at' }, at)),
+            el('p', { class: 'meta' }, `${labels.published}: ${source.published} \\u00b7 ${labels.readOn}: ${source.read}`),
+          );
+        }),
+      ),
+    );
+
+    const children: Node[] = [card, el('section', { class: 'why' }, el('h3', {}, labels.why), el('dl', { class: 'why-list' }, ...rows))];
+    if (result.skipped.length > 0) {
+      children.push(
+        el(
+          'section',
+          { class: 'skipped' },
+          el('h3', {}, labels.notAsked),
+          el('ul', {}, ...result.skipped.map((s) => el('li', {}, s.question))),
+        ),
+      );
+    }
+    return { node: el('section', { class: 'stage' }, ...children), heading, announce: headingText };
+  }
+
+'''
+s=s[:a]+new+s[b:]
+
+sub("""    const copyButton = button([labels.copyLink], () => void copyLink(copyButton));
+    return el('div', { class: 'actions' }, button([labels.startOver], () => {
+      steps = [];
+      ignored = 0;
+      update(true);
+    }), copyButton);""","""    const copyButton = button([labels.copyLink], () => void copyLink(copyButton), 'primary');
+    return el(
+      'div',
+      { class: 'actions' },
+      copyButton,
+      button([labels.startOver], () => {
+        steps = [];
+        ignored = 0;
+        update(true);
+      }),
+    );""")
+open(p,'w').write(s)
+E
+grep -n "u00b7" skeleton/shell/shell.ts
+    186:            el('p', { class: 'meta' }, `${labels.published}: ${source.published} \u00b7 ${labels.readOn}: ${source.read}`),
+    exit 0
+[tool:search] Grep Search
+[tool:read] Read File ~/hackathons-2026/kiroween/barebones/test/build.test.ts
+[tool:edit] Write File ~/hackathons-2026/kiroween/barebones/skeleton/shell/shell.css
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run typecheck 2>&1 | tail -15 && npm test 2>&1 | tail -15
+    
+    > typecheck
+    > tsc --noEmit
+    
+    
+    > test
+    > vitest --run
+    
+    
+     RUN  v5.1.0 ~/hackathons-2026/kiroween/barebones
+    
+    bare-bones MCP server ready
+    
+     Test Files  11 passed (11)
+          Tests  91 passed (91)
+       Start at  14:36:17
+       Duration  503ms (tests 48%, import 32%, transform 19%, worker 1%)
+    exit 0
+[tool:execute] $ cd ~/hackathons-2026/kiroween/barebones && npm run test:e2e 2>&1 | tail -40
+    
+    > test:e2e
+    > npm run build && playwright test
+    
+    
+    > build
+    > tsx skeleton/build/build.ts
+    
+    built 2 apps into dist/
+    
+    Running 12 tests using 6 workers
+    
+      ✓   4 [chromium] › e2e/layout.spec.ts:7:1 › no horizontal scroll at 360 px (523ms)
+      ✓   5 [chromium] › e2e/landing.spec.ts:4:1 › landing page lists both apps (657ms)
+      ✓   7 [chromium] › e2e/link.spec.ts:4:1 › shared link and bad link (343ms)
+      ✓   8 [chromium] › e2e/nojs.spec.ts:6:1 › pages are not blank without JavaScript (359ms)
+      ✓   9 [chromium] › e2e/table.spec.ts:22:1 › which-bin: whole table (309ms)
+      ✓  10 [chromium] › e2e/table.spec.ts:26:1 › which-licence: whole table (329ms)
+      ✓  11 [chromium] › e2e/walk.spec.ts:4:1 › which-bin: keyboard walk, greasy pizza box (445ms)
+      ✓   1 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, dark (1.7s)
+      ✓   2 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-licence, light (1.8s)
+      ✓  12 [chromium] › e2e/walk.spec.ts:19:1 › which-licence: keyboard walk, MIT (510ms)
+      ✓   6 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, dark (2.0s)
+      ✓   3 [chromium] › e2e/a11y.spec.ts:13:3 › axe, which-bin, light (2.1s)
+    
+      12 passed (2.9s)
+    exit 0
+
+The design pass is done. The three-part verify command passed, but I ran it in pieces: typecheck and `npm test` together, then `npm run test:e2e` alone. I haven't looked at screenshots, so the look is untested beyond axe and the 360 px overflow check.
+
+I recorded the amendment as item 10 in `.kiro/specs/shell-and-cli/requirements.md`. It covers your ten points.
+
+Result lines:
+- `npm run typecheck`: exit 0, no errors.
+- `npm test`: `Test Files  11 passed (11)`, `Tests  91 passed (91)`.
+- `npm run test:e2e`: `12 passed (2.9s)`. This covers axe in light and dark, the 360 px overflow check, the keyboard walks, the table view, the bad-link case, the no-JS page and the landing page.
+
+I changed the e2e tests that select by text only if they needed it, and none did. The headings, the steps region and the progress text keep the names they were selected by.
+
+Choices and additions beyond your list:
+- **New label:** you asked for the back link's text to come from `labels`, so I added `allApps` ("All apps"). That makes 20 labels, and `copy.json` for both apps and the template now has it.
+- **Landing words:** `landing.json` now has `intro`, `styles` ("Answers as tiles" / "Answers as a list"), `noteTitle` and `note`. `validateLanding` checks them, and `AppSummary` carries `answerStyle`.
+- **Progress bar:** it is a `<progress>` element (`aria-hidden`), because a CSS-width bar would have needed an inline style.
+- **Rule cell:** the Rule row shows rule ids joined with commas.
+- **Dates:** published and read dates sit on one line, separated by " · ".
+- **Footer:** link entries and plain-text entries get separate classes, so links wrap in a row while a plain note takes the full width.
+- **No-JS page:** I did not add the back link to the static no-JS page, since the `bootApp` property test fixes what that block contains.
+
+Files changed:
+- `.kiro/specs/shell-and-cli/requirements.md`
+- `skeleton/shell/`: `shell.ts`, `dom.ts`, `landing.ts`, `landing.json`, `shell.css`, `copy-type.ts`. I did not touch `neutral-theme.css`.
+- `skeleton/build/`: `copy-check.ts` (the `allApps` label and landing validation), `build.ts` (passes `answerStyle` to the landing page).
+- `apps/which-bin/copy.json`, `apps/which-licence/copy.json`, `skeleton/template/copy.json`
+- `test/apps.test.ts`: 19 labels became 20.
+- `test/props/shell-generators.ts`: `LABEL_KEYS` gained `allApps`.
+
+The last two are outside the list you gave, but the label count and the generator's key list would otherwise be wrong. No check was weakened.
+
+I did not change the engine, the tables or the theme contract, and I did not stage or commit anything.
+
+--- run success (end_turn); credits reported by this session: 5.99 ---
+--- exit 0; account credit meter before 3459.86, after 3465.86 (shared account) ---

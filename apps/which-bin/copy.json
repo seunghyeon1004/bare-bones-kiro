@@ -22,9 +22,10 @@
     "yourAnswers": "Your answers",
     "questionOf": "Question {n} of up to {max}",
     "badLink": "{count} answer(s) in this link were not recognised and were ignored.",
+    "allApps": "All apps",
     "noscript": "This page needs JavaScript to ask its questions. It does not send anything anywhere."
   },
-  "resultLead": "Where it goes:",
+  "resultLead": "Where it goes",
   "footer": [
     {
       "text": "Source: Seoul Metropolitan Government, Seoul's standard discharge rules (page updated 2025-08-06)",

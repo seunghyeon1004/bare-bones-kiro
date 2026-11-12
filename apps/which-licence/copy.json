@@ -22,9 +22,10 @@
     "yourAnswers": "Your answers",
     "questionOf": "Question {n} of at most {max}",
     "badLink": "{count} answer(s) in this link were not recognised and were ignored.",
+    "allApps": "All apps",
     "noscript": "This page needs JavaScript. It makes no network requests and stores nothing."
   },
-  "resultLead": "Closest fit:",
+  "resultLead": "Closest fit",
   "footer": [
     { "text": "Licence data from choosealicense.com, CC BY 3.0", "href": "https://choosealicense.com/" },
     { "text": "Data source: github.com/github/choosealicense.com", "href": "https://github.com/github/choosealicense.com" },

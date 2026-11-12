@@ -21,10 +21,11 @@ const LABEL_KEYS = {
   noscript: true,
   questionOf: true,
   badLink: true,
+  allApps: true,
 } satisfies Record<keyof Labels, true>;
 
 const COPY_KEYS = ['title', 'tagline', 'intro', 'answerStyle', 'labels', 'resultLead', 'footer'] as const satisfies readonly (keyof Copy)[];
-const LANDING_KEYS = ['title', 'tagline', 'footer'] as const satisfies readonly (keyof Landing)[];
+const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'footer'] as const satisfies readonly (keyof Landing)[];
 const PLACEHOLDERS: Partial<Record<keyof Labels, string[]>> = { questionOf: ['{n}', '{max}'], badLink: ['{count}'] };
 
 type Obj = Record<string, unknown>;
@@ -112,14 +113,24 @@ export function validateCopy(input: unknown): string[] {
   return problems;
 }
 
-/** Problems with landing.json: `title`, `tagline` and `footer`. */
+/** Problems with landing.json: `title`, `tagline`, `intro`, `styles`, `noteTitle`, `note` and `footer`. */
 export function validateLanding(input: unknown): string[] {
   const problems: string[] = [];
   if (!isObj(input)) return ['$: must be an object'];
   for (const key of LANDING_KEYS) {
     if (!Object.hasOwn(input, key)) problems.push(`${key}: missing`);
     else if (key === 'footer') checkFooter(input[key], problems);
-    else nonEmptyString(input[key], key, problems);
+    else if (key === 'styles') {
+      const styles = input[key];
+      if (!isObj(styles)) problems.push('styles: must be an object');
+      else {
+        for (const name of ['tiles', 'list']) {
+          if (!Object.hasOwn(styles, name)) problems.push(`styles.${name}: missing`);
+          else nonEmptyString(styles[name], `styles.${name}`, problems);
+        }
+        unknownKeys(styles, ['tiles', 'list'], 'styles.', problems);
+      }
+    } else nonEmptyString(input[key], key, problems);
   }
   unknownKeys(input, LANDING_KEYS, '', problems);
   return problems;

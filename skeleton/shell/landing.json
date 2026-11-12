@@ -1,5 +1,9 @@
 {
   "title": "Bare Bones",
   "tagline": "Small decision tools, each one a table that has been checked for gaps and conflicts.",
+  "intro": "A decision is a table: conditions go in, one outcome comes out. A checker reads each table and finds the gaps (answers no rule covers) and the conflicts (answers two rules disagree on). The page then asks only the questions that can still change the answer, and shows the rule and source behind it.",
+  "styles": { "tiles": "Answers as tiles", "list": "Answers as a list" },
+  "noteTitle": "Same skeleton, three files each",
+  "note": "Every app here is made of table.json (the decision), copy.json (the words) and theme.css (the colours and fonts). Nothing else.",
   "footer": [{ "text": "Every answer comes from a checked decision table." }]
 }

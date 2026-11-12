@@ -150,7 +150,7 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
   const template = readFileSync(path.join(SHELL_DIR, 'page.html'), 'utf8');
   const shellCss = readFileSync(path.join(SHELL_DIR, 'shell.css'), 'utf8');
   const landing = landingJson as Landing;
-  const summaries: AppSummary[] = apps.map((a) => ({ id: a.name, title: a.copy.title, tagline: a.copy.tagline }));
+  const summaries: AppSummary[] = apps.map((a) => ({ id: a.name, title: a.copy.title, tagline: a.copy.tagline, answerStyle: a.copy.answerStyle }));
 
   rmSync(opts.outDir, { recursive: true, force: true });
   mkdirSync(opts.outDir, { recursive: true });

@@ -20,6 +20,7 @@ export interface Labels {
   noscript: string;
   questionOf: string; // must contain {n} and {max}
   badLink: string; // must contain {count}
+  allApps: string; // link back to the landing page
 }
 
 export interface FooterEntry { text: string; href?: string }
@@ -34,6 +35,14 @@ export interface Copy {
   footer: FooterEntry[];
 }
 
-export interface Landing { title: string; tagline: string; footer: FooterEntry[] }
+export interface Landing {
+  title: string;
+  tagline: string;
+  intro: string;
+  styles: { tiles: string; list: string };
+  noteTitle: string;
+  note: string;
+  footer: FooterEntry[];
+}
 
-export interface AppSummary { id: string; title: string; tagline: string }
+export interface AppSummary { id: string; title: string; tagline: string; answerStyle: 'tiles' | 'list' }

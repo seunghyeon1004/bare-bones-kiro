@@ -22,6 +22,7 @@
     "yourAnswers": "Your answers",
     "noscript": "This page needs JavaScript to ask the questions.",
     "questionOf": "Question {n} of at most {max}",
+    "allApps": "All apps",
     "badLink": "{count} part(s) of the link were not understood and were ignored."
   },
   "resultLead": "Put it in",

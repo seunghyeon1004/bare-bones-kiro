@@ -33,7 +33,13 @@ function start(): void {
   const page = el(
     'div',
     { class: 'page' },
-    el('header', {}, el('h1', {}, copy.title), el('p', { class: 'tagline' }, copy.tagline)),
+    el(
+      'header',
+      {},
+      el('p', { class: 'back' }, el('a', { href: '../' }, labels.allApps)),
+      el('h1', {}, copy.title),
+      el('p', { class: 'tagline' }, copy.tagline),
+    ),
     main,
     tableSection,
     renderFooter(copy.footer),
@@ -56,9 +62,14 @@ function start(): void {
       const question = conditionById.get(step.condition)?.question ?? step.condition;
       return el(
         'li',
-        {},
-        el('span', {}, `${question}: ${valueLabel(step.condition, step.value)}`),
-        text(' '),
+        { class: 'step' },
+        el(
+          'span',
+          { class: 'step-text' },
+          el('span', { class: 'step-question' }, question),
+          text(' '),
+          el('span', { class: 'step-answer' }, valueLabel(step.condition, step.value)),
+        ),
         button(
           [labels.change, text(' '), el('span', { class: 'vh' }, question)],
           () => {
@@ -66,7 +77,7 @@ function start(): void {
             ignored = 0;
             update(true);
           },
-          'small',
+          'quiet',
         ),
       );
     });
@@ -74,7 +85,7 @@ function start(): void {
       'section',
       { class: 'steps', 'aria-labelledby': 'steps-heading' },
       el('h2', { id: 'steps-heading', class: 'plain' }, labels.yourAnswers),
-      el('ol', {}, ...items),
+      el('ol', { class: 'step-list' }, ...items),
     );
   }
 
@@ -103,6 +114,7 @@ function start(): void {
       'section',
       { class: 'stage' },
       el('p', { class: 'progress' }, progress),
+      el('progress', { class: 'bar', max: String(steps.length + result.relevant.length), value: String(steps.length + 1), 'aria-hidden': 'true' }),
       heading,
       ...(next.help === undefined ? [] : [el('p', { class: 'help' }, next.help)]),
       el('ul', { class: `choices ${copy.answerStyle}` }, ...choices),
@@ -112,45 +124,72 @@ function start(): void {
 
   function resultStage(result: DecidedResult): Stage {
     const headingText = `${copy.resultLead} ${result.outcome.label}`;
-    const heading = el('h2', { tabindex: '-1' }, headingText);
+    const heading = el(
+      'h2',
+      { tabindex: '-1', class: 'result-heading' },
+      el('span', { class: 'lead' }, copy.resultLead),
+      text(' '),
+      el('span', { class: 'outcome' }, result.outcome.label),
+    );
 
     const notes: string[] = [];
     for (const rule of result.rules) {
       if (rule.note !== undefined && !notes.includes(rule.note)) notes.push(rule.note);
     }
 
-    const why: Node[] = [
-      el('h3', {}, labels.why),
-      el('h4', {}, labels.rule),
-      el('ul', {}, ...result.rules.map((r) => el('li', {}, r.id))),
-    ];
-    if (result.mattered.length > 0) {
-      why.push(
-        el('h4', {}, labels.whatMattered),
-        el('ul', {}, ...result.mattered.map((m) => el('li', {}, `${m.question}: ${m.label}`))),
-      );
-    }
-    why.push(el('h4', {}, labels.source));
-    for (const source of result.sources) {
-      const places = result.rules.filter((r) => r.source.ref === source.id).map((r) => r.source.at);
-      why.push(
-        el(
-          'div',
-          { class: 'source' },
-          el('p', {}, linkOrText(source.title, source.url)),
-          el('ul', {}, ...places.map((at) => el('li', {}, at))),
-          el('p', { class: 'meta' }, `${labels.published}: ${source.published}`),
-          el('p', { class: 'meta' }, `${labels.readOn}: ${source.read}`),
-        ),
-      );
-    }
-
-    const children: Node[] = [
+    const card = el(
+      'div',
+      { class: 'card' },
       heading,
       el('p', { class: 'detail' }, result.outcome.detail),
       ...notes.map((note) => el('p', { class: 'note' }, note)),
-      el('section', { class: 'why' }, ...why),
-    ];
+    );
+
+    const row = (term: string, ...details: Node[]): HTMLElement =>
+      el('div', { class: 'row' }, el('dt', {}, term), ...details);
+
+    const rows: HTMLElement[] = [row(labels.rule, el('dd', {}, result.rules.map((r) => r.id).join(', ')))];
+    if (result.mattered.length > 0) {
+      rows.push(
+        row(
+          labels.whatMattered,
+          el(
+            'dd',
+            {},
+            el(
+              'ul',
+              { class: 'matters' },
+              ...result.mattered.map((m) =>
+                el(
+                  'li',
+                  {},
+                  el('span', { class: 'matter-question' }, m.question),
+                  text(' '),
+                  el('span', { class: 'matter-answer' }, m.label),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    rows.push(
+      row(
+        labels.source,
+        ...result.sources.map((source) => {
+          const places = result.rules.filter((r) => r.source.ref === source.id).map((r) => r.source.at);
+          return el(
+            'dd',
+            { class: 'source' },
+            el('p', { class: 'source-title' }, linkOrText(source.title, source.url)),
+            ...places.map((at) => el('p', { class: 'source-at' }, at)),
+            el('p', { class: 'meta' }, `${labels.published}: ${source.published} \u00b7 ${labels.readOn}: ${source.read}`),
+          );
+        }),
+      ),
+    );
+
+    const children: Node[] = [card, el('section', { class: 'why' }, el('h3', {}, labels.why), el('dl', { class: 'why-list' }, ...rows))];
     if (result.skipped.length > 0) {
       children.push(
         el(
@@ -182,12 +221,17 @@ function start(): void {
   }
 
   function actions(): HTMLElement {
-    const copyButton = button([labels.copyLink], () => void copyLink(copyButton));
-    return el('div', { class: 'actions' }, button([labels.startOver], () => {
-      steps = [];
-      ignored = 0;
-      update(true);
-    }), copyButton);
+    const copyButton = button([labels.copyLink], () => void copyLink(copyButton), 'primary');
+    return el(
+      'div',
+      { class: 'actions' },
+      copyButton,
+      button([labels.startOver], () => {
+        steps = [];
+        ignored = 0;
+        update(true);
+      }),
+    );
   }
 
   function render(moveFocus: boolean): void {

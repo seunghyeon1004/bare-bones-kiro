@@ -20,6 +20,11 @@ h4 {
   line-height: 1.25;
 }
 
+h1 {
+  margin: 0 0 calc(var(--space) / 2);
+  font-size: 2rem;
+}
+
 .page {
   box-sizing: border-box;
   max-width: 40rem;
@@ -35,6 +40,15 @@ h4 {
   color: var(--muted);
 }
 
+.tagline {
+  margin-top: 0;
+}
+
+.back {
+  margin: 0 0 var(--space);
+  font-size: 0.875rem;
+}
+
 .plain {
   font-size: 1rem;
 }
@@ -43,6 +57,17 @@ a {
   color: var(--accent);
 }
 
+/* Focus. Headings that script focuses (tabindex -1) show no ring unless :focus-visible applies. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Buttons. The base style is the secondary (outline) button. */
 button,
 input {
   font: inherit;
@@ -54,26 +79,57 @@ button {
   min-height: 44px;
   min-width: 44px;
   padding: var(--space);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
 
-button:hover,
-button:focus-visible {
+button:hover {
+  background: var(--surface);
+}
+
+button.primary {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-text);
+  font-weight: bold;
 }
 
-button:hover .hint,
-button:focus-visible .hint {
-  color: var(--accent-text);
+button.primary:hover {
+  background: var(--accent);
+  border-color: var(--text);
 }
 
-button.small {
+/* Text-style button: the "Change" control. */
+button.quiet {
   padding: calc(var(--space) / 2) var(--space);
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+button.quiet:hover {
+  background: transparent;
+  border-color: var(--border);
+}
+
+button.choice {
+  background: var(--surface);
+  border-width: 1px;
+}
+
+button.choice:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button.choice:hover .hint {
+  color: var(--accent-text);
 }
 
 input {
@@ -87,11 +143,7 @@ input {
   border-radius: var(--radius);
 }
 
-:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-
+/* Question and choices. */
 .choices {
   margin: 0;
   padding: 0;
@@ -126,6 +178,36 @@ input {
   gap: var(--space);
 }
 
+.progress {
+  margin-bottom: calc(var(--space) / 2);
+  font-size: 0.875rem;
+}
+
+.bar {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 6px;
+  margin: 0 0 var(--space);
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.bar::-webkit-progress-bar {
+  background: var(--border);
+}
+
+.bar::-webkit-progress-value {
+  background: var(--accent);
+}
+
+.bar::-moz-progress-bar {
+  background: var(--accent);
+}
+
 .notice {
   padding: var(--space);
   border: 1px solid var(--border);
@@ -133,21 +215,169 @@ input {
   background: var(--surface);
 }
 
-.steps ol {
-  padding-left: calc(var(--space) * 2);
-}
-
-.steps li {
+/* Your answers: one row per step. */
+.steps h2 {
   margin-bottom: calc(var(--space) / 2);
 }
 
-.why,
-.skipped {
+.step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.step-text {
+  min-width: 0;
+}
+
+.step-question,
+.step-answer {
+  display: block;
+}
+
+.step-question {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.step-answer {
+  font-weight: bold;
+}
+
+/* The result card. */
+.stage {
   margin-top: calc(var(--space) * 2);
 }
 
-.source {
-  margin-bottom: var(--space);
+.card {
+  box-sizing: border-box;
+  margin-bottom: calc(var(--space) * 3);
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.result-heading {
+  margin: 0 0 var(--space);
+}
+
+.result-heading .lead {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.result-heading .outcome {
+  display: block;
+  font-size: 2rem;
+}
+
+.detail {
+  margin: 0 0 var(--space);
+}
+
+.note {
+  margin: var(--space) 0 0;
+  padding: var(--space);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9375rem;
+}
+
+/* Why: a quiet two-column definition list. */
+.why h3,
+.skipped h3 {
+  margin: 0 0 var(--space);
+  font-size: 1rem;
+}
+
+.why {
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.why-list {
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 10rem) 1fr;
+  gap: var(--space);
+  padding: var(--space) 0;
+  border-top: 1px solid var(--border);
+}
+
+.row dt {
+  color: var(--muted);
+}
+
+.row dd {
+  margin: 0;
+}
+
+.row dd + dd {
+  grid-column: 2;
+}
+
+.row p {
+  margin: 0;
+}
+
+.matters {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.matters li {
+  margin-bottom: calc(var(--space) / 2);
+}
+
+.matter-question {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.matter-answer {
+  display: block;
+  font-weight: bold;
+}
+
+.source-title {
+  font-weight: bold;
+}
+
+.meta {
+  font-size: 0.875rem;
+}
+
+.skipped {
+  margin-top: calc(var(--space) * 2);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.skipped ul {
+  margin: 0;
+  padding-left: calc(var(--space) * 1.5);
 }
 
 .actions {
@@ -189,19 +419,76 @@ td {
   overflow-wrap: normal;
 }
 
+/* Footer. */
 .footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2) calc(var(--space) * 1.5);
   margin-top: calc(var(--space) * 3);
+  padding-top: calc(var(--space) * 1.5);
+  border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: 0.875em;
+  font-size: 0.875rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer-note {
+  flex-basis: 100%;
+}
+
+/* Landing page. */
+.lede {
+  margin: var(--space) 0 calc(var(--space) * 2);
 }
 
 .apps {
+  display: grid;
+  gap: var(--space);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .apps li {
-  margin-bottom: calc(var(--space) * 2);
+  padding: calc(var(--space) * 1.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 0.5rem solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.apps p {
+  margin: calc(var(--space) / 2) 0 0;
+}
+
+.app-link {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.app-style {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.note-block {
+  margin-top: calc(var(--space) * 2);
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.note-block h2 {
+  margin: 0 0 calc(var(--space) / 2);
+}
+
+.note-block p {
+  margin: 0;
 }
 
 .vh {
@@ -220,10 +507,27 @@ td {
   display: none;
 }
 
+@media (max-width: 36rem) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: calc(var(--space) / 4);
+  }
+
+  .row dd + dd {
+    grid-column: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* By hand (owner): keep the "Change" button on one line beside a long question. */
+.step > button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }

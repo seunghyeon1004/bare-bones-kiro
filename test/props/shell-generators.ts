@@ -84,6 +84,7 @@ export const LABEL_KEYS = [
   'noscript',
   'questionOf',
   'badLink',
+  'allApps',
 ] as const;
 
 /** A `Copy` with hostile text in every string field. */
