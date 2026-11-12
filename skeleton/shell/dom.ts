@@ -14,6 +14,31 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** A decorative outline pictogram: each string is one path `d` on a 24 by 24 grid. Built with createElementNS, never markup. */
+export function svgIcon(paths: readonly string[]): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  const attrs: Record<string, string> = {
+    class: 'icon',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.75',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'aria-hidden': 'true',
+    focusable: 'false',
+  };
+  for (const [name, value] of Object.entries(attrs)) svg.setAttribute(name, value);
+  for (const d of paths) {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  }
+  return svg;
+}
+
 export function text(value: string): Text {
   return document.createTextNode(value);
 }

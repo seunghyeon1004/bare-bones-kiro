@@ -211,3 +211,13 @@ Given after `apps/which-bin/table.json` was audited against `docs/sources/README
 ### Amendment from the playground spec (owner answers, 2026-11)
 
 - 10.10 (amended): the `e2e/` suite holds 16 tests (12 + 4 in `e2e/playground.spec.ts`). The Verify of task 5 counts `Total: 16 tests`.
+
+### Owner answers: amendment after the review of the Which bin? first screen (docs/screens/02-which-bin-question.png)
+
+Given after the owner saw the question screen: tiles were walls of text of uneven height, and the tagline and intro repeated the same sentence about Seoul's rules. They override anything above that they contradict. The engine and every table rule are unchanged; the amendment is made in `skeleton/shell` and `skeleton/build` (see the matching item in `shell-and-cli/requirements.md`).
+
+1. Which bin? `copy.json` gains `icons`: a pictogram for each of the 15 `kind` values. Which bin? tiles show the pictogram and a short label (about three words). `table.json` changes labels and hints of the `kind` values only; no condition, value id, outcome, rule, note or source changes.
+2. The tile hint is not printed in the tile. In the tiles style it appears as a secondary line in the "Your answers" row once the value is chosen. The list style (Which licence?) is unchanged, and Which licence? sets no `icons` and no `filter`.
+3. `copy.json` gains a `filter` for the `kind` question: a search box that narrows the tiles by label and keywords. Keywords cover only items the table covers (for example "bulb" and "lamp" only where the label says lamps).
+4. The tagline is short ("Where does it go? Korea's household recycling rules, in plain English."). The intro names Seoul's rules (2025) and the Ministry of Environment guide (2018) once and says districts differ. The footer keeps the source links and its last line.
+5. Tests: the e2e suite gains one test in `e2e/filter.spec.ts` (type "pizza", one tile remains, Enter, the next question appears), so the count in the Verify of task 5 is `Total: 17 tests` (16 + 1; this supersedes the playground amendment above).

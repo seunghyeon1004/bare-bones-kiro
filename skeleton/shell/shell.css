@@ -177,14 +177,71 @@ input {
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 7.5rem), 1fr));
+  align-items: stretch;
   gap: var(--space);
+}
+
+/* Tiles: pictogram over a short label; every tile in a row is as tall as the tallest. */
+.tiles > li {
+  display: flex;
+}
+
+.tiles .choice {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--space) / 2);
+  padding: var(--space) calc(var(--space) / 2);
+  text-align: center;
+}
+
+.tiles .choice .label {
+  font-size: 0.9375rem;
+  line-height: 1.25;
+}
+
+.icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
 }
 
 .list {
   display: flex;
   flex-direction: column;
   gap: var(--space);
+}
+
+/* Filter box above the choices. */
+.filter {
+  margin-bottom: var(--space);
+}
+
+.filter-label {
+  display: block;
+  font-weight: bold;
+}
+
+.filter-input {
+  display: block;
+  width: 100%;
+  margin-top: calc(var(--space) / 2);
+}
+
+.filter-status {
+  min-height: 1.5em;
+  margin: calc(var(--space) / 2) 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.step-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
 }
 
 .progress {

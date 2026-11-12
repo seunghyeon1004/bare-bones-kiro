@@ -6,7 +6,7 @@ import { check, formatInvalidJson, formatProblems, formatReport, validate } from
 import type { Table } from '../engine/index.ts';
 import type { PlaygroundCopy, PlaygroundData, PlaygroundExample } from '../playground/types.ts';
 import type { AppSummary, Copy, Landing } from '../shell/copy-type.ts';
-import { validateCopy, validateLanding, validatePlayground } from './copy-check.ts';
+import { validateCopy, validateCopyAgainstTable, validateLanding, validatePlayground } from './copy-check.ts';
 import { bootApp, bootLanding, bootPlayground, renderPage } from './page.ts';
 import { parseTheme, validateTheme } from './theme-check.ts';
 
@@ -110,7 +110,9 @@ export async function build(opts: BuildOptions): Promise<BuildResult> {
       }
     }
     if (copyJson !== undefined) {
-      for (const problem of validateCopy(copyJson)) errors.push(`${shown}/copy.json: ${problem}`);
+      const copyProblems = validateCopy(copyJson);
+      if (copyProblems.length === 0 && table !== undefined) copyProblems.push(...validateCopyAgainstTable(copyJson as Copy, table));
+      for (const problem of copyProblems) errors.push(`${shown}/copy.json: ${problem}`);
     }
     for (const problem of validateTheme(themeCss)) errors.push(`${shown}/theme.css: ${problem}`);
 

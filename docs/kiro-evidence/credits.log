@@ -12,3 +12,4 @@
 2026-11-12T05:44:00Z 09-mcp-check-draft exit 0 meter 3472.48 -> 3472.48
 2026-11-12T06:08:23Z 12-spec-playground exit 0 meter 3472.99 -> 3494.74
 2026-11-12T06:17:44Z 13-impl-playground exit 0 meter 3494.74 -> 3515.98
+2026-11-12T06:22:59Z 14-which-bin-first-screen exit 0 meter 3515.98 -> 3525.39

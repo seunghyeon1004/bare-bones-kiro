@@ -1,8 +1,9 @@
 import { decide } from '../engine/index.ts';
 import type { DecidedResult, OpenResult, Table } from '../engine/index.ts';
 import type { Copy } from './copy-type.ts';
-import { el, fill, linkOrText, renderFooter, text } from './dom.ts';
+import { el, fill, linkOrText, renderFooter, svgIcon, text } from './dom.ts';
 import type { Child } from './dom.ts';
+import { matchValues } from './filter.ts';
 import { readHash, writeHash } from './hash.ts';
 import type { Step } from './hash.ts';
 
@@ -82,6 +83,8 @@ export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: M
   function stepsSection(): HTMLElement {
     const items = steps.map((step, i) => {
       const question = conditionById.get(step.condition)?.question ?? step.condition;
+      const hint =
+        copy.answerStyle === 'tiles' ? conditionById.get(step.condition)?.values.find((v) => v.id === step.value)?.hint : undefined;
       return el(
         'li',
         { class: 'step' },
@@ -91,6 +94,7 @@ export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: M
           el('span', { class: 'step-question' }, question),
           text(' '),
           el('span', { class: 'step-answer' }, valueLabel(step.condition, step.value)),
+          ...(hint === undefined ? [] : [el('span', { class: 'step-hint' }, hint)]),
         ),
         button(
           [labels.change, text(' '), el('span', { class: 'vh' }, question)],
@@ -115,23 +119,67 @@ export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: M
     const next = result.next;
     const progress = fill(labels.questionOf, { n: steps.length + 1, max: steps.length + result.relevant.length });
     const questionHeading = heading(2, { tabindex: '-1', class: 'question-title' }, next.question);
-    const choices = next.values.map((value) => {
-      const content: Child[] = [el('span', { class: 'label' }, value.label)];
-      if (value.hint !== undefined) content.push(el('span', { class: 'hint' }, value.hint));
-      return el(
-        'li',
-        {},
-        button(
-          content,
-          () => {
-            steps.push({ condition: next.condition, value: value.id });
-            ignored = 0;
-            update(true);
-          },
-          'choice',
-        ),
+    const tiles = copy.answerStyle === 'tiles';
+
+    const choose = (valueId: string): void => {
+      steps.push({ condition: next.condition, value: valueId });
+      ignored = 0;
+      update(true);
+    };
+    const choiceItem = (value: (typeof next.values)[number]): HTMLElement => {
+      const content: Child[] = [];
+      const icon = copy.icons !== undefined && Object.hasOwn(copy.icons, value.id) ? copy.icons[value.id] : undefined;
+      if (icon !== undefined) content.push(svgIcon(icon));
+      content.push(el('span', { class: 'label' }, value.label));
+      if (!tiles && value.hint !== undefined) content.push(el('span', { class: 'hint' }, value.hint));
+      return el('li', {}, button(content, () => choose(value.id), 'choice'));
+    };
+
+    const list = el('ul', { class: `choices ${copy.answerStyle}` });
+    const filter = copy.filter !== undefined && copy.filter.condition === next.condition ? copy.filter : undefined;
+    const extra: Node[] = [];
+
+    if (filter === undefined) {
+      list.replaceChildren(...next.values.map(choiceItem));
+    } else {
+      const inputId = 'filter-input';
+      const input = el('input', { id: inputId, type: 'search', autocomplete: 'off', placeholder: filter.placeholder, class: 'filter-input' });
+      const status = el('p', { class: 'filter-status', 'aria-live': 'polite' });
+      const showAll = button([filter.showAll], () => {
+        input.value = '';
+        applyFilter();
+        input.focus();
+      });
+      showAll.hidden = true;
+      let matches: string[] = next.values.map((v) => v.id);
+
+      function applyFilter(): void {
+        matches = matchValues(next.values, filter?.keywords ?? {}, input.value);
+        list.replaceChildren(...next.values.filter((v) => matches.includes(v.id)).map(choiceItem));
+        const typed = input.value.trim() !== '';
+        status.textContent = !typed
+          ? ''
+          : matches.length === 0
+            ? (filter?.noMatch ?? '')
+            : matches.length === 1
+              ? (filter?.countOne ?? '')
+              : fill(filter?.count ?? '', { n: matches.length });
+        showAll.hidden = matches.length > 0;
+      }
+
+      input.addEventListener('input', applyFilter);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && matches.length === 1 && matches[0] !== undefined) {
+          event.preventDefault();
+          choose(matches[0]);
+        }
+      });
+      applyFilter();
+      extra.push(
+        el('div', { class: 'filter' }, el('label', { for: inputId, class: 'filter-label' }, filter.label), input, status, showAll),
       );
-    });
+    }
+
     const node = el(
       'section',
       { class: 'stage' },
@@ -139,7 +187,8 @@ export function mountApp(root: HTMLElement, table: Table, copy: Copy, options: M
       el('progress', { class: 'bar', max: String(steps.length + result.relevant.length), value: String(steps.length + 1), 'aria-hidden': 'true' }),
       questionHeading,
       ...(next.help === undefined ? [] : [el('p', { class: 'help' }, next.help)]),
-      el('ul', { class: `choices ${copy.answerStyle}` }, ...choices),
+      ...extra,
+      list,
     );
     return { node, heading: questionHeading, announce: `${progress} ${next.question}` };
   }

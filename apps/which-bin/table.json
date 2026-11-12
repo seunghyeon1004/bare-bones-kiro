@@ -8,17 +8,17 @@
       "values": [
         {
           "id": "paper-box",
-          "label": "Paper or cardboard box",
+          "label": "Paper box",
           "hint": "Cardboard and pizza boxes. A delivery box lined with foil or plastic has its own choice."
         },
         {
           "id": "insulated-box",
-          "label": "Insulated delivery box",
+          "label": "Insulated box",
           "hint": "A box lined with foil or plastic that will not come off"
         },
         {
           "id": "paper-books",
-          "label": "Newspaper, books or flyers",
+          "label": "Newspapers, books",
           "hint": "Take plastic-coated paper (a coated flyer, for example) out first: it goes in the general waste bag. The rest goes out as paper."
         },
         {
@@ -54,11 +54,11 @@
         },
         {
           "id": "plastic-container",
-          "label": "Other plastic container or tray"
+          "label": "Plastic tub or tray"
         },
         {
           "id": "plastic-film",
-          "label": "Plastic film or bag"
+          "label": "Plastic bag or film"
         },
         {
           "id": "styrofoam",

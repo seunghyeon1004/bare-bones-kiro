@@ -25,6 +25,18 @@ export interface Labels {
 
 export interface FooterEntry { text: string; href?: string }
 
+/** A search box above the choices of one question. */
+export interface FilterCopy {
+  condition: string; // the condition whose choices are filtered
+  label: string;
+  placeholder: string;
+  noMatch: string; // shown when nothing matches; should suggest what to try
+  showAll: string; // button label that restores every choice
+  count: string; // must contain {n}
+  countOne: string; // used when exactly one choice matches
+  keywords: Record<string, string[]>; // value id -> extra words to match
+}
+
 export interface Copy {
   title: string;
   tagline: string;
@@ -33,6 +45,9 @@ export interface Copy {
   labels: Labels;
   resultLead: string;
   footer: FooterEntry[];
+  /** Value id -> SVG path `d` strings drawn on a 24 by 24 grid. */
+  icons?: Record<string, string[]>;
+  filter?: FilterCopy;
 }
 
 export interface Landing {

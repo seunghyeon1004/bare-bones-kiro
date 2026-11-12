@@ -15,3 +15,5 @@ Also polish the playground page (skeleton/playground/, its CSS and copy file; re
 8. Rule list: each row shows the rule id, a short "when -> outcome" summary (text nodes only), and Remove. After a removal, show "Removed rule-id" with an Undo button that puts that rule back where it was (Reset stays).
 9. In the preview, hide the shell's "Copy link" button (a mount option), because the link would point at the playground, not the preview.
 Add one e2e assertion for Undo (remove, Undo, "Passes" again). Keep axe clean at 1280 and 390, light and dark.
+
+Two small shell touches from the owner's look at the new Which bin? screen: draw the tile pictograms at 36 px (they render at about 24 px now), and make the progress bar's unfilled track a quiet colour (the surface or border colour mixed lighter), so the filled part reads as progress; the bar is decorative and aria-hidden, so this is visual only.

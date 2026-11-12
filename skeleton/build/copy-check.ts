@@ -1,5 +1,6 @@
+import type { Table } from '../engine/index.ts';
 import type { Plural, PlaygroundCopy } from '../playground/types.ts';
-import type { Copy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';
+import type { Copy, FilterCopy, FooterEntry, Labels, Landing } from '../shell/copy-type.ts';
 
 // `satisfies` makes the compiler fail if this list and `Labels` ever differ.
 const LABEL_KEYS = {
@@ -26,6 +27,19 @@ const LABEL_KEYS = {
 } satisfies Record<keyof Labels, true>;
 
 const COPY_KEYS = ['title', 'tagline', 'intro', 'answerStyle', 'labels', 'resultLead', 'footer'] as const satisfies readonly (keyof Copy)[];
+const OPTIONAL_COPY_KEYS = ['icons', 'filter'] as const satisfies readonly (keyof Copy)[];
+const FILTER_KEYS = {
+  condition: true,
+  label: true,
+  placeholder: true,
+  noMatch: true,
+  showAll: true,
+  count: true,
+  countOne: true,
+  keywords: true,
+} satisfies Record<keyof FilterCopy, true>;
+/** Digits, path command letters, exponent, space, comma, dot, plus, minus. */
+const PATH_CHARACTERS = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+$/;
 const LANDING_KEYS = ['title', 'tagline', 'intro', 'styles', 'noteTitle', 'note', 'playground', 'footer'] as const satisfies readonly (keyof Landing)[];
 const PLACEHOLDERS: Partial<Record<keyof Labels, string[]>> = { questionOf: ['{n}', '{max}'], badLink: ['{count}'] };
 
@@ -110,7 +124,73 @@ export function validateCopy(input: unknown): string[] {
       nonEmptyString(value, key, problems);
     }
   }
-  unknownKeys(input, COPY_KEYS, '', problems);
+  if (Object.hasOwn(input, 'icons')) checkIcons(input['icons'], problems);
+  if (Object.hasOwn(input, 'filter')) checkFilter(input['filter'], problems);
+  unknownKeys(input, [...COPY_KEYS, ...OPTIONAL_COPY_KEYS], '', problems);
+  return problems;
+}
+
+function checkIcons(value: unknown, problems: string[]): void {
+  if (!isObj(value)) {
+    problems.push('icons: must be an object');
+    return;
+  }
+  for (const [id, paths] of Object.entries(value)) {
+    const path = `icons.${id}`;
+    if (!Array.isArray(paths) || paths.length === 0) {
+      problems.push(`${path}: must be a non-empty array of path strings`);
+      continue;
+    }
+    paths.forEach((d: unknown, i) => {
+      if (typeof d !== 'string' || d.trim() === '') problems.push(`${path}[${i}]: must be a non-empty string`);
+      else if (!PATH_CHARACTERS.test(d)) problems.push(`${path}[${i}]: contains characters that are not SVG path characters`);
+    });
+  }
+}
+
+function checkFilter(value: unknown, problems: string[]): void {
+  if (!isObj(value)) {
+    problems.push('filter: must be an object');
+    return;
+  }
+  for (const key of Object.keys(FILTER_KEYS) as (keyof FilterCopy)[]) {
+    const path = `filter.${key}`;
+    if (!Object.hasOwn(value, key)) {
+      problems.push(`${path}: missing`);
+    } else if (key === 'keywords') {
+      const keywords = value[key];
+      if (!isObj(keywords)) problems.push(`${path}: must be an object`);
+      else {
+        for (const [id, words] of Object.entries(keywords)) {
+          if (!Array.isArray(words) || words.some((w: unknown) => typeof w !== 'string' || w.trim() === '')) {
+            problems.push(`${path}.${id}: must be an array of non-empty strings`);
+          }
+        }
+      }
+    } else if (nonEmptyString(value[key], path, problems) && key === 'count' && !(value[key] as string).includes('{n}')) {
+      problems.push(`${path}: must contain {n}`);
+    }
+  }
+  unknownKeys(value, Object.keys(FILTER_KEYS), 'filter.', problems);
+}
+
+/** Problems that need the app's table: icon keys and filter ids must exist in it. Run after `validateCopy` passes. */
+export function validateCopyAgainstTable(copy: Copy, table: Table): string[] {
+  const problems: string[] = [];
+  const valueIds = new Set(table.conditions.flatMap((c) => c.values.map((v) => v.id)));
+  for (const id of Object.keys(copy.icons ?? {})) {
+    if (!valueIds.has(id)) problems.push(`icons.${id}: not a value id of the table`);
+  }
+  if (copy.filter !== undefined) {
+    const condition = table.conditions.find((c) => c.id === copy.filter?.condition);
+    if (condition === undefined) {
+      problems.push(`filter.condition: "${copy.filter.condition}" is not a condition id of the table`);
+    } else {
+      for (const id of Object.keys(copy.filter.keywords)) {
+        if (!condition.values.some((v) => v.id === id)) problems.push(`filter.keywords.${id}: not a value id of "${condition.id}"`);
+      }
+    }
+  }
   return problems;
 }
 

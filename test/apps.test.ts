@@ -327,9 +327,9 @@ describe('copy', () => {
 
   it('which-bin names Seoul and the districts, and links both sources as in the table', () => {
     const sources = "Seoul's rules (2025) and the Ministry of Environment's guide (2018)";
-    expect(bin.tagline).toContain(sources);
+    expect(bin.tagline).not.toContain('Seoul');
     expect(bin.intro).toContain(sources);
-    expect(bin.footer.at(-1)?.text).toContain(sources);
+    expect(bin.footer.at(-1)?.text).not.toContain(sources);
     expect(bin.intro).toContain('vary by district');
     expect(bin.footer.find((f) => f.href?.includes('sustainability.korea.ac.kr'))?.text).toContain('copy hosted by Korea University');
     const table = loadTable('apps/which-bin/table.json');

@@ -167,6 +167,24 @@ describe('build', () => {
       expected: 'sources[0].url: must start with https:// or http://',
     },
     {
+      name: 'an icon key that is not a value id',
+      setup: (w) => editJson<Record<string, unknown>>(path.join(w.app, 'copy.json'), (c) => (c['icons'] = { nope: ['M0 0L24 24'] })),
+      expected: 'icons.nope: not a value id of the table',
+    },
+    {
+      name: 'an icon path with characters that are not path characters',
+      setup: (w) => editJson<Record<string, unknown>>(path.join(w.app, 'copy.json'), (c) => (c['icons'] = { small: ['M0 0 <script>'] })),
+      expected: 'icons.small[0]: contains characters that are not SVG path characters',
+    },
+    {
+      name: 'a filter on a condition that is not in the table',
+      setup: (w) =>
+        editJson<Record<string, unknown>>(path.join(w.app, 'copy.json'), (c) => {
+          c['filter'] = { condition: 'nope', label: 'a', placeholder: 'b', noMatch: 'c', showAll: 'd', count: '{n}', countOne: 'e', keywords: {} };
+        }),
+      expected: 'filter.condition: "nope" is not a condition id of the table',
+    },
+    {
       name: 'an extra file in the app folder',
       setup: (w) => writeFileSync(path.join(w.app, 'extra.txt'), 'x'),
       expected: 'unexpected file extra.txt',
